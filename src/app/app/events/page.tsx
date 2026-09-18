@@ -3,7 +3,7 @@ import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "../_copy";
-import { Card, ChainSteps, Chip, ProvenanceStrip } from "../_components/ui";
+import { Card, Chip, DecisionRail, ProvenanceStrip } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -15,7 +15,7 @@ export default async function EventsPage() {
 
   return (
     <div className="flex flex-col gap-4 pt-6">
-      <ChainSteps current="Intelligence" />
+      <DecisionRail current="INTELLIGENCE" />
       <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
         Events
       </h1>

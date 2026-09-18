@@ -32,6 +32,8 @@ import {
   checkDisplay,
   formatPct,
   formatUsd,
+  provenanceMarker,
+  railStages,
 } from "../src/app/app/_components/ui";
 import { FULL_PAYLOADS, stubClientFor } from "./fixtures/reality-payloads";
 
@@ -99,6 +101,34 @@ describe("display mappings", () => {
   });
 });
 
+describe("decision rail", () => {
+  it("marks active, completed, and future stages", () => {
+    const stages = railStages("MANDATE");
+    expect(stages.map((s) => `${s.index} ${s.label}:${s.state}`)).toEqual([
+      "01 EXPOSURE:done",
+      "02 INTENT:done",
+      "03 INTELLIGENCE:done",
+      "04 MANDATE:active",
+      "05 ACTION:todo",
+      "06 RECEIPT:todo",
+    ]);
+  });
+
+  it("stays quiet on unknown stages", () => {
+    expect(railStages("SOMETHING_ELSE").every((s) => s.state === "todo")).toBe(true);
+  });
+});
+
+describe("provenance markers", () => {
+  it("keeps the four required truths with distinct markers", () => {
+    expect(provenanceMarker("LIVE BITGET DATA")).toMatchObject({ glyph: "●", hot: true });
+    expect(provenanceMarker("SIMULATED PORTFOLIO").glyph).toBe("○");
+    expect(provenanceMarker("DEVELOPMENT ANALYSIS").glyph).toBe("◇");
+    expect(provenanceMarker("DRY_RUN EXECUTION").glyph).toBe("□");
+    expect(provenanceMarker("BITGET DATA UNAVAILABLE")).toMatchObject({ alert: true });
+  });
+});
+
 describe("honesty copy", () => {
   it("dry-run language never claims execution", () => {
     expect(DRY_RUN_PRE_NOTICE).toMatch(/no funds/i);
@@ -110,11 +140,8 @@ describe("honesty copy", () => {
     expect(DATE_UNAVAILABLE_LINE).not.toMatch(/\d{4}-\d{2}-\d{2}/);
   });
 
-  it("covers the full decision chain including the gate", () => {
-    expect([...CHAIN_STEPS]).toEqual(
-      expect.arrayContaining(["Exposure", "Mandate", "Approval", "Receipt"]),
-    );
-    expect(CHAIN_STEPS).toHaveLength(8);
+  it("covers the six-stage decision rail including the gate", () => {
+    expect([...CHAIN_STEPS]).toEqual(["EXPOSURE", "INTENT", "INTELLIGENCE", "MANDATE", "ACTION", "RECEIPT"]);
   });
 
   it("names the failed rule in refusal sentences", () => {

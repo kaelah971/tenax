@@ -7,7 +7,7 @@ import { notFound } from "next/navigation";
 import { getDecisionReceipt } from "@/lib/tenax/service";
 import { routeDevStore } from "@/app/api/protection/_dev-store";
 import { NOT_ADVICE } from "../../_copy";
-import { Card, ChainSteps, Chip, ProvenanceStrip } from "../../_components/ui";
+import { Card, Chip, DecisionRail, ProvenanceStrip } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -33,7 +33,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="flex flex-col gap-4 pt-6">
-      <ChainSteps current="Receipt" />
+      <DecisionRail current="RECEIPT" />
       <div className="flex flex-wrap items-center gap-3">
         <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
           Decision Receipt

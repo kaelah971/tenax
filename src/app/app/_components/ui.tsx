@@ -1,8 +1,9 @@
-// Tenax Phase 1D — shared UI primitives (DESIGN.md, server-safe).
+// Tenax Phase 1E-A — shared signal-system primitives (DESIGN.md beta-signal).
 //
-// Cream field, white cards with soft shadows, labeled state chips, one type
-// family with tabular figures. Pure presentational helpers plus the
-// check-display mapping the Mandate Gate renders from server decisions.
+// Signal Yellow dominance, Ink authority, ivory field, mono system labels.
+// Server-safe. Pure display mappings (railStages, provenanceMarker,
+// checkDisplay) stay unit-tested; rendering behavior is covered by
+// typecheck + production build.
 import type { ReactNode } from "react";
 
 import type { MandateCheck, MandateCheckId } from "@/lib/tenax/domain";
@@ -48,11 +49,11 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[14px] bg-white p-4 text-ink shadow-[0_6px_16px_rgba(0,0,0,0.08)] sm:p-5">
+    <section className="rounded-[10px] bg-softwhite p-4 text-ink shadow-[0_6px_16px_rgba(0,0,0,0.08)] sm:p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
-          <h2 className="text-[13px] font-semibold leading-[18px]">{title}</h2>
-          {meta ? <p className="mt-0.5 text-[11px] leading-[14px] text-muted">{meta}</p> : null}
+          <h2 className="text-[13px] font-bold leading-[18px]">{title}</h2>
+          {meta ? <p className="mt-0.5 text-[11px] leading-[14px] text-mutedink">{meta}</p> : null}
         </div>
         {action}
       </div>
@@ -61,6 +62,115 @@ export function Card({
   );
 }
 
+// ---- Tenax Decision Rail ----------------------------------------------------
+
+export const RAIL_STAGES = [
+  "EXPOSURE",
+  "INTENT",
+  "INTELLIGENCE",
+  "MANDATE",
+  "ACTION",
+  "RECEIPT",
+] as const;
+
+export type RailStage = (typeof RAIL_STAGES)[number];
+export type RailState = "active" | "done" | "todo";
+
+export interface RailStageView {
+  readonly index: string;
+  readonly label: RailStage;
+  readonly state: RailState;
+}
+
+/** Pure mapping: stages before current are done, current is active. */
+export function railStages(current: string): RailStageView[] {
+  const at = RAIL_STAGES.indexOf(current as RailStage);
+  return RAIL_STAGES.map((label, i) => ({
+    index: String(i + 1).padStart(2, "0"),
+    label,
+    state: (at === -1 ? "todo" : i < at ? "done" : i === at ? "active" : "todo") as RailState,
+  }));
+}
+
+export function DecisionRail({ current }: { current: string }) {
+  const stages = railStages(current);
+  return (
+    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label="Decision rail">
+      {stages.map((stage, i) => (
+        <li key={stage.label} className="flex items-center gap-2">
+          <span
+            className={`font-syslabel text-[11px] leading-[14px] tracking-[0.08em] ${
+              stage.state === "active"
+                ? "anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
+                : stage.state === "done"
+                  ? "font-bold text-ink"
+                  : "text-mutedink"
+            }`}
+          >
+            {stage.index} {stage.label}
+          </span>
+          {i < stages.length - 1 ? <span className="text-mutedink">━</span> : null}
+        </li>
+      ))}
+    </ol>
+  );
+}
+
+// ---- Compact provenance strip ------------------------------------------------
+// Markers: ● LIVE (Bitget Reality) · ○ DEMO (simulated) · ◇ DEV (fixture) ·
+// □ DRY (no funds moved). Full required truth always rendered as words.
+
+export interface ProvenanceMark {
+  readonly glyph: string;
+  readonly hot: boolean;
+  readonly alert: boolean;
+}
+
+/** Pure mapping from a provenance label to its compact marker. */
+export function provenanceMarker(label: string): ProvenanceMark {
+  const upper = label.toUpperCase();
+  if (upper.startsWith("LIVE")) return { glyph: "●", hot: true, alert: false };
+  if (upper.includes("UNAVAILABLE") || upper.startsWith("OFFLINE"))
+    return { glyph: "○", hot: false, alert: true };
+  if (upper.startsWith("SIMULATED") || upper.startsWith("DEMO"))
+    return { glyph: "○", hot: false, alert: false };
+  if (upper.startsWith("DEVELOPMENT") || upper.startsWith("DEV") || upper.startsWith("◇"))
+    return { glyph: "◇", hot: false, alert: false };
+  if (upper.startsWith("DRY") || upper.startsWith("□")) return { glyph: "□", hot: false, alert: false };
+  return { glyph: "•", hot: false, alert: false };
+}
+
+export function ProvenanceStrip({ items }: { items: readonly string[] }) {
+  return (
+    <p
+      className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink"
+      aria-label="Data provenance"
+    >
+      {items.map((item, i) => {
+        const mark = provenanceMarker(item);
+        return (
+          <span key={item}>
+            {i > 0 ? <span className="mx-2">·</span> : null}
+            <span
+              className={
+                mark.hot
+                  ? "bg-signal px-1 py-px font-bold text-ink"
+                  : mark.alert
+                    ? "font-bold text-clay"
+                    : undefined
+              }
+            >
+              {mark.glyph} {item}
+            </span>
+          </span>
+        );
+      })}
+    </p>
+  );
+}
+
+// ---- Mandate checks ----------------------------------------------------------
+
 function Glyph({ d }: { d: string }) {
   return (
     <svg
@@ -68,7 +178,7 @@ function Glyph({ d }: { d: string }) {
       height="20"
       viewBox="0 0 20 20"
       fill="none"
-      stroke="#1A1A1A"
+      stroke="#111111"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -119,79 +229,72 @@ export function checkDisplay(check: MandateCheck): CheckDisplay {
     : { title: CHECK_TITLES[check.id], detail: check.detail, tone: "refused", label: "REFUSED" };
 }
 
-export function CheckRow({ check }: { check: MandateCheck }) {
+export function CheckRow({ check, index }: { check: MandateCheck; index: string }) {
   const display = checkDisplay(check);
   return (
-    <li className="flex items-center gap-3 rounded-[10px] bg-white px-3 py-2.5 shadow-[0_6px_14px_rgba(0,0,0,0.08)]">
-      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[10px] bg-cream">
+    <li className="flex items-center gap-3 rounded-[6px] bg-softwhite px-3 py-2.5 shadow-[0_6px_14px_rgba(0,0,0,0.08)]">
+      <span className="font-syslabel w-6 shrink-0 text-[11px] leading-[14px] text-mutedink">
+        {index}
+      </span>
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-[6px] bg-ivory">
         <Glyph d={CHECK_GLYPHS[check.id]} />
       </span>
       <span className="min-w-0 flex-1">
-        <span className="block text-[13px] font-semibold leading-[18px]">{display.title}</span>
-        <span className="block truncate text-[11px] leading-[14px] text-muted">{display.detail}</span>
+        <span className="block text-[13px] font-bold leading-[18px]">{display.title}</span>
+        <span className="block truncate text-[11px] leading-[14px] text-mutedink">
+          {display.detail}
+        </span>
       </span>
-      <Chip tone={display.tone}>{display.label}</Chip>
+      {display.tone === "dryrun" ? (
+        <span className="rounded-full border-2 border-ink bg-signal px-2.5 py-0.5 text-[13px] font-bold leading-[18px] text-ink">
+          {display.label}
+        </span>
+      ) : (
+        <Chip tone={display.tone}>{display.label}</Chip>
+      )}
     </li>
   );
 }
 
-/** The signature Mandate Gate core: white module, blue glow rings, label stack. */
-export function GateCore() {
+// ---- Mandate Gate core (signature primitive) ---------------------------------
+// Ink control surface, geometric gate, Signal Yellow illumination on PASS,
+// oversized state word. Refusal sits flat with no glow.
+
+export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
+  const lit = state === "PASS";
   return (
-    <div className="flex items-center justify-center py-6" aria-label="Mandate Gate diagram">
-      <div className="rounded-full bg-primary/10 p-8">
-        <div className="rounded-full bg-primary/15 p-6">
-          <div className="flex h-32 w-32 flex-col items-center justify-center rounded-full bg-white text-center shadow-[0_8px_20px_rgba(78,128,232,0.25)]">
-            <span className="text-[12px] font-semibold leading-[16px]">Mandate Gate</span>
-            <span className="mt-1 text-[11px] leading-[14px] text-muted">ENFORCED</span>
-            <span className="text-[11px] leading-[14px] text-muted">deterministic</span>
+    <div className="rounded-[2px] bg-ink px-6 py-8 text-softwhite" aria-label="Mandate Gate">
+      <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+        MANDATE_GATE · ENFORCED · DETERMINISTIC
+      </p>
+      <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+        <div className={lit ? "anim-gate rounded-[6px]" : "rounded-[6px]"}>
+          <div
+            className="flex items-end justify-center gap-3 rounded-[6px] px-8 py-6"
+            style={lit ? { backgroundColor: "#F5FF3B" } : { backgroundColor: "#242424" }}
+            aria-hidden="true"
+          >
+            <span className="h-20 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
+            <span className="h-14 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
+            <span className="h-20 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
           </div>
         </div>
+        <div className="text-center sm:text-left">
+          <p
+            className="text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[72px]"
+            style={{ color: state === null ? "#6E6D66" : state === "PASS" ? "#F5FF3B" : "#C74B3B" }}
+          >
+            {state ?? "GATE"}
+          </p>
+          <p className="mt-2 text-[16px] leading-[24px] text-softwhite/80">
+            {state === "PASS"
+              ? "Every rule cleared. Approval still required — nothing has moved."
+              : state === "REFUSED"
+                ? "A rule failed below. No approval path exists from here."
+                : "Verdict pending."}
+          </p>
+        </div>
       </div>
-    </div>
-  );
-}
-
-export function ChainSteps({ current }: { current: string }) {
-  const steps = [
-    "Exposure",
-    "Intent",
-    "Intelligence",
-    "Proposal",
-    "Mandate",
-    "Approval",
-    "Action",
-    "Receipt",
-  ];
-  return (
-    <ol className="flex flex-wrap items-center gap-1.5" aria-label="Protection chain">
-      {steps.map((step, i) => {
-        const active = step === current;
-        return (
-          <li key={step} className="flex items-center gap-1.5">
-            <span
-              className={`rounded-full px-2.5 py-1 text-[11px] leading-[14px] ${
-                active ? "bg-ink font-semibold text-white" : "bg-badgefill text-ink"
-              }`}
-            >
-              {step}
-            </span>
-            {i < steps.length - 1 ? <span className="text-muted">→</span> : null}
-          </li>
-        );
-      })}
-    </ol>
-  );
-}
-
-export function ProvenanceStrip({ items }: { items: readonly string[] }) {
-  return (
-    <div className="flex flex-wrap gap-1.5" aria-label="Data provenance">
-      {items.map((item) => (
-        <Chip key={item} tone="muted">
-          {item}
-        </Chip>
-      ))}
     </div>
   );
 }

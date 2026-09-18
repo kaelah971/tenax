@@ -25,15 +25,14 @@ export const EVENT_UNAVAILABLE_LINE =
 export const SESSION_ONLY_NOTICE =
   "Current session only — activity resets when the server restarts. No database yet.";
 
+// Tenax Decision Rail stages (DESIGN.md beta-signal): six technical stages.
 export const CHAIN_STEPS = [
-  "Exposure",
-  "Intent",
-  "Intelligence",
-  "Proposal",
-  "Mandate",
-  "Approval",
-  "Action",
-  "Receipt",
+  "EXPOSURE",
+  "INTENT",
+  "INTELLIGENCE",
+  "MANDATE",
+  "ACTION",
+  "RECEIPT",
 ] as const;
 
 export function approveCta(tradeValueUsdt: number): string {

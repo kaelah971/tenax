@@ -44,9 +44,9 @@ export default function AnalyzeButton({
         type="button"
         onClick={onAnalyze}
         disabled={disabled || state === "working"}
-        className="inline-flex h-12 items-center justify-center rounded-[10px] bg-deep px-6 text-[15px] font-semibold leading-[20px] text-white shadow-[0_8px_20px_rgba(78,128,232,0.25)] hover:bg-pressed disabled:cursor-not-allowed disabled:opacity-50"
+        className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
       >
-        {state === "working" ? "Analyzing…" : "Analyze protection ↗"}
+        {state === "working" ? "ANALYZING…" : "ANALYZE PROTECTION →"}
       </button>
       {disabled && disabledReason ? (
         <p className="text-[13px] leading-[18px] text-muted">{disabledReason}</p>

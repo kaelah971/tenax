@@ -6,7 +6,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { routeDevStore } from "@/app/api/protection/_dev-store";
-import { Card, ChainSteps, Chip, ProvenanceStrip } from "../../_components/ui";
+import { Card, Chip, DecisionRail, ProvenanceStrip } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -19,7 +19,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="flex flex-col gap-4 pt-6">
-      <ChainSteps current="Intelligence" />
+      <DecisionRail current="INTELLIGENCE" />
       <div>
         <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
           Assessment

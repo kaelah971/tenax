@@ -6,7 +6,7 @@ import { notFound } from "next/navigation";
 
 import { routeDevStore } from "@/app/api/protection/_dev-store";
 import { DRY_RUN_PRE_NOTICE, refusalSentence } from "../../_copy";
-import { Card, ChainSteps, CheckRow, Chip, GateCore, ProvenanceStrip } from "../../_components/ui";
+import { Card, CheckRow, Chip, DecisionRail, GateCore, ProvenanceStrip } from "../../_components/ui";
 import ApproveExecutePanel from "./ApproveExecutePanel";
 
 export const dynamic = "force-dynamic";
@@ -24,16 +24,20 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
   return (
     <div className="flex flex-col gap-4 pt-6">
-      <ChainSteps current="Mandate" />
-      <div className="flex flex-wrap items-center gap-3">
-        <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
-          Mandate Gate
-        </h1>
-        {passed ? <Chip tone="pass">MANDATE PASS</Chip> : <Chip tone="refused">MANDATE REFUSED</Chip>}
-        <Chip tone="dryrun">DRY RUN</Chip>
+      <DecisionRail current="MANDATE" />
+      <div>
+        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          GATE_001 · PERMISSION ENGINE
+        </p>
+        <div className="mt-2 flex flex-wrap items-center gap-3">
+          <h1 className="text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-[64px]">
+            Mandate Gate
+          </h1>
+          <Chip tone="dryrun">DRY RUN</Chip>
+        </div>
       </div>
 
-      <GateCore />
+      <GateCore state={passed ? "PASS" : "REFUSED"} />
 
       <Card
         title={`Proposed protection — ${analysis.proposal.protectionPct}% / $${analysis.authority.calculatedTradeValueUsdt}`}
@@ -43,8 +47,8 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
         }
       >
         <ul className="flex flex-col gap-2">
-          {decision.checks.map((check) => (
-            <CheckRow key={check.id} check={check} />
+          {decision.checks.map((check, i) => (
+            <CheckRow key={check.id} check={check} index={String(i + 1).padStart(2, "0")} />
           ))}
         </ul>
         {!passed ? (

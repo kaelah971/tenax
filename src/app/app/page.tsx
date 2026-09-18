@@ -1,115 +1,149 @@
-// Tenax Phase 1D — Capital dashboard (server-rendered, cached snapshot).
-// SIMULATED portfolio exposure beside LIVE Bitget market context, each
-// labeled. No earnings date is shown because none is verified.
+// Tenax Phase 1E-A — Capital dashboard (editorial composition).
+// Same data, same provenance, same CTAs as Phase 1D: $500 SIMULATED
+// exposure beside LIVE Bitget context, no fabricated earnings date.
 import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
 import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "../app/_copy";
-import { Card, ChainSteps, Chip, ProvenanceStrip } from "./_components/ui";
+import { DecisionRail, ProvenanceStrip } from "./_components/ui";
 
 export const dynamic = "force-dynamic";
-
-function PrimaryCta({ href, children }: { href: string; children: string }) {
-  return (
-    <Link
-      href={href}
-      className="inline-flex h-12 items-center justify-center rounded-[10px] bg-deep px-6 text-[15px] font-semibold leading-[20px] text-white shadow-[0_8px_20px_rgba(78,128,232,0.25)] hover:bg-pressed"
-    >
-      {children} ↗
-    </Link>
-  );
-}
 
 export default async function CapitalPage() {
   const snapshot = await getDemoSnapshot();
   const live = snapshot.availability !== "UNAVAILABLE";
   const ticker = snapshot.ticker.data;
   const instrument = snapshot.instrument.data;
-  const sessions = snapshot.sessions.data;
+  const sessionState = snapshot.sessions.data?.currentState ?? "UNKNOWN";
 
   return (
-    <div className="flex flex-col gap-4 pt-6">
-      <div className="flex flex-wrap items-center gap-2">
-        <ChainSteps current="Exposure" />
-        <span className="ml-auto text-[11px] leading-[14px] text-muted">
-          {live ? `Market data as of ${snapshot.fetchedAt}` : "Market data unavailable"}
+    <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
+      <div className="flex flex-wrap items-center gap-3">
+        <DecisionRail current="EXPOSURE" />
+        <span className="font-syslabel ml-auto text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          {live ? `MARKET ${snapshot.fetchedAt}` : "MARKET OFFLINE"}
         </span>
       </div>
 
       <div>
-        <h1 className="max-w-xl text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
+        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          CAPITAL_001
+        </p>
+        <h1 className="mt-3 max-w-3xl text-[40px] font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-[76px]">
           What should your capital do?
         </h1>
-        <p className="mt-3 max-w-xl text-[16px] leading-[24px] text-muted">
-          Tenax watches your exposure through earnings, proposes bounded protection, and clears
-          every action through your mandate before anything moves.
-        </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <Card
-          title="NVIDIA"
-          meta="rNVDA · Bitget Reality · Exposure $500"
-          action={<Chip tone="muted">SIMULATED PORTFOLIO</Chip>}
-        >
-          <p className="text-[16px] leading-[24px]">
-            <span className="text-[30px] font-bold leading-[34px]">$500</span> NVIDIA exposure held
-            as rNVDA.
-          </p>
-          <div className="mt-4 flex flex-wrap gap-3">
-            <PrimaryCta href="/app/protect/nvidia">Protect this exposure</PrimaryCta>
-            <Link
-              href="/app/exposure/nvidia"
-              className="inline-flex h-12 items-center justify-center rounded-[10px] border border-secondaryborder bg-white px-6 text-[15px] font-semibold leading-[20px] hover:bg-secondaryhover"
-            >
-              View exposure
-            </Link>
-          </div>
-        </Card>
+      <section aria-label="Primary exposure">
+        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          NVIDIA EXPOSURE
+        </p>
+        <p className="mt-1 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[104px]">
+          $500
+        </p>
+        <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
+          <span className="bg-signal px-1.5 py-0.5 font-bold text-ink">rNVDA · BITGET REALITY</span>{" "}
+          <span className={live ? "text-ink" : "text-clay"}>
+            {live ? `● LIVE MARKET · ${instrument?.status?.toUpperCase() ?? "—"}` : "○ MARKET OFFLINE"}
+          </span>
+        </p>
+        <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          ○ DEMO · SIMULATED PORTFOLIO — NOT A LIVE POSITION
+        </p>
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+          <Link
+            href="/app/protect/nvidia"
+            className="inline-flex min-h-12 flex-1 items-center justify-center bg-signal px-6 py-4 text-center text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:flex-none sm:px-10"
+          >
+            PROTECT THROUGH EARNINGS →
+          </Link>
+          <Link
+            href="/app/exposure/nvidia"
+            className="inline-flex min-h-12 items-center justify-center border-2 border-ink px-6 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
+          >
+            VIEW EXPOSURE
+          </Link>
+        </div>
+      </section>
 
-        <Card
-          title="Live Bitget context"
-          meta="RNVDAUSDT · public market data"
-          action={live ? <Chip tone="live">LIVE BITGET DATA</Chip> : <Chip tone="refused">UNAVAILABLE</Chip>}
-        >
-          {live ? (
-            <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] leading-[18px]">
-              <dt className="text-muted">Instrument</dt>
-              <dd className="font-semibold">{instrument?.status ?? "—"}</dd>
-              <dt className="text-muted">Last price</dt>
-              <dd className="font-semibold">{ticker?.lastPrice ? `$${ticker.lastPrice}` : "—"}</dd>
-              <dt className="text-muted">24h range</dt>
-              <dd className="font-semibold">
+      <section aria-label="Live market signal" className="rounded-[2px] bg-graphite p-5 text-softwhite sm:p-8">
+        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+          LIVE_SIGNAL · RNVDAUSDT · BITGET REALITY
+        </p>
+        {live ? (
+          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
+            <div>
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">LAST</p>
+              <p className="mt-1 text-[36px] font-extrabold leading-none tracking-[-0.02em] text-signal">
+                {ticker?.lastPrice ? `$${ticker.lastPrice}` : "—"}
+              </p>
+            </div>
+            <div>
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">24H RANGE</p>
+              <p className="mt-1 text-[20px] font-bold leading-[24px]">
                 {ticker?.lowPrice24h && ticker?.highPrice24h
                   ? `$${ticker.lowPrice24h} – $${ticker.highPrice24h}`
                   : "—"}
-              </dd>
-              <dt className="text-muted">Session</dt>
-              <dd className="font-semibold">{sessions?.currentState ?? "UNKNOWN"}</dd>
-            </dl>
-          ) : (
-            <p className="text-[16px] leading-[24px]">{EVENT_UNAVAILABLE_LINE}</p>
-          )}
-        </Card>
-      </div>
+              </p>
+            </div>
+            <div>
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">SESSION</p>
+              <p className="mt-1 text-[20px] font-bold leading-[24px]">
+                {sessionState === "UNKNOWN" ? "— AWAITING SIGNAL" : sessionState}
+              </p>
+              {sessionState === "UNKNOWN" ? (
+                <p className="mt-1 text-[11px] leading-[14px] text-softwhite/60">
+                  No authoritative session marker from Bitget.
+                </p>
+              ) : null}
+            </div>
+            <div>
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">VOL 24H</p>
+              <p className="mt-1 text-[20px] font-bold leading-[24px]">{ticker?.volume24h ?? "—"}</p>
+            </div>
+          </div>
+        ) : (
+          <p className="mt-4 max-w-xl text-[16px] leading-[24px]">{EVENT_UNAVAILABLE_LINE}</p>
+        )}
+      </section>
 
-      <Card
-        title="NVIDIA Earnings"
-        meta="Affects $500 rNVDA exposure"
-        action={<Link href="/app/events" className="text-[13px] font-medium leading-[18px] text-deep">Open event →</Link>}
-      >
-        <div className="flex flex-wrap items-center gap-3">
-          <p className="text-[16px] leading-[24px]">{DATE_UNAVAILABLE_LINE}</p>
-          <span className="ml-auto">
-            <PrimaryCta href="/app/protect/nvidia">Protect this position</PrimaryCta>
-          </span>
+      <section aria-label="Earnings event" className="rounded-[2px] bg-ink p-5 text-softwhite sm:p-8">
+        <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            EVENT_01
+          </p>
+          <h2 className="text-[30px] font-extrabold leading-none tracking-[-0.02em] sm:text-[44px]">
+            NVIDIA EARNINGS
+          </h2>
         </div>
-        <p className="mt-2 text-[11px] leading-[14px] text-muted">
-          Exposure at risk: {NVDA_EXPOSURE_FIXTURE.underlying} via{" "}
-          {NVDA_EXPOSURE_FIXTURE.representation.symbol} · {formatExposureValue()}
-        </p>
-      </Card>
+        <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
+          <div className="border-t border-softwhite/20 pt-3">
+            <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">CAPITAL AT RISK</dt>
+            <dd className="mt-1 text-[28px] font-extrabold leading-none">$500</dd>
+          </div>
+          <div className="border-t border-softwhite/20 pt-3">
+            <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">DATE</dt>
+            <dd className="mt-1 text-[28px] font-extrabold leading-none">UNVERIFIED</dd>
+            <dd className="mt-1 text-[11px] leading-[14px] text-softwhite/60">{DATE_UNAVAILABLE_LINE}</dd>
+          </div>
+          <div className="border-t border-softwhite/20 pt-3">
+            <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">STATUS</dt>
+            <dd className="mt-1 text-[28px] font-extrabold leading-none text-signal">WATCHING</dd>
+            <dd className="mt-1 text-[11px] leading-[14px] text-softwhite/60">
+              {NVDA_EXPOSURE_FIXTURE.underlying} via {NVDA_EXPOSURE_FIXTURE.representation.symbol}
+            </dd>
+          </div>
+        </dl>
+        <div className="mt-6">
+          <Link
+            href="/app/protect/nvidia"
+            className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
+          >
+            PROTECT THIS POSITION →
+          </Link>
+        </div>
+      </section>
 
       <ProvenanceStrip
         items={[
@@ -120,8 +154,4 @@ export default async function CapitalPage() {
       />
     </div>
   );
-}
-
-function formatExposureValue(): string {
-  return `$${NVDA_EXPOSURE_FIXTURE.exposureValueUsdt} simulated value`;
 }
