@@ -6,7 +6,12 @@
 // typecheck + production build.
 import type { ReactNode } from "react";
 
-import type { MandateCheck, MandateCheckId } from "@/lib/tenax/domain";
+import type {
+  MandateCheck,
+  MandateCheckId,
+  MandateDecision,
+  ProtectionProposal,
+} from "@/lib/tenax/domain";
 
 export function formatUsd(value: number): string {
   return `$${Number.isInteger(value) ? value : value.toFixed(2)}`;
@@ -14,6 +19,32 @@ export function formatUsd(value: number): string {
 
 export function formatPct(value: number): string {
   return `${value}%`;
+}
+
+/** Human-compact large market figures: 145580319.3223 → 145.58M. */
+export function formatCompact(value: string | null): string {
+  if (value === null) return "—";
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "—";
+  const abs = Math.abs(n);
+  if (abs >= 1_000_000_000) return `${(n / 1_000_000_000).toFixed(2)}B`;
+  if (abs >= 1_000_000) return `${(n / 1_000_000).toFixed(2)}M`;
+  if (abs >= 1_000) return `${(n / 1_000).toFixed(2)}K`;
+  return value;
+}
+
+/** Compact product timestamp: ISO → "23:01 UTC". Exact ISO stays in title. */
+export function formatMarketTime(iso: string | null): string {
+  if (!iso) return "—";
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return "—";
+  const pad = (n: number): string => String(n).padStart(2, "0");
+  return `${pad(date.getUTCHours())}:${pad(date.getUTCMinutes())} UTC`;
+}
+
+/** User-facing execution-mode display: enum DRY_RUN renders as DRY RUN. */
+export function provenanceDisplay(label: string): string {
+  return label.replace(/DRY_RUN/g, "DRY RUN");
 }
 
 type ChipTone = "pass" | "refused" | "dryrun" | "live" | "muted" | "deep";
@@ -99,12 +130,12 @@ export function DecisionRail({ current }: { current: string }) {
       {stages.map((stage, i) => (
         <li key={stage.label} className="flex items-center gap-2">
           <span
-            className={`font-syslabel text-[11px] leading-[14px] tracking-[0.08em] ${
+            className={`${
               stage.state === "active"
                 ? "anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
                 : stage.state === "done"
                   ? "font-bold text-ink"
-                  : "text-mutedink"
+                  : "text-mutedink/60"
             }`}
           >
             {stage.index} {stage.label}
@@ -160,7 +191,7 @@ export function ProvenanceStrip({ items }: { items: readonly string[] }) {
                     : undefined
               }
             >
-              {mark.glyph} {item}
+              {mark.glyph} {provenanceDisplay(item)}
             </span>
           </span>
         );
@@ -254,6 +285,78 @@ export function CheckRow({ check, index }: { check: MandateCheck; index: string 
       )}
     </li>
   );
+}
+
+// ---- Permission ledger --------------------------------------------------------
+// Indexed gate rows with values derived from the actual proposal and mandate
+// limits. Approval is always WAITING at gate stage — mandate PASS is never
+// merged with human approval.
+
+export interface LedgerRow {
+  readonly index: string;
+  readonly title: string;
+  readonly value: string;
+  readonly state: "PASS" | "REFUSED" | "WAITING";
+}
+
+export interface LedgerLimits {
+  readonly maxPct: number;
+  readonly maxTrade: number;
+}
+
+const LEDGER_TITLES: Record<MandateCheckId, string> = {
+  underlying_allowed: "EXPOSURE",
+  max_protection_pct: "MAX HEDGE",
+  max_trade_value: "MAX TRADE",
+  leverage_disabled: "LEVERAGE",
+  approval_required: "HUMAN APPROVAL",
+  min_order_amount: "MIN SIZE",
+};
+
+function ledgerValue(
+  check: MandateCheck,
+  proposal: ProtectionProposal,
+  limits: LedgerLimits,
+): string {
+  switch (check.id) {
+    case "underlying_allowed":
+      return proposal.underlying;
+    case "max_protection_pct":
+      return `${proposal.protectionPct}% / ${limits.maxPct}%`;
+    case "max_trade_value":
+      return `$${proposal.proposedTradeValueUsdt} / $${limits.maxTrade}`;
+    case "leverage_disabled":
+      return proposal.leverageUsed ? "USED" : "OFF";
+    case "approval_required":
+      return "REQUIRED";
+    case "min_order_amount":
+      return check.detail;
+  }
+}
+
+/** Pure mapping from a server-computed decision to indexed ledger rows. */
+export function ledgerRows(
+  decision: MandateDecision,
+  proposal: ProtectionProposal,
+  limits: LedgerLimits,
+): LedgerRow[] {
+  return decision.checks.map((check, i) => ({
+    index: String(i + 1).padStart(2, "0"),
+    title: LEDGER_TITLES[check.id],
+    value: ledgerValue(check, proposal, limits),
+    state: (check.id === "approval_required" ? "WAITING" : check.pass ? "PASS" : "REFUSED") as
+      | "PASS"
+      | "REFUSED"
+      | "WAITING",
+  }));
+}
+
+/** Truthful cleared-rule count straight from the decision's checks. */
+export function rulesCleared(decision: MandateDecision): { cleared: number; total: number } {
+  return {
+    cleared: decision.checks.filter((c) => c.pass).length,
+    total: decision.checks.length,
+  };
 }
 
 // ---- Mandate Gate core (signature primitive) ---------------------------------

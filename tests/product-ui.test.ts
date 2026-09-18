@@ -10,9 +10,17 @@ import { fetchRealityBundle } from "../src/lib/bitget/reality";
 import { createSnapshotCache } from "../src/lib/bitget/snapshot-cache";
 import { MANDATE_CHECK_IDS, type MandateCheck } from "../src/lib/tenax/domain";
 import {
+  MANDATE_FIXTURE,
+  NVDA_EXPOSURE_FIXTURE,
+  PROPOSAL_PASS_FIXTURE,
+  PROPOSAL_REFUSE_VALUE_FIXTURE,
   analyzeInputSchema,
+  approveProtection,
   approveProtectionProposal,
+  createApprovalRequest,
   createDevStore,
+  dryRunAdapter,
+  evaluateMandate,
   getCapitalContext,
   getDecisionReceipt,
 } from "../src/lib/tenax/index";
@@ -30,10 +38,15 @@ import {
 import {
   CHECK_TITLES,
   checkDisplay,
+  formatCompact,
+  formatMarketTime,
   formatPct,
   formatUsd,
+  ledgerRows,
+  provenanceDisplay,
   provenanceMarker,
   railStages,
+  rulesCleared,
 } from "../src/app/app/_components/ui";
 import { FULL_PAYLOADS, stubClientFor } from "./fixtures/reality-payloads";
 
@@ -126,6 +139,96 @@ describe("provenance markers", () => {
     expect(provenanceMarker("DEVELOPMENT ANALYSIS").glyph).toBe("◇");
     expect(provenanceMarker("DRY_RUN EXECUTION").glyph).toBe("□");
     expect(provenanceMarker("BITGET DATA UNAVAILABLE")).toMatchObject({ alert: true });
+  });
+});
+
+describe("market display helpers", () => {
+  it("compacts large figures without inventing precision", () => {
+    expect(formatCompact("145580319.3223")).toBe("145.58M");
+    expect(formatCompact("2500000000")).toBe("2.50B");
+    expect(formatCompact("1500")).toBe("1.50K");
+    expect(formatCompact("221.57")).toBe("221.57");
+    expect(formatCompact(null)).toBe("—");
+    expect(formatCompact("not-a-number")).toBe("—");
+  });
+
+  it("renders compact UTC product time with exact ISO behind it", () => {
+    expect(formatMarketTime("2026-09-18T23:01:00.000Z")).toBe("23:01 UTC");
+    expect(formatMarketTime("not-a-date")).toBe("—");
+    expect(formatMarketTime(null)).toBe("—");
+  });
+
+  it("displays the execution mode as DRY RUN, never DRY_RUN", () => {
+    expect(provenanceDisplay("DRY_RUN EXECUTION")).toBe("DRY RUN EXECUTION");
+    expect(provenanceDisplay("LIVE BITGET DATA")).toBe("LIVE BITGET DATA");
+  });
+});
+
+describe("permission ledger", () => {
+  it("indexes every rule with proposal-derived values, approval always WAITING", () => {
+    const decision = evaluateMandate(
+      PROPOSAL_PASS_FIXTURE,
+      MANDATE_FIXTURE,
+      NVDA_EXPOSURE_FIXTURE,
+    );
+    const rows = ledgerRows(decision, PROPOSAL_PASS_FIXTURE, { maxPct: 30, maxTrade: 150 });
+    expect(rows.map((r) => r.index)).toEqual(["01", "02", "03", "04", "05", "06"]);
+    expect(rows.map((r) => r.title)).toEqual(
+      expect.arrayContaining(["EXPOSURE", "MAX HEDGE", "MAX TRADE", "LEVERAGE", "HUMAN APPROVAL"]),
+    );
+    expect(rows.find((r) => r.title === "MAX TRADE")).toMatchObject({
+      value: "$100 / $150",
+      state: "PASS",
+    });
+    expect(rows.find((r) => r.title === "HUMAN APPROVAL")).toMatchObject({
+      value: "REQUIRED",
+      state: "WAITING",
+    });
+  });
+
+  it("counts cleared rules truthfully from the decision", () => {
+    const pass = evaluateMandate(PROPOSAL_PASS_FIXTURE, MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE);
+    expect(rulesCleared(pass)).toEqual({ cleared: 6, total: 6 });
+    const refuse = evaluateMandate(
+      PROPOSAL_REFUSE_VALUE_FIXTURE,
+      MANDATE_FIXTURE,
+      NVDA_EXPOSURE_FIXTURE,
+    );
+    const counted = rulesCleared(refuse);
+    expect(counted.total).toBe(6);
+    expect(counted.cleared).toBeLessThan(6);
+    const rows = ledgerRows(refuse, PROPOSAL_REFUSE_VALUE_FIXTURE, { maxPct: 30, maxTrade: 150 });
+    expect(rows.find((r) => r.title === "MAX TRADE")).toMatchObject({
+      value: "$200 / $150",
+      state: "REFUSED",
+    });
+  });
+});
+
+describe("approval transition", () => {
+  it("moves WAITING to APPROVED with a timestamp, human only", () => {
+    const decision = evaluateMandate(
+      PROPOSAL_PASS_FIXTURE,
+      MANDATE_FIXTURE,
+      NVDA_EXPOSURE_FIXTURE,
+    );
+    const pending = createApprovalRequest("intent-1", PROPOSAL_PASS_FIXTURE, decision);
+    expect(pending.state).toBe("REQUIRED");
+    expect(pending.approvedAt).toBeNull();
+    const granted = approveProtection(pending, "human", "2026-09-18T00:00:00.000Z");
+    expect(granted.state).toBe("APPROVED");
+    expect(granted.approvedAt).toBe("2026-09-18T00:00:00.000Z");
+  });
+});
+
+describe("execution preview honesty", () => {
+  it("exposes only the would-be request shape, no fake identifiers", () => {
+    const result = dryRunAdapter.executeProtection({ qty: "0.4513" });
+    expect(Object.keys(result.request).sort()).toEqual(
+      ["category", "endpoint", "kind", "mode", "operationId", "orderType", "qty", "side", "symbol"],
+    );
+    expect(JSON.stringify(result)).not.toMatch(/orderId|txHash|transactionHash|success/i);
+    expect(result.disclaimer).toMatch(/NO FUNDS MOVED/);
   });
 });
 

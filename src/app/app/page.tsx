@@ -6,7 +6,7 @@ import Link from "next/link";
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
 import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "../app/_copy";
-import { DecisionRail, ProvenanceStrip } from "./_components/ui";
+import { DecisionRail, formatCompact, formatMarketTime, ProvenanceStrip } from "./_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -21,8 +21,11 @@ export default async function CapitalPage() {
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
       <div className="flex flex-wrap items-center gap-3">
         <DecisionRail current="EXPOSURE" />
-        <span className="font-syslabel ml-auto text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-          {live ? `MARKET ${snapshot.fetchedAt}` : "MARKET OFFLINE"}
+        <span
+          className="font-syslabel ml-auto text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink"
+          title={live ? snapshot.fetchedAt : undefined}
+        >
+          {live ? `MARKET DATA · ${formatMarketTime(snapshot.fetchedAt)}` : "MARKET OFFLINE"}
         </span>
       </div>
 
@@ -100,7 +103,7 @@ export default async function CapitalPage() {
             </div>
             <div>
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">VOL 24H</p>
-              <p className="mt-1 text-[20px] font-bold leading-[24px]">{ticker?.volume24h ?? "—"}</p>
+              <p className="mt-1 text-[20px] font-bold leading-[24px]">{formatCompact(ticker?.volume24h ?? null)}</p>
             </div>
           </div>
         ) : (
