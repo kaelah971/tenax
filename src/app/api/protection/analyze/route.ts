@@ -4,7 +4,7 @@
 // client sends is trusted as authority beyond the raw intent text.
 import { ZodError } from "zod";
 
-import { fetchRealityBundle } from "@/lib/bitget/reality";
+import { getDemoBundle } from "@/lib/bitget/snapshot-cache";
 import { normalizeNvidiaSnapshot } from "@/lib/intelligence/snapshot";
 import {
   analyzeInputSchema,
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
   }
   try {
     const { flowId } = createProtectionIntent(routeDevStore, analyzeInputSchema.parse(body));
-    const snapshot = normalizeNvidiaSnapshot(await fetchRealityBundle());
+    const snapshot = normalizeNvidiaSnapshot(await getDemoBundle());
     const result = analyzeProtectionIntent(routeDevStore, flowId, snapshot);
     return Response.json({ ok: true, ...result });
   } catch (err) {

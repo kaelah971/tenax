@@ -1,5 +1,23 @@
 @import "tailwindcss";
 
+/* Tenax visual system (DESIGN.md): warm cream field, one blue, labeled
+   state chips, one type family with tabular figures globally. */
+@theme {
+  --color-cream: #efe8dc;
+  --color-ink: #1a1a1a;
+  --color-muted: #656565;
+  --color-primary: #4e80e8;
+  --color-deep: #3e6dd6;
+  --color-pressed: #3560c4;
+  --color-badgefill: #dce6f2;
+  --color-secondaryhover: #f7f3ea;
+  --color-secondaryborder: #d8d2c4;
+  --color-pass: #1f7a4d;
+  --color-clay: #b1442e;
+  --color-caution: #966d12;
+  --font-sans: "Inter Tight", "General Sans", Inter, ui-sans-serif, sans-serif;
+}
+
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -8,7 +26,6 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,5 +39,6 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-sans);
+  font-variant-numeric: tabular-nums;
 }
