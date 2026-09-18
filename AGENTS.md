@@ -94,4 +94,4 @@ Sub-agent rule: pass or point sub-agents to the relevant source docs before dele
 
 ## Decision log
 
-- (none yet)
+- 2026-09-18 Phase 0A: zero-credential public Reality spike executed (`scripts/spikes/bitget-public.mjs`); all 8 probes transport-blocked by sandbox DNS (no Bitget response observed) — evidence recorded in `docs/spike-result.md`, rerun required on owner network. No credentials used, no orders placed. Default execution mode stays DRY_RUN.
