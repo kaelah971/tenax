@@ -104,3 +104,117 @@ rerun below; do not overwrite this section.
 No endpoint required auth/whitelist. No credentials, authenticated APIs, or
 execution assumptions are added by this rerun. Demo + RNVDA execution remains
 UNVERIFIED; default execution mode stays DRY_RUN. Phase 0B not begun.
+
+## Phase 0B — SDK + Dry-run Execution
+
+- Date: 2026-09-18. Script: `scripts/spikes/bitget-sdk-dryrun.mjs`
+  (official SDK discover/tool metadata + isolated mandate logic + dryRun
+  preview + example receipt; rerun-safe, writes no files).
+- Credential: none. No `BITGET_*` env vars detected at runtime. No Demo
+  credentials, no live credentials, no authenticated writes, no network
+  order submission. `readOnly:true` config + `dryRun:true` previews only.
+- KYC blocker (material): the owner cannot complete Bitget KYC right now,
+  so authenticated Demo trading is unavailable. Demo execution = BLOCKED BY
+  KYC (not attempted, not a product failure).
+- Locked hackathon execution mode: DRY_RUN. Rules: no real funds, no Demo
+  credentials, no live credentials, no authenticated writes, no network
+  order submission, never present a dry-run as an executed trade, all
+  UI/receipts must label DRY_RUN / NO FUNDS MOVED.
+- Prior Phase 0A sections above are preserved unchanged.
+
+Authenticated Bitget Demo execution was not tested because the owner could
+not complete KYC. Tenax therefore uses an explicitly labelled dry-run
+execution adapter for the hackathon MVP.
+
+### Official SDK verification
+
+- Package: `@bitget-ai/bitget-agent-sdk` (official Bitget tooling,
+  Bitget-AI org). Third-party `bitget-api` was NOT installed.
+- `npm view` before install: `version 3.3.0`, `dist-tags { latest: 3.3.0 }`.
+- Install: `npm install @bitget-ai/bitget-agent-sdk` → `3.3.0`
+  (confirmed via `npm list` and SDK `package.json`).
+- Catalog: 109 operations (`CATALOG.length`). Intent tools observed:
+  `market, order, position, strategy_order, account_overview,
+  account_config, repayment, transfer_funds, deposit, withdraw,
+  funds_records, subaccount, loan, tax, raw, authorize_start,
+  get_auth_status, discover`.
+
+### SDK coverage (VERIFIED / UNCERTAIN / NOT SUPPORTED)
+
+| Question | Verdict | Evidence |
+|---|---|---|
+| Reality-specific order operations | NOT SUPPORTED | 0 catalog matches for `reality`, `rtoken`, `rwa`, `stock` across all 109 ops/paths/summaries. No dedicated Reality place/cancel operation in SDK v3 UTA surface. Recorded, not faked. |
+| Regular UTA place-order exposed | VERIFIED | `placeOrder`: `POST /api/v3/trade/place-order`, `auth private`, `isWrite true`, `module trade`. Reachable via `order` verb `action=place` and via `raw` `operationId=placeOrder`. |
+| dryRun supported on writes | VERIFIED | `safeInvoke(order, {action:'place', ..., dryRun:true})` and `safeInvoke(raw, {operationId:'placeOrder', args:{...}, dryRun:true})` both return `{ok:true, data:{dryRun:true, operationId:'placeOrder', wouldSend}}` with zero network writes and zero credentials, allowed even in `readOnly`. |
+| RNVDAUSDT representable via schema | UNCERTAIN | Place-order schema accepts a free-form `symbol` string, and the dryRun preview builds for `category SPOT / symbol RNVDAUSDT`, but the SDK has no Reality-specific operation and no live submission was made. This does NOT prove RNVDA/Reality execution support. No BTCUSDT or other asset substituted as proof. |
+
+### Dry-run fixture (per brief, labelled fixture — not live state)
+
+- Exposure: underlying NVDA, representation RNVDAUSDT, venue Bitget Reality,
+  exposure value 500 USDT.
+- Mandate: max hedge 30%, max trade value 150 USDT, leverage disabled,
+  human approval required yes, allowed asset NVDA.
+- Proposed protection: 20% of exposure = 100 USDT (expected).
+- Instrument constraints (from Phase 0A owner rerun): status online,
+  isReality yes, minOrderAmount 10 USDT, minOrderQty 0.0001, pricePrecision 2,
+  quantityPrecision 4.
+- Quantity derivation: no fill price invented. Script fetched the real
+  public ticker `GET /api/v3/market/tickers?category=SPOT&symbol=RNVDAUSDT`
+  (HTTP 200, code 00000; observed run `2026-09-18T20:31:36.568Z`:
+  `lastPrice 221.57`, `ask1Price 221.54`, `bid1Price 221.53`) and derived
+  `qty 0.4513 = 100 / 221.57` rounded to quantityPrecision 4 with a clear
+  timestamp. Note: this sandbox now reaches `api.bitget.com` (unlike the
+  Phase 0A sandbox run); if the ticker is ever unavailable the script
+  records `tickerUnavailable` and uses an explicitly shape-only qty.
+- Exact dry-run mechanism proven: official SDK `executeWithSafety` dryRun
+  path via (1) `order` verb and (2) `raw` escape hatch. Example would-be
+  payload (NOT submitted):
+  `placeOrder POST /api/v3/trade/place-order { category SPOT,
+  symbol RNVDAUSDT, side sell, orderType market, qty 0.4513 }`
+  (`order`-verb preview additionally echoes an auto-generated `clientOid`;
+  `raw` preview echoes the verbatim args). `riskLevel write`,
+  `dryRun true`, `networkWrite false`, `credentialsSent false`.
+
+### Mandate check (spike-local deterministic logic, not Phase 1 code)
+
+- PASS fixture: 20% / 100 USDT vs max 30% / 150 USDT, asset NVDA,
+  leverage disabled, approval required, 100 USDT >= minOrderAmount 10 USDT
+  → `PASS, pending human approval` (all 6 checks pass; `failedRules []`).
+- REFUSE fixture: 40% / 200 USDT vs max 30% / 150 USDT → `REFUSE`
+  (`failedRules [max_protection_pct, max_trade_value]`; all other checks
+  pass). Recorded as the rejected alternative in the receipt.
+
+### Example Decision Receipt (deterministic, dry-run only)
+
+- Receipt `TENAX-0B-DRYRUN-EXAMPLE-001`: exposure NVIDIA / RNVDAUSDT,
+  500 USDT; intent PROTECT_EVENT_RISK; proposed 20% / 100 USDT
+  (qty preview 0.4513 with timestamped price source); mandate PASS;
+  approval REQUIRED (pending; no auto-execution); execution mode DRY_RUN;
+  funds moved false; Bitget order request = would-be payload only
+  (`placeOrder POST /api/v3/trade/place-order`); rejected alternative =
+  200 USDT / 40% REFUSE; timestamp + evidence/source references included.
+- No fake orderId, no fake transaction hash, no "executed successfully"
+  wording. Disclaimers: `DRY_RUN — NO FUNDS MOVED`, `No orderId. No
+  transaction hash. Nothing was executed.`, `Authenticated Bitget Demo
+  execution was not tested (KYC blocker).`
+
+### Execution adapter boundary (locked for MVP)
+
+- Market/intelligence plane: Bitget public Reality REST (Phase 0A probes).
+- Order-shape plane: Tenax DRY_RUN adapter constructs the documented UTA
+  place-order request shape locally and labels it would-be payload only;
+  never submits.
+- SDK role: official Agent SDK v3 stays integrated for Agent Hub
+  compatibility/tooling (discover, order-verb dryRun preview, raw escape
+  hatch); it is NOT claimed as Reality execution proof.
+- Forbidden: live or Demo submission, credentials, BTCUSDT substitution as
+  RNVDA proof, labelling dry-run as executed.
+
+### Phase 0 exit
+
+- DATA: PASS (Phase 0A public Reality data, owner-network rerun).
+- DEMO EXECUTION: BLOCKED BY KYC (not tested; no credentials created).
+- DRY-RUN: PASS (official SDK dryRun preview + mandate PASS/REFUSE +
+  example receipt, zero network writes, zero credentials).
+- Final locked MVP execution mode = DRY_RUN. Phase 0 is closed on this
+  basis. Phase 1 not begun.
