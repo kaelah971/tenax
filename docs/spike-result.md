@@ -61,3 +61,46 @@ RNVDA execution remains UNVERIFIED; default execution mode stays DRY_RUN.
 On any network with working DNS: `node scripts/spikes/bitget-public.mjs`.
 Pure public GETs, rerun-safe, writes no files. Append results as Phase 0A
 rerun below; do not overwrite this section.
+
+## Phase 0A — Owner-network rerun
+
+- Date: 2026-09-18. Window: 2026-09-18T17:12:50Z through
+  2026-09-18T17:13:02Z. Script: `scripts/spikes/bitget-public.mjs`
+  (unchanged from sandbox run).
+- Base URL: `https://api.bitget.com`. Credential: none (public) for all
+  probes. No credentials sent, no authenticated endpoints, no orders placed.
+- Result: all eight public probes returned `HTTP 200`, Bitget `code 00000`,
+  Bitget `msg success`, verdict PASS.
+- The sandbox transport-failure record above is preserved unchanged and
+  remains the evidence for that environment.
+
+### Environment troubleshooting (not a Bitget API defect)
+
+- The first local owner-machine run failed before reaching Bitget because
+  Windows Wi-Fi was using router DNS `192.168.0.1`, which timed out for
+  Bitget domains.
+- Owner changed Windows Wi-Fi DNS to `1.1.1.1` / `8.8.8.8`. After that:
+  - `Resolve-DnsName api.bitget.com` succeeded.
+  - `curl` reached `api.bitget.com` and received `HTTP 404` at the root URL
+    (root-path probe only; expected — no API route at `/`).
+  - Node fetch reached `api.bitget.com` and received `HTTP 404` at root.
+  - The Phase 0A script then completed with all eight probes PASS.
+- Treat the original local failures as environment/network evidence, not
+  Bitget API failures.
+
+### Probes (owner-network rerun, credential: none/public for all)
+
+| Probe | Endpoint + params | Verdict | Returned fields | Proves |
+|---|---|---|---|---|
+| instruments | `GET /api/v3/market/instruments?category=SPOT&symbol=RNVDAUSDT` | PASS (HTTP 200, code 00000, msg success) | symbol RNVDAUSDT; category SPOT; status online; isReality yes; baseCoin rNVDA; quoteCoin USDT; minOrderQty 0.0001; minOrderAmount 10; pricePrecision 2; quantityPrecision 4; quotePrecision 6; symbolType stock | Proves canonical RNVDAUSDT SPOT instrument, online status, Reality flag, and sizing/precision constraints for the exposure adapter. |
+| ticker | `GET /api/v3/market/tickers?category=SPOT&symbol=RNVDAUSDT` | PASS (HTTP 200, code 00000, msg success) | symbol RNVDAUSDT; live public ticker payload with fields including lastPrice, openPrice24h, highPrice24h, lowPrice24h, ask1Price, bid1Price, bid1Size, ask1Size, price24hPcnt, volume24h, turnover24h, platformTurnover24h, ts | Proves a live public ticker exists for RNVDAUSDT (market-state input). |
+| stock-info | `GET /api/v3/reality/market/stock-info?symbol=RNVDAUSDT` | PASS (HTTP 200, code 00000, msg success) | symbol RNVDAUSDT; code NVDA; tradingPeriod overnight, pre_market, regular, after_hours; weekendTradable yes; name field null | Proves Reality RNVDAUSDT → NVDA underlying mapping plus session metadata. `symbol=RNVDAUSDT` param confirmed working. Null name recorded as observed; not used as mapping evidence. |
+| market-states | `GET /api/v3/reality/market/states` | PASS (HTTP 200, code 00000, msg success) | market US; daylightType standard; stateList length 4; observed examples pre_market EST 04:00–09:30, regular EST 09:30–16:00 | Verified usable Bitget-native session-state context source for event-risk analysis. |
+| market-calendar | `GET /api/v3/reality/market/calendar` | PASS (HTTP 200, code 00000, msg success) | timeZone EST; regularConfig SATURDAY, SUNDAY; specificConfig 3 entries | Verified usable Bitget-native closure/calendar context source. |
+| earnings-forecast | `GET /api/v3/reality/market/earnings-forecast?code=NVDA` | PASS (HTTP 200, code 00000, msg success) | fiscalYear 2029; publicationDeadline null; isActual false; eps 25.2300; revenue 1025950.0000; currency USD | Verified for forecast/fundamentals context ONLY. `publicationDeadline` was null — this endpoint does NOT prove the actual NVIDIA earnings date. `code=NVDA` param confirmed working. |
+| company-overview (opt) | `GET /api/v3/reality/market/company-overview?code=NVDA` | PASS (HTTP 200, code 00000, msg success) | code NVDA; name Nvidia; listingDate 1999-01-22; employees 42000; peRatio 27.5; pbRatio 23.13; high52Week 241.01; low52Week 162.94 | Optional verified enrichment surface only. Confirms NVDA underlying mapping with company context. `code=NVDA` param confirmed working. |
+| valuation-indicators (opt) | `GET /api/v3/reality/market/valuation-indicators?code=NVDA` | PASS (HTTP 200, code 00000, msg success) | valuation fields including PE, PB, PS, PCF, EV/EBITDA, market-value fields and dividendYieldTtm | Optional verified enrichment surface for fundamentals context only. `code=NVDA` param confirmed working. |
+
+No endpoint required auth/whitelist. No credentials, authenticated APIs, or
+execution assumptions are added by this rerun. Demo + RNVDA execution remains
+UNVERIFIED; default execution mode stays DRY_RUN. Phase 0B not begun.
