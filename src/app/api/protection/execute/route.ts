@@ -10,7 +10,7 @@ import {
   executeProtectionProposal,
   getDecisionReceipt,
 } from "@/lib/tenax/service";
-import { routeDevStore } from "../_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -24,8 +24,9 @@ export async function POST(request: Request) {
   }
   try {
     const parsed = executeInputSchema.parse(body);
-    const execution = executeProtectionProposal(routeDevStore, parsed);
-    const { receipt } = getDecisionReceipt(routeDevStore, parsed.flowId);
+    const store = getTenaxDevStore();
+    const execution = executeProtectionProposal(store, parsed);
+    const { receipt } = getDecisionReceipt(store, parsed.flowId);
     return Response.json({ ok: true, ...execution, receipt });
   } catch (err) {
     if (err instanceof ZodError) {

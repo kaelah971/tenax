@@ -4,7 +4,7 @@
 import { ZodError } from "zod";
 
 import { approveInputSchema, approveProtectionProposal } from "@/lib/tenax/service";
-import { routeDevStore } from "../_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -17,7 +17,7 @@ export async function POST(request: Request) {
     );
   }
   try {
-    const result = approveProtectionProposal(routeDevStore, approveInputSchema.parse(body));
+    const result = approveProtectionProposal(getTenaxDevStore(), approveInputSchema.parse(body));
     return Response.json({ ok: true, ...result });
   } catch (err) {
     if (err instanceof ZodError) {

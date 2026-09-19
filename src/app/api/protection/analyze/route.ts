@@ -11,7 +11,7 @@ import {
   analyzeProtectionIntent,
   createProtectionIntent,
 } from "@/lib/tenax/service";
-import { routeDevStore } from "../_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 
 export async function POST(request: Request) {
   let body: unknown;
@@ -24,9 +24,10 @@ export async function POST(request: Request) {
     );
   }
   try {
-    const { flowId } = createProtectionIntent(routeDevStore, analyzeInputSchema.parse(body));
+    const store = getTenaxDevStore();
+    const { flowId } = createProtectionIntent(store, analyzeInputSchema.parse(body));
     const snapshot = normalizeNvidiaSnapshot(await getDemoBundle());
-    const result = analyzeProtectionIntent(routeDevStore, flowId, snapshot);
+    const result = analyzeProtectionIntent(store, flowId, snapshot);
     return Response.json({ ok: true, ...result });
   } catch (err) {
     if (err instanceof ZodError) {

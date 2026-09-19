@@ -2,14 +2,14 @@
 // No database: this lists in-memory flows and says so.
 import Link from "next/link";
 
-import { routeDevStore } from "@/app/api/protection/_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { SESSION_ONLY_NOTICE } from "../_copy";
 import { Card, Chip } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
 export default async function ActivityPage() {
-  const flows = [...routeDevStore.flows.entries()];
+  const flows = [...getTenaxDevStore().flows.entries()];
 
   return (
     <div className="flex flex-col gap-4 pt-6">

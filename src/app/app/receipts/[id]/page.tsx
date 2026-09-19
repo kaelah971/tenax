@@ -4,7 +4,7 @@
 import { notFound } from "next/navigation";
 
 import { getDecisionReceipt } from "@/lib/tenax/service";
-import { routeDevStore } from "@/app/api/protection/_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { NOT_ADVICE } from "../../_copy";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
 
@@ -14,7 +14,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const { id } = await params;
   let receipt;
   try {
-    ({ receipt } = getDecisionReceipt(routeDevStore, id));
+    ({ receipt } = getDecisionReceipt(getTenaxDevStore(), id));
   } catch {
     notFound();
   }

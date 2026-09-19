@@ -4,7 +4,7 @@
 // approval are visually separate states. All values server-computed.
 import { notFound } from "next/navigation";
 
-import { routeDevStore } from "@/app/api/protection/_dev-store";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { DRY_RUN_PRE_NOTICE, refusalSentence } from "../../_copy";
 import {
@@ -20,7 +20,7 @@ export const dynamic = "force-dynamic";
 
 export default async function ApprovalPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  const flow = routeDevStore.flows.get(id);
+  const flow = getTenaxDevStore().flows.get(id);
   const context = flow?.getContext();
   const analysis = context?.analysis;
   if (!flow || !analysis) notFound();
