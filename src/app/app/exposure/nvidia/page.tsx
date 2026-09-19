@@ -82,9 +82,9 @@ export default async function ExposurePage() {
       <div>
         <Link
           href="/app/protect/nvidia"
-          className="inline-flex h-12 items-center justify-center rounded-[10px] bg-deep px-6 text-[15px] font-semibold leading-[20px] text-white shadow-[0_8px_20px_rgba(78,128,232,0.25)] hover:bg-pressed"
+          className="btn-living inline-flex h-12 items-center justify-center bg-signal px-6 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
         >
-          Protect this exposure ↗
+          Protect this exposure <span className="btn-arrow" aria-hidden="true">↗</span>
         </Link>
       </div>
 

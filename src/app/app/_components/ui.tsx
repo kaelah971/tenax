@@ -80,7 +80,7 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="rounded-[10px] bg-softwhite p-4 text-ink shadow-[0_6px_16px_rgba(0,0,0,0.08)] sm:p-5">
+    <section className="depth-panel rounded-[10px] border border-ink/5 bg-softwhite p-4 text-ink sm:p-5">
       <div className="mb-3 flex items-start justify-between gap-3">
         <div>
           <h2 className="text-[13px] font-bold leading-[18px]">{title}</h2>
@@ -126,21 +126,28 @@ export function railStages(current: string): RailStageView[] {
 export function DecisionRail({ current }: { current: string }) {
   const stages = railStages(current);
   return (
-    <ol className="flex flex-wrap items-center gap-x-2 gap-y-1" aria-label="Decision rail">
+    <ol className="tx-rail flex flex-wrap items-center gap-x-2 gap-y-1" aria-label="Decision rail">
       {stages.map((stage, i) => (
         <li key={stage.label} className="flex items-center gap-2">
           <span
             className={`${
               stage.state === "active"
-                ? "anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
+                ? "tx-rail-node-active tx-rail-pulse anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
                 : stage.state === "done"
-                  ? "font-bold text-ink"
+                  ? "tx-rail-node-done font-bold text-ink"
                   : "text-mutedink/60"
             }`}
           >
             {stage.index} {stage.label}
           </span>
-          {i < stages.length - 1 ? <span className="text-mutedink">━</span> : null}
+          {i < stages.length - 1 ? (
+            <span
+              className={stage.state === "done" ? "text-ink" : "text-mutedink/50"}
+              aria-hidden="true"
+            >
+              ━
+            </span>
+          ) : null}
         </li>
       ))}
     </ol>
@@ -365,21 +372,38 @@ export function rulesCleared(decision: MandateDecision): { cleared: number; tota
 
 export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
   const lit = state === "PASS";
+  const refused = state === "REFUSED";
   return (
-    <div className="rounded-[2px] bg-ink px-6 py-8 text-softwhite" aria-label="Mandate Gate">
+    <div
+      className={`glass-dark depth-critical gate-stage rounded-[2px] px-6 py-8 text-softwhite ${lit ? "gate-bloom" : ""}`}
+      aria-label="Mandate Gate"
+    >
       <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
         MANDATE_GATE · ENFORCED · DETERMINISTIC
       </p>
-      <div className="mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
-        <div className={lit ? "anim-gate rounded-[6px]" : "rounded-[6px]"}>
+      <div className="gate-plane relative mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+        <span className="gate-ring gate-ring-outer" aria-hidden="true" />
+        <span className="gate-ring gate-ring-mid" aria-hidden="true" />
+        <div className={lit ? "anim-gate relative rounded-[6px]" : "relative rounded-[6px]"}>
           <div
-            className="flex items-end justify-center gap-3 rounded-[6px] px-8 py-6"
-            style={lit ? { backgroundColor: "#F5FF3B" } : { backgroundColor: "#242424" }}
+            className={`flex items-end justify-center gap-3 rounded-[6px] border px-8 py-6 ${
+              lit ? "gate-core-lit border-ink" : refused ? "border-clay/60" : "border-softwhite/15"
+            }`}
+            style={lit ? undefined : { backgroundColor: "#242424" }}
             aria-hidden="true"
           >
-            <span className="h-20 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
-            <span className="h-14 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
-            <span className="h-20 w-4 rounded-[2px]" style={{ backgroundColor: lit ? "#111111" : "#6E6D66" }} />
+            <span
+              className="h-20 w-4 rounded-[2px]"
+              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+            />
+            <span
+              className="h-14 w-4 rounded-[2px]"
+              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+            />
+            <span
+              className="h-20 w-4 rounded-[2px]"
+              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+            />
           </div>
         </div>
         <div className="text-center sm:text-left">

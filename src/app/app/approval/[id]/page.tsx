@@ -14,6 +14,7 @@ import {
   ledgerRows,
   rulesCleared,
 } from "../../_components/ui";
+import { TenaxAgent, staggerStyle } from "../../_components/living";
 import ApproveExecutePanel from "./ApproveExecutePanel";
 
 export const dynamic = "force-dynamic";
@@ -39,22 +40,42 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
       <DecisionRail current="MANDATE" />
 
-      <section aria-label="Permission boundary" className="rounded-[2px] bg-ink p-5 text-softwhite sm:p-10">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
-          GATE_001 · PERMISSION BOUNDARY · FLOW {id}
-        </p>
+      <section aria-label="Permission boundary" className="relative rounded-[2px] bg-ink p-5 text-softwhite shadow-[0_32px_80px_-28px_rgba(17,17,17,0.6)] sm:p-10">
+        {passed ? (
+          <div
+            className="pointer-events-none absolute inset-0 rounded-[2px]"
+            aria-hidden="true"
+            style={{
+              background:
+                "radial-gradient(ellipse 70% 55% at 50% 30%, rgba(245,255,59,0.22), transparent 70%)",
+            }}
+          />
+        ) : null}
+        <div className="relative flex flex-wrap items-start justify-between gap-4">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+            GATE_001 · PERMISSION BOUNDARY · FLOW {id}
+          </p>
+          <TenaxAgent
+            state={passed ? "gate-check" : "refused"}
+            size={72}
+            caption={passed ? "SENTINEL OBSERVING GATE" : "SENTINEL HOLDING"}
+          />
+        </div>
 
-        <GateCore state={passed ? "PASS" : "REFUSED"} />
+        <div className="relative">
+          <GateCore state={passed ? "PASS" : "REFUSED"} />
+        </div>
 
         <p className="font-syslabel mt-2 text-center text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
           {cleared} / {total} RULES CLEARED
         </p>
 
-        <ol className="mx-auto mt-6 flex max-w-2xl flex-col">
-          {rows.map((row) => (
+        <ol className="relative mx-auto mt-6 flex max-w-2xl flex-col">
+          {rows.map((row, i) => (
             <li
               key={row.index}
-              className="flex items-baseline gap-4 border-t border-softwhite/15 py-3"
+              style={staggerStyle(i)}
+              className="tx-rule flex items-baseline gap-4 border-t border-softwhite/15 py-3"
             >
               <span className="font-syslabel w-8 shrink-0 text-[11px] leading-[14px] text-softwhite/60">
                 {row.index}
@@ -89,7 +110,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       {passed ? (
         <section aria-label="Human authority" className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-[2px] bg-ink/10">
+          <div className="depth-control grid grid-cols-2 gap-px overflow-hidden rounded-[2px] bg-ink/10">
             <div className="bg-softwhite p-5 sm:p-6">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                 MANDATE
@@ -126,7 +147,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       <section
         aria-label="Refusal test"
-        className="rounded-[2px] border-t-4 border-clay bg-softwhite p-5 sm:p-8"
+        className="depth-panel rounded-[2px] border-t-4 border-clay bg-softwhite p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REFUSAL TEST · REFUSAL IS A FEATURE

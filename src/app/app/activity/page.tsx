@@ -38,7 +38,7 @@ export default async function ActivityPage() {
               return (
                 <li
                   key={flowId}
-                  className="flex flex-wrap items-center gap-3 rounded-[10px] bg-cream px-3 py-2 text-[13px] leading-[18px]"
+                  className="row-living flex flex-wrap items-center gap-3 rounded-[10px] border border-transparent bg-cream px-3 py-2 text-[13px] leading-[18px]"
                 >
                   <span className="font-semibold">{flowId}</span>
                   <Chip tone={done ? "pass" : state === "FAILED" ? "refused" : "dryrun"}>

@@ -1,9 +1,13 @@
 // Client-side analyze trigger. Authority stays server-side: this button only
-// POSTs the raw intent text and follows the returned flowId.
+// POSTs the raw intent text and follows the returned flowId. The Sentinel
+// shifts WATCHING → ANALYZING with a short beat before navigation so the
+// handoff into reasoning reads as a state change, not a jump.
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+
+import { TenaxAgent } from "../../_components/living";
 
 export default function AnalyzeButton({
   rawText,
@@ -31,7 +35,10 @@ export default function AnalyzeButton({
       if (!res.ok || !body.ok || !body.flowId) {
         throw new Error(body.error?.message ?? "Analysis failed");
       }
-      router.push(`/app/analysis/${body.flowId}`);
+      const flowId = body.flowId;
+      // Short transition: let the ANALYZING state land before navigating.
+      await new Promise((resolve) => setTimeout(resolve, 650));
+      router.push(`/app/analysis/${flowId}`);
     } catch (err) {
       setState("error");
       setMessage(err instanceof Error ? err.message : "Analysis failed");
@@ -39,23 +46,31 @@ export default function AnalyzeButton({
   }
 
   return (
-    <div className="flex flex-col gap-2">
-      <button
-        type="button"
-        onClick={onAnalyze}
-        disabled={disabled || state === "working"}
-        className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
-      >
-        {state === "working" ? "ANALYZING…" : "ANALYZE PROTECTION →"}
-      </button>
-      {disabled && disabledReason ? (
-        <p className="text-[13px] leading-[18px] text-muted">{disabledReason}</p>
-      ) : null}
-      {state === "error" ? (
-        <p role="alert" className="text-[13px] font-medium leading-[18px] text-clay">
-          {message}
-        </p>
-      ) : null}
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+      <TenaxAgent
+        state={state === "working" ? "analyzing" : "watching"}
+        size={72}
+        caption={state === "working" ? "ANALYZING" : "TENAX IS READY"}
+      />
+      <div className="flex flex-1 flex-col gap-2">
+        <button
+          type="button"
+          onClick={onAnalyze}
+          disabled={disabled || state === "working"}
+          className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+        >
+          {state === "working" ? "ANALYZING…" : "ANALYZE PROTECTION "}
+          <span className="btn-arrow" aria-hidden="true">→</span>
+        </button>
+        {disabled && disabledReason ? (
+          <p className="text-[13px] leading-[18px] text-muted">{disabledReason}</p>
+        ) : null}
+        {state === "error" ? (
+          <p role="alert" className="text-[13px] font-medium leading-[18px] text-clay">
+            {message}
+          </p>
+        ) : null}
+      </div>
     </div>
   );
 }

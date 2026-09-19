@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { DRY_RUN_PRE_NOTICE, approveCta } from "../../_copy";
+import { TenaxAgent, staggerStyle } from "../../_components/living";
 
 type Phase = "ready" | "approving" | "approved" | "executing" | "preview" | "error";
 
@@ -75,7 +76,7 @@ export default function ApproveExecutePanel({
 
   if (phase === "preview" && preview) {
     return (
-      <div className="anim-rise rounded-[2px] bg-ink p-5 text-softwhite sm:p-8">
+      <div className="anim-rise glass-dark depth-critical rounded-[2px] p-5 text-softwhite sm:p-8">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
           ACTION_01 · EXECUTION PREVIEW CREATED
         </p>
@@ -105,9 +106,9 @@ export default function ApproveExecutePanel({
         <button
           type="button"
           onClick={() => router.push(`/app/receipts/${flowId}`)}
-          className="mt-6 inline-flex min-h-12 w-full items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:w-auto"
+          className="btn-living mt-6 inline-flex min-h-12 w-full items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:w-auto"
         >
-          VIEW DECISION RECEIPT →
+          VIEW DECISION RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
         </button>
       </div>
     );
@@ -116,13 +117,19 @@ export default function ApproveExecutePanel({
   if (phase === "approved" || phase === "executing") {
     return (
       <div className="flex flex-col gap-4">
-        <ol className="anim-rise flex flex-col gap-px overflow-hidden rounded-[2px] bg-ink/10">
-          {[
-            ["HUMAN", "APPROVED", "text-signal"],
-            ["MANDATE", "PASS", "text-pass"],
-            ["ACTION", "CLEARED", "text-ink"],
-          ].map(([label, state, color]) => (
-            <li key={label} className="flex items-baseline gap-4 bg-softwhite px-4 py-3">
+        <div className="flex items-center gap-4">
+          <TenaxAgent state="approved" size={64} caption="CLEARED BY YOU" />
+          <ol className="anim-rise flex flex-1 flex-col gap-px overflow-hidden rounded-[2px] bg-ink/10">
+            {[
+              ["HUMAN", "APPROVED", "text-signal"],
+              ["MANDATE", "PASS", "text-pass"],
+              ["ACTION", "CLEARED", "text-ink"],
+            ].map(([label, state, color], i) => (
+              <li
+                key={label}
+                style={staggerStyle(i)}
+                className="tx-rule flex items-baseline gap-4 bg-softwhite px-4 py-3"
+              >
               <span className="font-syslabel w-20 shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                 {label}
               </span>
@@ -134,7 +141,8 @@ export default function ApproveExecutePanel({
               ) : null}
             </li>
           ))}
-        </ol>
+          </ol>
+        </div>
         <p className="text-[16px] leading-[24px]">
           Approved — one action authorized. {DRY_RUN_PRE_NOTICE}
         </p>
@@ -142,23 +150,35 @@ export default function ApproveExecutePanel({
           type="button"
           onClick={onExecute}
           disabled={phase === "executing"}
-          className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+          className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
         >
-          {phase === "executing" ? "CREATING PREVIEW…" : "CREATE EXECUTION PREVIEW →"}
+          {phase === "executing" ? "CREATING PREVIEW…" : "CREATE EXECUTION PREVIEW "}
+          {phase === "executing" ? null : (
+            <span className="btn-arrow" aria-hidden="true">→</span>
+          )}
         </button>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-2">
+    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
+      <TenaxAgent
+        state="gate-check"
+        size={72}
+        caption={phase === "approving" ? "CHECKING…" : "AWAITING YOUR DECISION"}
+      />
+      <div className="flex flex-1 flex-col gap-2">
       <button
         type="button"
         onClick={onApprove}
         disabled={phase === "approving"}
-        className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+        className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
       >
-        {phase === "approving" ? "APPROVING…" : `${approveCta(tradeValueUsdt)} →`}
+        {phase === "approving" ? "APPROVING…" : `${approveCta(tradeValueUsdt)} `}
+        {phase === "approving" ? null : (
+          <span className="btn-arrow" aria-hidden="true">→</span>
+        )}
       </button>
       {phase === "error" ? (
         <p role="alert" className="text-[13px] font-medium leading-[18px] text-clay">
@@ -169,6 +189,7 @@ export default function ApproveExecutePanel({
           ONE ACTION · ONE APPROVAL · {DRY_RUN_PRE_NOTICE.toUpperCase()}
         </p>
       )}
+      </div>
     </div>
   );
 }

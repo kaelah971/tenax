@@ -7,6 +7,7 @@ import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
 import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "../app/_copy";
 import { DecisionRail, formatCompact, formatMarketTime, ProvenanceStrip } from "./_components/ui";
+import { LiveDot, Sparkline, TenaxAgent } from "./_components/living";
 
 export const dynamic = "force-dynamic";
 
@@ -38,47 +39,64 @@ export default async function CapitalPage() {
         </h1>
       </div>
 
-      <section aria-label="Primary exposure">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-          NVIDIA EXPOSURE
-        </p>
-        <p className="mt-1 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[104px]">
-          $500
-        </p>
-        <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
-          <span className="bg-signal px-1.5 py-0.5 font-bold text-ink">rNVDA · BITGET REALITY</span>{" "}
-          <span className={live ? "text-ink" : "text-clay"}>
-            {live ? `● LIVE MARKET · ${instrument?.status?.toUpperCase() ?? "—"}` : "○ MARKET OFFLINE"}
-          </span>
-        </p>
+      <section aria-label="Primary exposure" className="relative">
+        <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
+          <div className="min-w-0 flex-1">
+            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+              NVIDIA EXPOSURE
+            </p>
+            <p className="depth-panel mt-1 inline-block text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[104px]">
+              $500
+            </p>
+            <Sparkline className="mt-4 h-[72px] w-full max-w-md" />
+            <p className="font-syslabel mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
+              <span className="bg-signal px-1.5 py-0.5 font-bold text-ink shadow-[0_0_22px_-4px_rgba(245,255,59,0.8)]">rNVDA · BITGET REALITY</span>{" "}
+              {live ? (
+                <span className="inline-flex items-center gap-2 text-ink">
+                  <LiveDot label={`LIVE MARKET · ${instrument?.status?.toUpperCase() ?? "—"}`} />
+                </span>
+              ) : (
+                <span className="text-clay">○ MARKET OFFLINE</span>
+              )}
+            </p>
+          </div>
+          <TenaxAgent state="watching" size={96} caption="WATCHING YOUR NVIDIA EXPOSURE" />
+        </div>
         <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           ○ DEMO · SIMULATED PORTFOLIO — NOT A LIVE POSITION
         </p>
         <div className="mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/app/protect/nvidia"
-            className="inline-flex min-h-12 flex-1 items-center justify-center bg-signal px-6 py-4 text-center text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:flex-none sm:px-10"
+            className="btn-living inline-flex min-h-12 flex-1 items-center justify-center bg-signal px-6 py-4 text-center text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:flex-none sm:px-10"
           >
-            PROTECT THROUGH EARNINGS →
+            PROTECT THROUGH EARNINGS <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
           <Link
             href="/app/exposure/nvidia"
-            className="inline-flex min-h-12 items-center justify-center border-2 border-ink px-6 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
+            className="btn-living inline-flex min-h-12 items-center justify-center border-2 border-ink px-6 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
           >
             VIEW EXPOSURE
           </Link>
         </div>
       </section>
 
-      <section aria-label="Live market signal" className="rounded-[2px] bg-graphite p-5 text-softwhite sm:p-8">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
-          LIVE_SIGNAL · RNVDAUSDT · BITGET REALITY
-        </p>
+      <section aria-label="Live market signal" className="glass-dark depth-control rounded-[2px] p-5 text-softwhite sm:p-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+            LIVE_SIGNAL · RNVDAUSDT · BITGET REALITY
+          </p>
+          {live ? (
+            <span className="ml-auto text-signal">
+              <LiveDot label="LIVE" />
+            </span>
+          ) : null}
+        </div>
         {live ? (
           <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
             <div>
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">LAST</p>
-              <p className="mt-1 text-[36px] font-extrabold leading-none tracking-[-0.02em] text-signal">
+              <p className="value-live signal-glow mt-1 text-[36px] font-extrabold leading-none tracking-[-0.02em] text-signal" key={ticker?.lastPrice ?? "none"}>
                 {ticker?.lastPrice ? `$${ticker.lastPrice}` : "—"}
               </p>
             </div>
@@ -111,7 +129,17 @@ export default async function CapitalPage() {
         )}
       </section>
 
-      <section aria-label="Earnings event" className="rounded-[2px] bg-ink p-5 text-softwhite sm:p-8">
+      <section aria-label="Earnings event" className="glass-dark depth-control relative overflow-hidden rounded-[2px] p-5 text-softwhite sm:p-8">
+        <svg
+          className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 text-signal"
+          viewBox="0 0 100 100"
+          aria-hidden="true"
+        >
+          <circle cx="50" cy="50" r="14" fill="currentColor" opacity="0.9" />
+          <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring" />
+          <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring radar-ring-delay" />
+          <circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" strokeWidth="0.75" opacity="0.35" />
+        </svg>
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
             EVENT_01
@@ -119,6 +147,9 @@ export default async function CapitalPage() {
           <h2 className="text-[30px] font-extrabold leading-none tracking-[-0.02em] sm:text-[44px]">
             NVIDIA EARNINGS
           </h2>
+          <span className="ml-auto text-signal">
+            <LiveDot label="WATCHING" />
+          </span>
         </div>
         <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
           <div className="border-t border-softwhite/20 pt-3">
@@ -138,13 +169,14 @@ export default async function CapitalPage() {
             </dd>
           </div>
         </dl>
-        <div className="mt-6">
+        <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <Link
             href="/app/protect/nvidia"
-            className="inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
+            className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
           >
-            PROTECT THIS POSITION →
+            PROTECT THIS POSITION <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
+          <TenaxAgent state="watching" size={72} caption="SENTINEL · EVENT WATCH" />
         </div>
       </section>
 

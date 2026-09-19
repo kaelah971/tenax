@@ -74,6 +74,581 @@
     animation: none !important;
     transition: none !important;
   }
+  .tx-env-grain {
+    display: none !important;
+  }
+}
+
+/* ---- Tenax Phase 1E-C — premium living interface system -------------------
+   Selective glass + depth + environment. Yellow still means signal, ink
+   still means authority. All motion is CSS-only and dies under
+   prefers-reduced-motion via the global kill-switch above. */
+
+:root {
+  --tx-signal: #f5ff3b;
+  --tx-ink: #111111;
+  --tx-graphite: #242424;
+  --tx-ivory: #f3efe6;
+  --tx-softwhite: #fffdf8;
+  --tx-pass: #177a50;
+  --tx-clay: #c74b3b;
+  --tx-ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+/* Keyframes */
+@keyframes tx-float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-7px);
+  }
+}
+
+@keyframes tx-drift {
+  0%,
+  100% {
+    transform: translate(0, 0) scale(1);
+  }
+  50% {
+    transform: translate(24px, -18px) scale(1.06);
+  }
+}
+
+@keyframes tx-live-dot {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(245, 255, 59, 0.65);
+  }
+  60% {
+    box-shadow: 0 0 0 7px rgba(245, 255, 59, 0);
+  }
+}
+
+@keyframes tx-rise {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tx-rule-in {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@keyframes tx-travel {
+  0% {
+    transform: translateX(-120%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@keyframes tx-draw {
+  from {
+    stroke-dashoffset: 320;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes tx-radar {
+  0% {
+    transform: scale(0.35);
+    opacity: 0.7;
+  }
+  100% {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@keyframes tx-scan {
+  0%,
+  100% {
+    transform: translateX(-14px);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(14px);
+    opacity: 1;
+  }
+}
+
+@keyframes tx-orbit {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes tx-value-pulse {
+  0% {
+    opacity: 0.35;
+  }
+  100% {
+    opacity: 1;
+  }
+}
+
+@keyframes tx-seal-in {
+  0% {
+    opacity: 0;
+    transform: scale(1.35) rotate(-7deg);
+  }
+  60% {
+    opacity: 1;
+    transform: scale(0.97) rotate(1deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(-2deg);
+  }
+}
+
+@keyframes tx-bloom-breathe {
+  0%,
+  100% {
+    opacity: 0.75;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes tx-glow-sweep {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Environment (LEVEL 0): fixed backdrop behind the app shell. */
+.tx-env {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background: var(--tx-ivory);
+  pointer-events: none;
+}
+
+.tx-env-bloom {
+  position: absolute;
+  top: -320px;
+  left: 50%;
+  width: min(1100px, 130vw);
+  height: 640px;
+  transform: translateX(-50%);
+  background: radial-gradient(
+    ellipse 52% 46% at 50% 42%,
+    rgba(245, 255, 59, 0.5),
+    rgba(245, 255, 59, 0.12) 55%,
+    transparent 72%
+  );
+  animation: tx-bloom-breathe 9s ease-in-out infinite;
+}
+
+.tx-env-bloom-pass {
+  background: radial-gradient(
+    ellipse 60% 52% at 50% 46%,
+    rgba(245, 255, 59, 0.72),
+    rgba(245, 255, 59, 0.2) 58%,
+    transparent 75%
+  );
+}
+
+.tx-env-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(17, 17, 17, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(17, 17, 17, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 78%);
+}
+
+.tx-env-path {
+  position: absolute;
+  top: -10%;
+  bottom: -10%;
+  left: 12%;
+  width: 1px;
+  background: linear-gradient(transparent, rgba(17, 17, 17, 0.16) 30%, rgba(17, 17, 17, 0.16) 70%, transparent);
+  transform: rotate(14deg);
+}
+
+.tx-env-path-right {
+  left: auto;
+  right: 10%;
+  transform: rotate(-12deg);
+}
+
+.tx-env-blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(70px);
+  animation: tx-drift 16s ease-in-out infinite;
+}
+
+.tx-env-blob-a {
+  width: 480px;
+  height: 480px;
+  left: -160px;
+  top: 22%;
+  background: radial-gradient(circle, rgba(245, 255, 59, 0.28), transparent 68%);
+}
+
+.tx-env-blob-b {
+  width: 560px;
+  height: 560px;
+  right: -200px;
+  top: 48%;
+  background: radial-gradient(circle, rgba(17, 17, 17, 0.1), transparent 68%);
+  animation-delay: -8s;
+}
+
+.tx-env-grain {
+  position: absolute;
+  inset: -40px;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+}
+
+/* Glass + depth system: three elevation levels above the environment. */
+.glass-surface {
+  position: relative;
+  background: rgba(255, 253, 248, 0.72);
+  backdrop-filter: blur(14px) saturate(1.08);
+  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  border: 1px solid rgba(17, 17, 17, 0.1);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.65),
+    0 18px 44px -20px rgba(17, 17, 17, 0.28);
+}
+
+.glass-dark {
+  position: relative;
+  background: linear-gradient(158deg, rgba(42, 42, 42, 0.9), rgba(17, 17, 17, 0.94));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(245, 255, 59, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.09),
+    inset 0 -18px 40px -30px rgba(245, 255, 59, 0.25),
+    0 26px 60px -24px rgba(17, 17, 17, 0.55);
+}
+
+.glass-signal {
+  position: relative;
+  background: linear-gradient(150deg, rgba(245, 255, 59, 0.92), rgba(240, 244, 120, 0.86));
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(17, 17, 17, 0.85);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.55),
+    0 16px 40px -16px rgba(150, 150, 20, 0.55);
+}
+
+.depth-panel {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.6),
+    0 14px 34px -18px rgba(17, 17, 17, 0.3);
+}
+
+.depth-control {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.1),
+    0 20px 48px -20px rgba(17, 17, 17, 0.5);
+  transform: translateZ(0);
+}
+
+.depth-critical {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 0 60px -30px rgba(245, 255, 59, 0.4),
+    0 32px 80px -28px rgba(17, 17, 17, 0.6),
+    0 0 0 1px rgba(245, 255, 59, 0.12),
+    0 0 64px -18px rgba(245, 255, 59, 0.45);
+}
+
+.signal-glow {
+  text-shadow: 0 0 26px rgba(245, 255, 59, 0.55);
+}
+
+/* Live indicator: pulsing signal dot + mono label. */
+.live-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.live-indicator-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 9999px;
+  background: var(--tx-signal);
+  animation: tx-live-dot 2.2s ease-out infinite;
+}
+
+.live-indicator-dot-quiet {
+  animation: none;
+  box-shadow: none;
+  opacity: 0.5;
+}
+
+/* Soft glow behind live market figures when data refreshes. */
+.value-live {
+  animation: tx-value-pulse 1.1s var(--tx-ease);
+}
+
+/* Microinteractions: buttons lift + glow, rows shift, arrows travel. */
+.btn-living {
+  position: relative;
+  overflow: hidden;
+  transition:
+    transform 0.18s var(--tx-ease),
+    box-shadow 0.22s var(--tx-ease),
+    filter 0.18s var(--tx-ease);
+}
+
+.btn-living:hover:not(:disabled) {
+  transform: translateY(-2px);
+  filter: brightness(1.02);
+  box-shadow:
+    0 14px 30px -12px rgba(17, 17, 17, 0.45),
+    0 0 28px -6px rgba(245, 255, 59, 0.7);
+}
+
+.btn-living:active:not(:disabled) {
+  transform: translateY(0);
+}
+
+.btn-living:focus-visible {
+  outline: 2px solid var(--tx-ink);
+  outline-offset: 3px;
+}
+
+.btn-living .btn-arrow {
+  display: inline-block;
+  transition: transform 0.18s var(--tx-ease);
+}
+
+.btn-living:hover:not(:disabled) .btn-arrow {
+  transform: translateX(4px);
+}
+
+.btn-living::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  transform: translateX(-100%);
+  pointer-events: none;
+}
+
+.btn-living:hover:not(:disabled)::after {
+  animation: tx-glow-sweep 0.7s var(--tx-ease);
+}
+
+.row-living {
+  transition:
+    transform 0.16s var(--tx-ease),
+    border-color 0.16s var(--tx-ease),
+    background-color 0.16s var(--tx-ease),
+    box-shadow 0.2s var(--tx-ease);
+}
+
+a.row-living:hover,
+button.row-living:hover {
+  transform: translateX(3px);
+  border-color: rgba(245, 255, 59, 0.6);
+}
+
+.mandate-row-living {
+  transition:
+    background-color 0.16s var(--tx-ease),
+    padding-left 0.16s var(--tx-ease);
+}
+
+.mandate-row-living:hover {
+  background-color: rgba(245, 255, 59, 0.06);
+  padding-left: 6px;
+}
+
+.mandate-row-living:focus-within {
+  background-color: rgba(245, 255, 59, 0.08);
+}
+
+/* Entrance choreography: stagger children with --i index. */
+.tx-stagger > * {
+  animation: tx-rise 0.55s var(--tx-ease) both;
+  animation-delay: calc(var(--i, 0) * 90ms);
+}
+
+.tx-rule {
+  animation: tx-rule-in 0.45s var(--tx-ease) both;
+  animation-delay: calc(var(--i, 0) * 110ms);
+}
+
+/* Travelling signal line for the Protect arming surface. */
+.signal-track {
+  position: relative;
+  height: 2px;
+  overflow: hidden;
+  background: rgba(255, 253, 248, 0.14);
+}
+
+.signal-track-segment {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 32%;
+  background: linear-gradient(90deg, transparent, var(--tx-signal), transparent);
+  animation: tx-travel 2.6s var(--tx-ease) infinite;
+}
+
+/* Animated sparkline stroke. */
+.spark-draw {
+  stroke-dasharray: 320;
+  animation: tx-draw 1.8s var(--tx-ease) both;
+}
+
+.spark-end {
+  animation: tx-live-dot 2.2s ease-out infinite;
+}
+
+/* Event radar: expanding signal rings. */
+.radar-ring {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: tx-radar 3s ease-out infinite;
+}
+
+.radar-ring-delay {
+  animation-delay: 1.5s;
+}
+
+/* TenaxAgent Sentinel. */
+.tx-agent {
+  animation: tx-float 5s ease-in-out infinite;
+}
+
+.tx-agent-glow-pass {
+  filter: drop-shadow(0 0 14px rgba(245, 255, 59, 0.55));
+}
+
+.tx-agent-glow-dim {
+  filter: drop-shadow(0 6px 14px rgba(17, 17, 17, 0.3));
+}
+
+.tx-agent-scan {
+  animation: tx-scan 3.2s ease-in-out infinite;
+}
+
+.tx-agent-orbit {
+  transform-origin: center;
+  transform-box: fill-box;
+  animation: tx-orbit 4s linear infinite;
+}
+
+/* Gate dimensionality: perspective stage, layered planes, lit core. */
+.gate-stage {
+  perspective: 900px;
+}
+
+.gate-plane {
+  transform: rotateX(6deg);
+  transform-style: preserve-3d;
+}
+
+.gate-ring {
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgba(245, 255, 59, 0.28);
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.gate-ring-outer {
+  transform: translateZ(-26px) scale(1.04);
+  opacity: 0.55;
+}
+
+.gate-ring-mid {
+  transform: translateZ(-13px) scale(1.02);
+  opacity: 0.8;
+}
+
+.gate-core-lit {
+  background: linear-gradient(165deg, #f7ff5c 0%, var(--tx-signal) 55%, #d9e62e 100%) !important;
+  box-shadow:
+    inset 0 2px 0 rgba(255, 255, 255, 0.6),
+    inset 0 -10px 22px -12px rgba(17, 17, 17, 0.35),
+    0 0 44px -6px rgba(245, 255, 59, 0.75);
+}
+
+.gate-bloom {
+  animation: tx-bloom-breathe 4.5s ease-in-out infinite;
+}
+
+/* Receipt seal stamp. */
+.seal-stamp {
+  display: inline-block;
+  transform: rotate(-2deg);
+  animation: tx-seal-in 0.6s var(--tx-ease) both;
+}
+
+/* Decision rail: live circuit. */
+.tx-rail {
+  scrollbar-width: thin;
+}
+
+.tx-rail-node-done {
+  box-shadow: inset 0 -2px 0 rgba(17, 17, 17, 0.85);
+}
+
+.tx-rail-node-active {
+  box-shadow:
+    0 0 18px -2px rgba(245, 255, 59, 0.8),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+}
+
+.tx-rail-pulse {
+  animation: tx-live-dot 2.4s ease-out infinite;
+}
+
+@media (max-width: 640px) {
+  .tx-rail {
+    flex-wrap: nowrap !important;
+    overflow-x: auto;
+    padding-bottom: 4px;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tx-rail > li {
+    flex-shrink: 0;
+  }
+  .tx-agent {
+    animation-duration: 6s;
+  }
 }
 
 :root {
