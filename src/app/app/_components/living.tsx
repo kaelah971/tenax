@@ -1,22 +1,25 @@
-// Tenax Phase 1E-C — premium living primitives (server-safe, CSS-only motion).
+// Tenax Phase 1E-D — premium living primitives (server-safe, CSS-only motion).
 //
-// TenaxAgent (Sentinel): an original SVG guardian — ink/graphite body,
-// glowing eyes, Signal Yellow core, shield motif, market-wave detail.
+// TenaxAgent: an original hooded companion in the soft-3D family — rounded
+// protective hood, black screen-face, subtle glowing eyes, Signal Yellow
+// core, market-wave hem. Cute but intelligent; calm, watchful, trustworthy.
 // Pure display mapping (agentPresence) stays unit-tested; rendering is
 // covered by typecheck + production build.
 import type { CSSProperties, ReactNode } from "react";
+import { useId } from "react";
 
 export type AgentState =
   | "idle"
   | "watching"
   | "analyzing"
   | "gate-check"
+  | "waiting"
   | "approved"
   | "refused"
   | "complete";
 
 export interface AgentPresence {
-  readonly eyes: "soft" | "open" | "narrow" | "happy" | "flat" | "calm";
+  readonly eyes: "soft" | "open" | "narrow" | "half" | "happy" | "flat" | "calm";
   readonly glow: "dim" | "signal" | "clay";
   readonly orbit: boolean;
   readonly scan: boolean;
@@ -32,6 +35,8 @@ export function agentPresence(state: AgentState): AgentPresence {
       return { eyes: "narrow", glow: "signal", orbit: true, scan: false, label: "ANALYZING" };
     case "gate-check":
       return { eyes: "open", glow: "signal", orbit: false, scan: true, label: "OBSERVING GATE" };
+    case "waiting":
+      return { eyes: "half", glow: "dim", orbit: false, scan: false, label: "WAITING" };
     case "approved":
       return { eyes: "happy", glow: "signal", orbit: false, scan: false, label: "CLEARED" };
     case "refused":
@@ -44,122 +49,164 @@ export function agentPresence(state: AgentState): AgentPresence {
   }
 }
 
-function AgentEyes({ kind }: { kind: AgentPresence["eyes"] }) {
-  const ink = "#111111";
-  const glowYellow = "#F5FF3B";
-  const glowClay = "#C74B3B";
+function AgentEyes({ kind, glow }: { kind: AgentPresence["eyes"]; glow: string }) {
+  const clay = "#C74B3B";
   if (kind === "happy") {
     return (
-      <g stroke={ink} strokeWidth="2.4" strokeLinecap="round" fill="none">
-        <path d="M25 30c2.5-3.4 7-3.4 9.5 0" />
-        <path d="M46 30c2.5-3.4 7-3.4 9.5 0" />
+      <g stroke={glow} strokeWidth="3" strokeLinecap="round" fill="none">
+        <path d="M44 62c2.5-3.6 7.5-3.6 10 0" />
+        <path d="M66 62c2.5-3.6 7.5-3.6 10 0" />
       </g>
     );
   }
   if (kind === "calm") {
     return (
-      <g stroke={ink} strokeWidth="2.2" strokeLinecap="round" fill="none">
-        <path d="M25 30c2.5 2.6 7 2.6 9.5 0" />
-        <path d="M46 30c2.5 2.6 7 2.6 9.5 0" />
+      <g stroke={glow} strokeWidth="2.6" strokeLinecap="round" fill="none">
+        <path d="M44 61c2.5 2.8 7.5 2.8 10 0" />
+        <path d="M66 61c2.5 2.8 7.5 2.8 10 0" />
       </g>
     );
   }
   if (kind === "flat") {
     return (
-      <g stroke={glowClay} strokeWidth="2.4" strokeLinecap="round">
-        <line x1="24" y1="30" x2="35" y2="30" />
-        <line x1="45" y1="30" x2="56" y2="30" />
+      <g stroke={clay} strokeWidth="3" strokeLinecap="round">
+        <line x1="43" y1="62" x2="55" y2="62" />
+        <line x1="65" y1="62" x2="77" y2="62" />
       </g>
     );
   }
   if (kind === "narrow") {
     return (
-      <g fill={glowYellow}>
-        <rect x="23" y="28" width="13" height="4.6" rx="2.3" />
-        <rect x="44" y="28" width="13" height="4.6" rx="2.3" />
+      <g fill={glow}>
+        <rect x="42" y="59.5" width="14" height="5" rx="2.5" />
+        <rect x="64" y="59.5" width="14" height="5" rx="2.5" />
       </g>
     );
   }
-  const ry = kind === "open" ? 6 : 4.4;
+  if (kind === "half") {
+    return (
+      <g>
+        <ellipse cx="49" cy="63" rx="5.5" ry="3" fill={glow} opacity="0.85" />
+        <ellipse cx="71" cy="63" rx="5.5" ry="3" fill={glow} opacity="0.85" />
+        <line x1="42" y1="59" x2="56" y2="59" stroke="#0A0A0A" strokeWidth="2.4" strokeLinecap="round" />
+        <line x1="64" y1="59" x2="78" y2="59" stroke="#0A0A0A" strokeWidth="2.4" strokeLinecap="round" />
+      </g>
+    );
+  }
+  const ry = kind === "open" ? 7 : 5;
+  const opacity = kind === "soft" ? 0.6 : 1;
   return (
-    <g fill={glowYellow}>
-      <ellipse cx="29.5" cy="30" rx="5" ry={ry} />
-      <ellipse cx="50.5" cy="30" rx="5" ry={ry} />
-      <circle cx="29.5" cy="30" r="1.6" fill="#111111" />
-      <circle cx="50.5" cy="30" r="1.6" fill="#111111" />
+    <g fill={glow} opacity={opacity}>
+      <ellipse cx="49" cy="62" rx="5.5" ry={ry} />
+      <ellipse cx="71" cy="62" rx="5.5" ry={ry} />
     </g>
   );
 }
 
 /**
- * TENAX SENTINEL — small rounded guardian orb. Ink/graphite body, glowing
- * eyes, Signal Yellow core, shield ring, market-wave detail. Gentle float;
- * expressive changes carry state, never complex animation.
+ * TENAX hooded companion — soft pseudo-3D guardian. Layered graphite hood
+ * with sheen + signal rim light, rounded black screen-face with glowing
+ * eyes, Signal Yellow core gem, market-wave hem. Gentle float; expressive
+ * changes carry state, never complex animation.
  */
 export function TenaxAgent({
   state = "idle",
   size = 88,
   caption,
+  className = "",
 }: {
   state?: AgentState;
   size?: number;
   caption?: string;
+  className?: string;
 }) {
   const presence = agentPresence(state);
-  const core = presence.glow === "clay" ? "#C74B3B" : "#F5FF3B";
+  const uid = useId().replace(/[^a-zA-Z0-9]/g, "");
+  const hoodId = `txh-hood-${uid}`;
+  const faceId = `txh-face-${uid}`;
+  const eyeGlowId = `txh-eyeglow-${uid}`;
+  const eyeColor = presence.glow === "clay" ? "#C74B3B" : "#F5FF3B";
+  const core = eyeColor;
+  const rim =
+    presence.glow === "signal" ? "#F5FF3B" : presence.glow === "clay" ? "#C74B3B" : "#6E6D66";
   const glowClass =
     presence.glow === "signal" ? "tx-agent-glow-pass" : "tx-agent-glow-dim";
   return (
     <figure
-      className="flex shrink-0 flex-col items-center gap-1.5"
+      className={`flex shrink-0 flex-col items-center gap-1.5 ${className}`}
       role="img"
-      aria-label={`Tenax Sentinel — ${presence.label}`}
+      aria-label={`Tenax agent — ${presence.label}`}
       data-agent-state={state}
     >
       <div className={`tx-agent ${glowClass}`}>
         <svg
           width={size}
           height={size}
-          viewBox="0 0 80 80"
+          viewBox="0 0 120 120"
           fill="none"
           aria-hidden="true"
         >
+          <defs>
+            <linearGradient id={hoodId} x1="20" y1="8" x2="100" y2="114" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#4a4a4a" />
+              <stop offset="0.45" stopColor="#2b2b2b" />
+              <stop offset="1" stopColor="#141414" />
+            </linearGradient>
+            <linearGradient id={faceId} x1="34" y1="40" x2="86" y2="82" gradientUnits="userSpaceOnUse">
+              <stop stopColor="#1c1c1c" />
+              <stop offset="1" stopColor="#070707" />
+            </linearGradient>
+            <filter id={eyeGlowId} x="-60%" y="-60%" width="220%" height="220%">
+              <feGaussianBlur stdDeviation="2.2" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
+          </defs>
           {presence.orbit ? (
             <g className="tx-agent-orbit">
-              <circle cx="40" cy="38" r="31" stroke="#F5FF3B" strokeWidth="1.6" strokeDasharray="10 14" opacity="0.85" />
-              <circle cx="40" cy="7" r="2.6" fill="#F5FF3B" />
+              <circle cx="60" cy="60" r="52" stroke="#F5FF3B" strokeWidth="1.6" strokeDasharray="12 16" opacity="0.8" />
+              <circle cx="60" cy="8" r="3" fill="#F5FF3B" />
             </g>
-          ) : (
-            <path
-              d="M40 4l22 8v12c0 14-9.5 24-22 28C27.5 48 18 38 18 24V12l22-8z"
-              stroke={presence.glow === "signal" ? "#F5FF3B" : "#6E6D66"}
-              strokeWidth="1.6"
-              opacity="0.9"
-            />
-          )}
-          <rect x="16" y="14" width="48" height="48" rx="20" fill="#242424" />
-          <rect x="16" y="14" width="48" height="48" rx="20" fill="url(#txa-sheen)" />
-          <rect x="16" y="14" width="48" height="48" rx="20" stroke="#111111" strokeWidth="2" />
-          <defs>
-            <linearGradient id="txa-sheen" x1="16" y1="14" x2="64" y2="62" gradientUnits="userSpaceOnUse">
-              <stop stopColor="#3d3d3d" />
-              <stop offset="0.55" stopColor="#242424" stopOpacity="0.4" />
-              <stop offset="1" stopColor="#111111" stopOpacity="0.85" />
-            </linearGradient>
-          </defs>
-          <AgentEyes kind={presence.eyes} />
-          {presence.scan ? (
-            <line x1="26" y1="40" x2="54" y2="40" stroke="#F5FF3B" strokeWidth="1.2" opacity="0.7" className="tx-agent-scan" />
           ) : null}
-          <circle cx="40" cy="50" r="5" fill={core} opacity={presence.glow === "dim" ? 0.55 : 1} />
-          <circle cx="40" cy="50" r="8.5" stroke={core} strokeWidth="1" opacity="0.4" />
+          {/* Hood: soft protective cloak */}
+          <path
+            d="M60 6C88 6 104 32 104 64c0 30-20 50-44 50S16 94 16 64C16 32 32 6 60 6Z"
+            fill={`url(#${hoodId})`}
+          />
+          {/* Hood sheen: soft top-left light */}
+          <ellipse cx="42" cy="30" rx="20" ry="12" fill="#FFFFFF" opacity="0.1" transform="rotate(-24 42 30)" />
+          {/* Hood rim light: signal edge on the watchful side */}
+          <path
+            d="M60 6c28 0 44 26 44 58"
+            stroke={rim}
+            strokeWidth="2"
+            strokeLinecap="round"
+            opacity={presence.glow === "dim" ? 0.45 : 0.95}
+          />
+          {/* Screen-face: rounded black visor */}
+          <rect x="34" y="42" width="52" height="42" rx="21" fill={`url(#${faceId})`} />
+          <rect x="34" y="42" width="52" height="42" rx="21" stroke="#000000" strokeWidth="2" />
+          {/* Face glass reflection */}
+          <rect x="40" y="47" width="18" height="6" rx="3" fill="#FFFFFF" opacity="0.09" transform="rotate(-8 40 47)" />
+          <g filter={`url(#${eyeGlowId})`}>
+            <AgentEyes kind={presence.eyes} glow={eyeColor} />
+          </g>
+          {presence.scan ? (
+            <line x1="42" y1="74" x2="78" y2="74" stroke="#F5FF3B" strokeWidth="1.2" opacity="0.6" className="tx-agent-scan" />
+          ) : null}
+          {/* Core gem */}
+          <circle cx="60" cy="99" r="5" fill={core} opacity={presence.glow === "dim" ? 0.6 : 1} />
+          <circle cx="60" cy="99" r="8.5" stroke={core} strokeWidth="1" opacity="0.35" />
+          {/* Market-wave hem */}
           <polyline
-            points="30,57 35,57 37.5,53.5 40,58.5 42.5,55 45,55 48,51.5 50,55"
+            points="40,108 46,108 49,104.5 52,109.5 55,106 59,106 62,102.5 65,106 70,106 74,103 77,106 80,106"
             stroke={core}
-            strokeWidth="1.4"
+            strokeWidth="1.3"
             strokeLinecap="round"
             strokeLinejoin="round"
-            opacity="0.9"
+            opacity="0.75"
           />
         </svg>
       </div>
@@ -210,31 +257,46 @@ export function LiveDot({ label = "LIVE", hot = true }: { label?: string; hot?: 
 export function Sparkline({ className = "" }: { className?: string }) {
   return (
     <svg
-      viewBox="0 0 300 72"
+      viewBox="0 0 300 84"
       className={className}
       aria-hidden="true"
       focusable="false"
+      preserveAspectRatio="none"
     >
       <defs>
         <linearGradient id="txs-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#F5FF3B" stopOpacity="0.5" />
+          <stop offset="0" stopColor="#F5FF3B" stopOpacity="0.55" />
+          <stop offset="0.7" stopColor="#F5FF3B" stopOpacity="0.08" />
           <stop offset="1" stopColor="#F5FF3B" stopOpacity="0" />
         </linearGradient>
+        <linearGradient id="txs-line" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0" stopColor="#111111" stopOpacity="0.45" />
+          <stop offset="0.6" stopColor="#111111" />
+          <stop offset="1" stopColor="#111111" />
+        </linearGradient>
       </defs>
+      <g fill="#111111" opacity="0.14">
+        {Array.from({ length: 12 }, (_, c) =>
+          Array.from({ length: 3 }, (_, r) => (
+            <circle key={`${c}-${r}`} cx={14 + c * 24} cy={16 + r * 26} r="1" />
+          )),
+        )}
+      </g>
       <path
-        d="M0 52 L30 46 L55 50 L85 34 L110 40 L140 26 L165 32 L195 18 L225 24 L255 12 L300 16 L300 72 L0 72 Z"
+        d="M0 62 L30 56 L55 60 L85 44 L110 50 L140 36 L165 42 L195 28 L225 34 L255 22 L300 26 L300 84 L0 84 Z"
         fill="url(#txs-fill)"
       />
       <path
-        d="M0 52 L30 46 L55 50 L85 34 L110 40 L140 26 L165 32 L195 18 L225 24 L255 12 L300 16"
+        d="M0 62 L30 56 L55 60 L85 44 L110 50 L140 36 L165 42 L195 28 L225 34 L255 22 L300 26"
         fill="none"
-        stroke="#111111"
+        stroke="url(#txs-line)"
         strokeWidth="2.5"
         strokeLinecap="round"
         strokeLinejoin="round"
         className="spark-draw"
       />
-      <circle cx="255" cy="12" r="4" fill="#F5FF3B" stroke="#111111" strokeWidth="2" className="spark-end" />
+      <circle cx="255" cy="22" r="7" fill="#F5FF3B" opacity="0.25" className="spark-end" />
+      <circle cx="255" cy="22" r="4" fill="#F5FF3B" stroke="#111111" strokeWidth="2" />
     </svg>
   );
 }

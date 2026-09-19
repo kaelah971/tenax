@@ -29,7 +29,7 @@ export default async function EventsPage() {
         <div className="mb-4 flex flex-col-reverse gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             {live ? (
-              <span className="text-ink">
+              <span className="inline-flex rounded-full bg-signal/60 px-2.5 py-1 text-ink">
                 <LiveDot label="WATCHING · EVENT_01" />
               </span>
             ) : (
@@ -38,12 +38,16 @@ export default async function EventsPage() {
               </span>
             )}
             <svg
-              className="mt-3 h-16 w-40 text-ink"
-              viewBox="0 0 160 40"
+              className="mt-3 h-20 w-48 text-ink"
+              viewBox="0 0 160 48"
               aria-hidden="true"
             >
+              <circle cx="128" cy="24" r="16" fill="none" stroke="#F5FF3B" strokeWidth="1.5" opacity="0.7" />
+              <circle cx="128" cy="24" r="16" fill="none" stroke="#111111" strokeWidth="1" strokeDasharray="4 5" opacity="0.5" className="tx-agent-orbit" />
+              <circle cx="128" cy="24" r="4" fill="#111111" />
+              <circle cx="128" cy="24" r="8" fill="none" stroke="#111111" strokeWidth="1" className="radar-ring" />
               <polyline
-                points="0,30 20,26 40,29 60,16 80,21 100,10 120,15 140,6 160,9"
+                points="0,34 20,30 40,33 60,20 80,25 100,14 120,19 140,10 160,13"
                 fill="none"
                 stroke="currentColor"
                 strokeWidth="2"
@@ -51,10 +55,11 @@ export default async function EventsPage() {
                 strokeLinejoin="round"
                 className="spark-draw"
               />
-              <line x1="100" y1="2" x2="100" y2="38" stroke="#F5FF3B" strokeWidth="2" opacity="0.9" />
             </svg>
           </div>
-          <TenaxAgent state="watching" size={72} caption="MONITORING EVENT" />
+          <div className="agent-stage">
+            <TenaxAgent state="watching" size={88} caption="MONITORING EVENT" className="mascot-scale" />
+          </div>
         </div>
         {live ? (
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] leading-[18px]">
@@ -77,7 +82,7 @@ export default async function EventsPage() {
         <div className="mt-4">
           <Link
             href="/app/protect/nvidia"
-            className="btn-living inline-flex h-12 items-center justify-center bg-signal px-6 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
+            className="btn-living rounded-full inline-flex h-12 items-center justify-center bg-signal px-6 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
           >
             Protect this position <span className="btn-arrow" aria-hidden="true">↗</span>
           </Link>

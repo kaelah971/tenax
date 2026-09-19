@@ -40,14 +40,14 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
       <DecisionRail current="MANDATE" />
 
-      <section aria-label="Permission boundary" className="relative rounded-[2px] bg-ink p-5 text-softwhite shadow-[0_32px_80px_-28px_rgba(17,17,17,0.6)] sm:p-10">
+      <section aria-label="Permission boundary" className="relative overflow-hidden rounded-[24px] bg-ink p-5 text-softwhite ring-1 ring-softwhite/10 shadow-[0_40px_90px_-30px_rgba(17,17,17,0.7)] sm:p-10">
         {passed ? (
           <div
-            className="pointer-events-none absolute inset-0 rounded-[2px]"
+            className="pointer-events-none absolute inset-0 rounded-[24px]"
             aria-hidden="true"
             style={{
               background:
-                "radial-gradient(ellipse 70% 55% at 50% 30%, rgba(245,255,59,0.22), transparent 70%)",
+                "radial-gradient(ellipse 70% 55% at 50% 28%, rgba(245,255,59,0.24), transparent 70%)",
             }}
           />
         ) : null}
@@ -55,27 +55,36 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             GATE_001 · PERMISSION BOUNDARY · FLOW {id}
           </p>
-          <TenaxAgent
-            state={passed ? "gate-check" : "refused"}
-            size={72}
-            caption={passed ? "SENTINEL OBSERVING GATE" : "SENTINEL HOLDING"}
-          />
+          <div className="agent-stage agent-stage-dark">
+            <TenaxAgent
+              state={passed ? "gate-check" : "refused"}
+              size={88}
+              caption={passed ? "AGENT OBSERVING GATE" : "AGENT HOLDING"}
+              className="mascot-scale"
+            />
+          </div>
         </div>
 
         <div className="relative">
           <GateCore state={passed ? "PASS" : "REFUSED"} />
         </div>
 
-        <p className="font-syslabel mt-2 text-center text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+        <p className="font-syslabel relative mt-3 text-center text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
           {cleared} / {total} RULES CLEARED
         </p>
 
-        <ol className="relative mx-auto mt-6 flex max-w-2xl flex-col">
+        <ol className="relative mx-auto mt-5 flex max-w-2xl flex-col gap-1.5">
           {rows.map((row, i) => (
             <li
               key={row.index}
               style={staggerStyle(i)}
-              className="tx-rule flex items-baseline gap-4 border-t border-softwhite/15 py-3"
+              className={`tx-rule flex items-center gap-4 rounded-[14px] border px-4 py-3 ${
+                row.state === "PASS"
+                  ? "border-softwhite/10 bg-softwhite/[0.06]"
+                  : row.state === "REFUSED"
+                    ? "border-clay/50 bg-clay/10"
+                    : "border-signal/40 bg-signal/[0.07]"
+              }`}
             >
               <span className="font-syslabel w-8 shrink-0 text-[11px] leading-[14px] text-softwhite/60">
                 {row.index}
@@ -110,8 +119,8 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       {passed ? (
         <section aria-label="Human authority" className="flex flex-col gap-6">
-          <div className="depth-control grid grid-cols-2 gap-px overflow-hidden rounded-[2px] bg-ink/10">
-            <div className="bg-softwhite p-5 sm:p-6">
+          <div className="grid grid-cols-2 gap-3">
+            <div className="float-module p-5 sm:p-6">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                 MANDATE
               </p>
@@ -119,11 +128,11 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
                 PASS
               </p>
             </div>
-            <div className="bg-ink p-5 text-softwhite sm:p-6">
+            <div className="float-module-dark p-5 text-softwhite sm:p-6">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
                 HUMAN
               </p>
-              <p className="mt-1 text-[28px] font-extrabold leading-none text-signal sm:text-[36px]">
+              <p className="signal-glow mt-1 text-[28px] font-extrabold leading-none text-signal sm:text-[36px]">
                 WAITING
               </p>
             </div>
@@ -147,7 +156,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       <section
         aria-label="Refusal test"
-        className="depth-panel rounded-[2px] border-t-4 border-clay bg-softwhite p-5 sm:p-8"
+        className="float-module border-t-4 border-t-clay p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REFUSAL TEST · REFUSAL IS A FEATURE

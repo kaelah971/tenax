@@ -367,48 +367,65 @@ export function rulesCleared(decision: MandateDecision): { cleared: number; tota
 }
 
 // ---- Mandate Gate core (signature primitive) ---------------------------------
-// Ink control surface, geometric gate, Signal Yellow illumination on PASS,
-// oversized state word. Refusal sits flat with no glow.
+// Rounded glass chamber, geometric gate with beveled pillars, Signal Yellow
+// illumination + check beam + floor light on PASS, oversized state word.
+// Refusal sits flat clay with no glow and no beam.
 
 export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
   const lit = state === "PASS";
   const refused = state === "REFUSED";
   return (
     <div
-      className={`glass-dark depth-critical gate-stage rounded-[2px] px-6 py-8 text-softwhite ${lit ? "gate-bloom" : ""}`}
+      className={`glass-dark depth-critical gate-stage gate-chamber relative px-6 py-8 text-softwhite sm:px-10 ${lit ? "gate-bloom" : ""}`}
       aria-label="Mandate Gate"
     >
-      <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+      {lit ? <span className="gate-beam" aria-hidden="true" /> : null}
+      <p className="font-syslabel relative text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
         MANDATE_GATE · ENFORCED · DETERMINISTIC
       </p>
       <div className="gate-plane relative mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
         <span className="gate-ring gate-ring-outer" aria-hidden="true" />
         <span className="gate-ring gate-ring-mid" aria-hidden="true" />
-        <div className={lit ? "anim-gate relative rounded-[6px]" : "relative rounded-[6px]"}>
+        <div className={lit ? "anim-gate relative rounded-[14px]" : "relative rounded-[14px]"}>
           <div
-            className={`flex items-end justify-center gap-3 rounded-[6px] border px-8 py-6 ${
+            className={`relative flex items-end justify-center gap-3.5 overflow-hidden rounded-[14px] border px-9 py-7 ${
               lit ? "gate-core-lit border-ink" : refused ? "border-clay/60" : "border-softwhite/15"
             }`}
             style={lit ? undefined : { backgroundColor: "#242424" }}
             aria-hidden="true"
           >
+            {lit ? (
+              <span
+                className="pointer-events-none absolute inset-x-6 top-2 h-8 rounded-full"
+                style={{ background: "radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,255,255,0.65), transparent 70%)" }}
+              />
+            ) : null}
             <span
-              className="h-20 w-4 rounded-[2px]"
-              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+              className="h-20 w-4 rounded-full"
+              style={{
+                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
+                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
+              }}
             />
             <span
-              className="h-14 w-4 rounded-[2px]"
-              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+              className="h-14 w-4 rounded-full"
+              style={{
+                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
+                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
+              }}
             />
             <span
-              className="h-20 w-4 rounded-[2px]"
-              style={{ backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66" }}
+              className="h-20 w-4 rounded-full"
+              style={{
+                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
+                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
+              }}
             />
           </div>
         </div>
         <div className="text-center sm:text-left">
           <p
-            className="text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[72px]"
+            className={`text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[72px] ${lit ? "signal-glow" : ""}`}
             style={{ color: state === null ? "#6E6D66" : state === "PASS" ? "#F5FF3B" : "#C74B3B" }}
           >
             {state ?? "GATE"}
@@ -422,6 +439,7 @@ export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
           </p>
         </div>
       </div>
+      <span className={`gate-floor${refused ? " gate-floor-refused" : ""}`} aria-hidden="true" />
     </div>
   );
 }

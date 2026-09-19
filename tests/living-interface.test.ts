@@ -12,6 +12,7 @@ const STATES: AgentState[] = [
   "watching",
   "analyzing",
   "gate-check",
+  "waiting",
   "approved",
   "refused",
   "complete",
@@ -22,9 +23,15 @@ describe("tenax sentinel presence", () => {
     for (const state of STATES) {
       const presence = agentPresence(state);
       expect(presence.label.length).toBeGreaterThan(0);
-      expect(["soft", "open", "narrow", "happy", "flat", "calm"]).toContain(presence.eyes);
+      expect(["soft", "open", "narrow", "half", "happy", "flat", "calm"]).toContain(presence.eyes);
       expect(["dim", "signal", "clay"]).toContain(presence.glow);
     }
+  });
+
+  it("waits visibly distinct from idle and watching", () => {
+    expect(agentPresence("waiting")).toMatchObject({ eyes: "half", glow: "dim", label: "WAITING" });
+    expect(agentPresence("idle")).toMatchObject({ eyes: "soft", label: "IDLE" });
+    expect(agentPresence("watching")).toMatchObject({ eyes: "open", glow: "signal" });
   });
 
   it("keeps refusal visually distinct from approval", () => {

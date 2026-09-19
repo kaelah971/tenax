@@ -4,7 +4,7 @@ import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { EVENT_UNAVAILABLE_LINE, INTENT_LINE, MANDATE_SUMMARY } from "../../_copy";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
-import { TenaxAgent } from "../../_components/living";
+import { LiveDot, TenaxAgent } from "../../_components/living";
 import AnalyzeButton from "./AnalyzeButton";
 
 export const dynamic = "force-dynamic";
@@ -36,23 +36,28 @@ export default async function ProtectPage() {
             {INTENT_LINE}
           </h1>
         </div>
-        <TenaxAgent state="watching" size={88} caption="WATCHING · READY TO REASON" />
+        <TenaxAgent state="watching" size={104} caption="WATCHING · READY TO REASON" className="mascot-scale" />
       </div>
 
-      <section aria-label="Mandate control surface" className="glass-dark depth-control rounded-[2px] p-5 text-softwhite sm:p-8">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
-          MANDATE_001 · ARMING
-        </p>
+      <section aria-label="Mandate control surface" className="float-module-dark p-5 text-softwhite sm:p-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            MANDATE_001 · ARMING
+          </p>
+          <span className="ml-auto rounded-full border border-signal/40 px-2.5 py-1 text-signal shadow-[0_0_18px_-6px_rgba(245,255,59,0.7)]">
+            <LiveDot label="AUTHORITY ARMING" />
+          </span>
+        </div>
         <dl className="mt-4">
           {MANDATE_ROWS.map(([term, value]) => (
             <div
               key={term}
-              className="mandate-row-living flex items-baseline justify-between gap-4 rounded-[6px] border-t border-softwhite/15 py-3 first:border-t-0 first:pt-0"
+              className="mandate-row-living group flex items-baseline justify-between gap-4 rounded-[14px] border border-transparent px-3 py-3.5 hover:border-signal/30 sm:px-4"
             >
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
                 {term}
               </dt>
-              <dd className="text-[24px] font-extrabold leading-none tracking-[-0.02em] sm:text-[32px]">
+              <dd className="text-[24px] font-extrabold leading-none tracking-[-0.02em] transition-shadow group-hover:[text-shadow:0_0_22px_rgba(245,255,59,0.5)] sm:text-[32px]">
                 {value}
               </dd>
             </div>

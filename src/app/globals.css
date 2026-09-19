@@ -636,7 +636,192 @@ button.row-living:hover {
   animation: tx-live-dot 2.4s ease-out infinite;
 }
 
+/* ---- Tenax Phase 1E-D — premium glass refinement ---------------------------
+   Frosted floating modules, rounded instrument geometry, cinematic light.
+   Still selective: flat ivory/ink remain the base; glass marks important,
+   critical, and live surfaces only. */
+
+@keyframes tx-beam {
+  0% {
+    transform: translateX(-140%) skewX(-12deg);
+    opacity: 0;
+  }
+  18% {
+    opacity: 1;
+  }
+  55% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(240%) skewX(-12deg);
+    opacity: 0;
+  }
+}
+
+/* Floating frosted module: the premium surface for instruments, authority
+   panels, previews, and records. Rounded, translucent, internally lit. */
+.float-module {
+  position: relative;
+  border-radius: 22px;
+  background: linear-gradient(155deg, rgba(255, 253, 248, 0.82), rgba(243, 239, 230, 0.68));
+  backdrop-filter: blur(18px) saturate(1.1);
+  -webkit-backdrop-filter: blur(18px) saturate(1.1);
+  border: 1px solid rgba(255, 255, 255, 0.7);
+  outline: 1px solid rgba(17, 17, 17, 0.08);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    inset 0 -14px 30px -22px rgba(17, 17, 17, 0.25),
+    0 30px 60px -28px rgba(17, 17, 17, 0.35);
+}
+
+.float-module-dark {
+  position: relative;
+  border-radius: 22px;
+  background: linear-gradient(160deg, rgba(52, 52, 52, 0.88), rgba(17, 17, 17, 0.94));
+  backdrop-filter: blur(20px) saturate(1.05);
+  -webkit-backdrop-filter: blur(20px) saturate(1.05);
+  border: 1px solid rgba(245, 255, 59, 0.18);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    inset 0 -22px 44px -28px rgba(245, 255, 59, 0.3),
+    0 34px 70px -30px rgba(17, 17, 17, 0.6);
+}
+
+/* Gentle hover lift for floating interactive modules. */
+.float-lift {
+  transition:
+    transform 0.22s var(--tx-ease),
+    box-shadow 0.26s var(--tx-ease);
+}
+
+.float-lift:hover {
+  transform: translateY(-3px);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.8),
+    0 38px 70px -28px rgba(17, 17, 17, 0.4);
+}
+
+/* Mascot stage: soft pedestal glow so the agent feels placed, not pasted. */
+.agent-stage {
+  position: relative;
+}
+
+.agent-stage::before {
+  content: "";
+  position: absolute;
+  inset: 12% -8% -6% -8%;
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(245, 255, 59, 0.35), transparent 70%);
+  filter: blur(6px);
+  z-index: -1;
+}
+
+.agent-stage-dark::before {
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(245, 255, 59, 0.22), transparent 70%);
+}
+
+/* Gate chamber: rounded critical vessel with floor light + check beam. */
+.gate-chamber {
+  border-radius: 20px;
+  overflow: hidden;
+}
+
+.gate-floor {
+  position: absolute;
+  left: 8%;
+  right: 8%;
+  bottom: 10px;
+  height: 26px;
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(245, 255, 59, 0.28), transparent 70%);
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+.gate-floor-refused {
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(199, 75, 59, 0.22), transparent 70%);
+}
+
+.gate-beam {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, rgba(245, 255, 59, 0.22), transparent);
+  animation: tx-beam 2.8s var(--tx-ease) 0.3s both;
+  pointer-events: none;
+}
+
+/* Receipt record stack: layered sheets beneath the sealed record. */
+.record-stack {
+  position: relative;
+}
+
+.record-stack::before,
+.record-stack::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 22px;
+  background: rgba(255, 253, 248, 0.5);
+  border: 1px solid rgba(17, 17, 17, 0.07);
+  z-index: -1;
+}
+
+.record-stack::before {
+  transform: translateY(8px) scale(0.985);
+}
+
+.record-stack::after {
+  transform: translateY(15px) scale(0.97);
+  opacity: 0.7;
+}
+
+/* Stepped intelligence path: Exposure → Evidence → Proposal. */
+.path-spine {
+  position: relative;
+}
+
+.path-node {
+  position: relative;
+  transition:
+    transform 0.18s var(--tx-ease),
+    box-shadow 0.22s var(--tx-ease);
+}
+
+.path-node:hover {
+  transform: translateY(-2px);
+}
+
+.path-node-dot {
+  box-shadow: 0 0 14px -2px rgba(245, 255, 59, 0.9);
+}
+
+/* Instrument divider glow for dark glass panels. */
+.instrument-divider {
+  border-color: rgba(255, 253, 248, 0.14);
+}
+
+.seal-ring {
+  box-shadow:
+    0 0 0 3px var(--tx-signal),
+    0 0 0 5px var(--tx-ink),
+    0 18px 40px -16px rgba(17, 17, 17, 0.5),
+    0 0 34px -8px rgba(245, 255, 59, 0.65);
+}
+
 @media (max-width: 640px) {
+  .float-module,
+  .float-module-dark {
+    border-radius: 18px;
+    backdrop-filter: blur(12px) saturate(1.08);
+    -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  }
+  .gate-chamber {
+    border-radius: 16px;
+  }
+  .mascot-scale {
+    transform: scale(0.84);
+    transform-origin: top center;
+  }
   .tx-rail {
     flex-wrap: nowrap !important;
     overflow-x: auto;

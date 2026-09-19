@@ -56,26 +56,28 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     <div className="anim-rise flex flex-col gap-10 pt-8 sm:pt-12">
       <DecisionRail current="RECEIPT" />
 
-      <section aria-label="Decision hero">
+      <section aria-label="Decision hero" className="float-module record-stack p-6 sm:p-10">
         <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               DECISION · {receipt.receiptId} · {receipt.timestamp}
             </p>
-            <p className="mt-4 inline-block bg-ink px-2 py-1 text-[20px] font-extrabold leading-none tracking-[-0.02em] text-signal shadow-[0_0_30px_-6px_rgba(245,255,59,0.7)] sm:text-[28px]">
+            <p className="mt-4 inline-block rounded-full bg-ink px-3 py-1.5 text-[20px] font-extrabold leading-none tracking-[-0.02em] text-signal shadow-[0_0_30px_-6px_rgba(245,255,59,0.7)] sm:text-[28px]">
               ACTION CLEARED
             </p>
-            <p className="value-live mt-4 text-[72px] font-extrabold leading-none tracking-[-0.03em] sm:text-[120px]">
+            <p className="value-live mt-4 text-[72px] font-extrabold leading-none tracking-[-0.03em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[120px]">
               ${receipt.proposedTradeValueUsdt}
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               PROTECTION · NVIDIA · RNVDAUSDT
             </p>
           </div>
-          <div className="flex flex-col items-center gap-3">
-            <TenaxAgent state="complete" size={88} caption="DECISION RECORDED" />
+          <div className="flex flex-col items-center gap-4">
+            <div className="agent-stage">
+              <TenaxAgent state="complete" size={104} caption="DECISION RECORDED" className="mascot-scale" />
+            </div>
             <p
-              className="seal-stamp border-2 border-ink bg-signal px-3 py-1.5 text-center text-[13px] font-extrabold leading-[18px] tracking-[0.06em] text-ink"
+              className="seal-stamp seal-ring rounded-full border-2 border-ink bg-signal px-4 py-2 text-center text-[13px] font-extrabold leading-[18px] tracking-[0.06em] text-ink"
               aria-label={`Tenax decision record sealed at ${receipt.timestamp}`}
             >
               TENAX DECISION RECORD
@@ -115,7 +117,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
       <section
         aria-label="Rejected alternative"
-        className="depth-panel rounded-[2px] border-t-4 border-clay bg-softwhite p-5 sm:p-8"
+        className="float-module border-t-4 border-t-clay p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REJECTED ALTERNATIVE · REFUSAL IS A FEATURE
@@ -137,15 +139,20 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       </section>
 
-      <section aria-label="Technical details" className="glass-dark depth-control rounded-[2px] p-5 text-softwhite sm:p-8">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
-          TECHNICAL · WOULD-BE BITGET REQUEST
-        </p>
+      <section aria-label="Technical details" className="float-module-dark p-5 text-softwhite sm:p-8">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+            TECHNICAL · WOULD-BE BITGET REQUEST
+          </p>
+          <span className="font-syslabel ml-auto rounded-full border border-signal/40 px-2.5 py-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            □ DRY RUN · NEVER SUBMITTED
+          </span>
+        </div>
         <dl className="mt-4 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
           {requestRows.map(([term, value]) => (
             <div
               key={term}
-              className="flex items-baseline justify-between gap-4 overflow-x-auto border-t border-softwhite/15 py-2"
+              className="flex items-baseline justify-between gap-4 overflow-x-auto border-t instrument-divider py-2.5"
             >
               <dt className="font-syslabel shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
                 {term}

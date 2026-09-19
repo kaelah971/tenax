@@ -39,18 +39,18 @@ export default async function CapitalPage() {
         </h1>
       </div>
 
-      <section aria-label="Primary exposure" className="relative">
+      <section aria-label="Primary exposure" className="float-module float-lift relative p-6 sm:p-10">
         <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div className="min-w-0 flex-1">
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               NVIDIA EXPOSURE
             </p>
-            <p className="depth-panel mt-1 inline-block text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[104px]">
+            <p className="mt-1 text-[64px] font-extrabold leading-none tracking-[-0.03em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[112px]">
               $500
             </p>
-            <Sparkline className="mt-4 h-[72px] w-full max-w-md" />
-            <p className="font-syslabel mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
-              <span className="bg-signal px-1.5 py-0.5 font-bold text-ink shadow-[0_0_22px_-4px_rgba(245,255,59,0.8)]">rNVDA · BITGET REALITY</span>{" "}
+            <Sparkline className="mt-5 h-[84px] w-full max-w-md" />
+            <p className="font-syslabel mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
+              <span className="rounded-full bg-signal px-2.5 py-1 font-bold text-ink shadow-[0_0_22px_-4px_rgba(245,255,59,0.8)]">rNVDA · BITGET REALITY</span>{" "}
               {live ? (
                 <span className="inline-flex items-center gap-2 text-ink">
                   <LiveDot label={`LIVE MARKET · ${instrument?.status?.toUpperCase() ?? "—"}`} />
@@ -60,7 +60,9 @@ export default async function CapitalPage() {
               )}
             </p>
           </div>
-          <TenaxAgent state="watching" size={96} caption="WATCHING YOUR NVIDIA EXPOSURE" />
+          <div className="agent-stage">
+            <TenaxAgent state="watching" size={124} caption="WATCHING YOUR NVIDIA EXPOSURE" className="mascot-scale" />
+          </div>
         </div>
         <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           ○ DEMO · SIMULATED PORTFOLIO — NOT A LIVE POSITION
@@ -81,26 +83,26 @@ export default async function CapitalPage() {
         </div>
       </section>
 
-      <section aria-label="Live market signal" className="glass-dark depth-control rounded-[2px] p-5 text-softwhite sm:p-8">
+      <section aria-label="Live market signal" className="float-module-dark p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             LIVE_SIGNAL · RNVDAUSDT · BITGET REALITY
           </p>
           {live ? (
-            <span className="ml-auto text-signal">
+            <span className="ml-auto rounded-full border border-signal/40 px-2.5 py-1 text-signal shadow-[0_0_18px_-6px_rgba(245,255,59,0.7)]">
               <LiveDot label="LIVE" />
             </span>
           ) : null}
         </div>
         {live ? (
-          <div className="mt-4 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
-            <div>
+          <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
+            <div className="border-t instrument-divider pt-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">LAST</p>
               <p className="value-live signal-glow mt-1 text-[36px] font-extrabold leading-none tracking-[-0.02em] text-signal" key={ticker?.lastPrice ?? "none"}>
                 {ticker?.lastPrice ? `$${ticker.lastPrice}` : "—"}
               </p>
             </div>
-            <div>
+            <div className="border-t instrument-divider pt-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">24H RANGE</p>
               <p className="mt-1 text-[20px] font-bold leading-[24px]">
                 {ticker?.lowPrice24h && ticker?.highPrice24h
@@ -108,7 +110,7 @@ export default async function CapitalPage() {
                   : "—"}
               </p>
             </div>
-            <div>
+            <div className="border-t instrument-divider pt-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">SESSION</p>
               <p className="mt-1 text-[20px] font-bold leading-[24px]">
                 {sessionState === "UNKNOWN" ? "— AWAITING SIGNAL" : sessionState}
@@ -119,7 +121,7 @@ export default async function CapitalPage() {
                 </p>
               ) : null}
             </div>
-            <div>
+            <div className="border-t instrument-divider pt-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">VOL 24H</p>
               <p className="mt-1 text-[20px] font-bold leading-[24px]">{formatCompact(ticker?.volume24h ?? null)}</p>
             </div>
@@ -129,16 +131,17 @@ export default async function CapitalPage() {
         )}
       </section>
 
-      <section aria-label="Earnings event" className="glass-dark depth-control relative overflow-hidden rounded-[2px] p-5 text-softwhite sm:p-8">
+      <section aria-label="Earnings event" className="float-module-dark relative overflow-hidden p-5 text-softwhite sm:p-8">
         <svg
-          className="pointer-events-none absolute -right-10 -top-10 h-56 w-56 text-signal"
+          className="pointer-events-none absolute -right-12 -top-12 h-64 w-64 text-signal"
           viewBox="0 0 100 100"
           aria-hidden="true"
         >
-          <circle cx="50" cy="50" r="14" fill="currentColor" opacity="0.9" />
-          <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring" />
-          <circle cx="50" cy="50" r="22" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring radar-ring-delay" />
-          <circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" strokeWidth="0.75" opacity="0.35" />
+          <circle cx="50" cy="50" r="34" fill="none" stroke="currentColor" strokeWidth="0.75" opacity="0.3" />
+          <circle cx="50" cy="50" r="26" fill="none" stroke="currentColor" strokeWidth="0.75" opacity="0.45" strokeDasharray="4 5" className="tx-agent-orbit" />
+          <circle cx="50" cy="50" r="13" fill="currentColor" opacity="0.9" />
+          <circle cx="50" cy="50" r="21" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring" />
+          <circle cx="50" cy="50" r="21" fill="none" stroke="currentColor" strokeWidth="1" className="radar-ring radar-ring-delay" />
         </svg>
         <div className="flex flex-wrap items-baseline gap-x-6 gap-y-1">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
@@ -147,23 +150,23 @@ export default async function CapitalPage() {
           <h2 className="text-[30px] font-extrabold leading-none tracking-[-0.02em] sm:text-[44px]">
             NVIDIA EARNINGS
           </h2>
-          <span className="ml-auto text-signal">
+          <span className="ml-auto rounded-full border border-signal/40 px-2.5 py-1 text-signal shadow-[0_0_18px_-6px_rgba(245,255,59,0.7)]">
             <LiveDot label="WATCHING" />
           </span>
         </div>
         <dl className="mt-6 grid grid-cols-1 gap-x-6 gap-y-4 sm:grid-cols-3">
-          <div className="border-t border-softwhite/20 pt-3">
+          <div className="border-t instrument-divider pt-3">
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">CAPITAL AT RISK</dt>
             <dd className="mt-1 text-[28px] font-extrabold leading-none">$500</dd>
           </div>
-          <div className="border-t border-softwhite/20 pt-3">
+          <div className="border-t instrument-divider pt-3">
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">DATE</dt>
             <dd className="mt-1 text-[28px] font-extrabold leading-none">UNVERIFIED</dd>
             <dd className="mt-1 text-[11px] leading-[14px] text-softwhite/60">{DATE_UNAVAILABLE_LINE}</dd>
           </div>
-          <div className="border-t border-softwhite/20 pt-3">
+          <div className="border-t instrument-divider pt-3">
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">STATUS</dt>
-            <dd className="mt-1 text-[28px] font-extrabold leading-none text-signal">WATCHING</dd>
+            <dd className="signal-glow mt-1 text-[28px] font-extrabold leading-none text-signal">WATCHING</dd>
             <dd className="mt-1 text-[11px] leading-[14px] text-softwhite/60">
               {NVDA_EXPOSURE_FIXTURE.underlying} via {NVDA_EXPOSURE_FIXTURE.representation.symbol}
             </dd>
@@ -172,11 +175,13 @@ export default async function CapitalPage() {
         <div className="mt-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
           <Link
             href="/app/protect/nvidia"
-            className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
+            className="btn-living rounded-full inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
           >
             PROTECT THIS POSITION <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
-          <TenaxAgent state="watching" size={72} caption="SENTINEL · EVENT WATCH" />
+          <div className="agent-stage agent-stage-dark">
+            <TenaxAgent state="watching" size={84} caption="AGENT · EVENT WATCH" className="mascot-scale" />
+          </div>
         </div>
       </section>
 

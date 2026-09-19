@@ -1,5 +1,5 @@
 // Client-side analyze trigger. Authority stays server-side: this button only
-// POSTs the raw intent text and follows the returned flowId. The Sentinel
+// POSTs the raw intent text and follows the returned flowId. The agent
 // shifts WATCHING → ANALYZING with a short beat before navigation so the
 // handoff into reasoning reads as a state change, not a jump.
 "use client";
@@ -46,18 +46,21 @@ export default function AnalyzeButton({
   }
 
   return (
-    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-6">
-      <TenaxAgent
-        state={state === "working" ? "analyzing" : "watching"}
-        size={72}
-        caption={state === "working" ? "ANALYZING" : "TENAX IS READY"}
-      />
+    <div className="float-module float-lift flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
+      <div className="agent-stage">
+        <TenaxAgent
+          state={state === "working" ? "analyzing" : state === "error" ? "waiting" : "watching"}
+          size={84}
+          caption={state === "working" ? "ANALYZING" : state === "error" ? "WAITING · RETRY READY" : "TENAX IS READY"}
+          className="mascot-scale"
+        />
+      </div>
       <div className="flex flex-1 flex-col gap-2">
         <button
           type="button"
           onClick={onAnalyze}
           disabled={disabled || state === "working"}
-          className="btn-living inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+          className="btn-living rounded-full inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
         >
           {state === "working" ? "ANALYZING…" : "ANALYZE PROTECTION "}
           <span className="btn-arrow" aria-hidden="true">→</span>
