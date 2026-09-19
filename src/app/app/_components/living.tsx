@@ -104,7 +104,7 @@ export function TenaxAgent({
       aria-label={`Tenax agent — ${presence.label}`}
       data-agent-state={state}
     >
-      <div className={`tx-agent agent-stage ${haloClass} ${glowClass}`}>
+      <div className={`tx-agent ${state === "watching" ? "tx-agent-watching" : ""} agent-stage ${haloClass} ${glowClass}`}>
         <span className="relative block" style={{ width: size, height: size }}>
           {presence.orbit ? (
             <svg

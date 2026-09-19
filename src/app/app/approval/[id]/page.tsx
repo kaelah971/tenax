@@ -40,29 +40,17 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
       <DecisionRail current="MANDATE" />
 
-      <section aria-label="Permission boundary" className="relative overflow-hidden rounded-[24px] bg-ink p-5 text-softwhite ring-1 ring-softwhite/10 shadow-[0_40px_90px_-30px_rgba(17,17,17,0.7)] sm:p-10">
-        {passed ? (
-          <div
-            className="pointer-events-none absolute inset-0 rounded-[24px]"
-            aria-hidden="true"
-            style={{
-              background:
-                "radial-gradient(ellipse 70% 55% at 50% 28%, rgba(245,255,59,0.24), transparent 70%)",
-            }}
-          />
-        ) : null}
+      <section aria-label="Permission boundary" className="relative rounded-[14px] bg-graphite p-4 text-softwhite sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             GATE_001 · PERMISSION BOUNDARY · FLOW {id}
           </p>
-          <div className="agent-stage">
-            <TenaxAgent
-              state={passed ? "gate-check" : "refused"}
-              size={88}
-              caption={passed ? "AGENT OBSERVING GATE" : "AGENT HOLDING"}
-              className="mascot-scale"
-            />
-          </div>
+          <TenaxAgent
+            state={passed ? "gate-check" : "refused"}
+            size={72}
+            caption={passed ? "OBSERVING GATE" : "HOLDING"}
+            className="mascot-scale"
+          />
         </div>
 
         <div className="relative">
@@ -78,12 +66,12 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
             <li
               key={row.index}
               style={staggerStyle(i)}
-              className={`tx-rule flex items-center gap-4 rounded-[14px] border px-4 py-3 ${
+              className={`tx-rule flex flex-wrap items-center gap-4 border-t px-2 py-3 ${
                 row.state === "PASS"
-                  ? "border-softwhite/10 bg-softwhite/[0.06]"
+                  ? "border-softwhite/20"
                   : row.state === "REFUSED"
-                    ? "border-clay/50 bg-clay/10"
-                    : "border-signal/40 bg-signal/[0.07]"
+                    ? "border-clay/70 bg-clay/10"
+                    : "border-signal/60 bg-signal/[0.07]"
               }`}
             >
               <span className="font-syslabel w-8 shrink-0 text-[11px] leading-[14px] text-softwhite/60">
@@ -92,7 +80,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
               <span className="font-syslabel min-w-28 shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em]">
                 {row.title}
               </span>
-              <span className="min-w-0 flex-1 truncate text-[13px] leading-[18px] text-softwhite/80">
+              <span className="min-w-0 flex-1 break-words text-[13px] leading-[18px] text-softwhite/80">
                 {row.value}
               </span>
               <span
@@ -119,22 +107,19 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       {passed ? (
         <section aria-label="Human authority" className="flex flex-col gap-6">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="float-module p-5 sm:p-6">
-              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-                MANDATE
-              </p>
-              <p className="mt-1 text-[28px] font-extrabold leading-none text-pass sm:text-[36px]">
-                PASS
-              </p>
-            </div>
-            <div className="float-module-dark p-5 text-softwhite sm:p-6">
-              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
-                HUMAN
-              </p>
-              <p className="signal-glow mt-1 text-[28px] font-extrabold leading-none text-signal sm:text-[36px]">
-                WAITING
-              </p>
+          <div className="material-authority p-5 text-softwhite sm:p-6">
+            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+              AUTHORITY HANDOFF
+            </p>
+            <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
+              <div>
+                <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">MANDATE</p>
+                <p className="mt-1 text-[32px] font-extrabold leading-none text-pass sm:text-[40px]">PASS</p>
+              </div>
+              <div className="border-t border-softwhite/15 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
+                <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">HUMAN APPROVAL</p>
+                <p className="mt-1 text-[32px] font-extrabold leading-none text-signal sm:text-[40px]">WAITING</p>
+              </div>
             </div>
           </div>
 
@@ -156,7 +141,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       <section
         aria-label="Refusal test"
-        className="float-module border-t-4 border-t-clay p-5 sm:p-8"
+        className="material-flat border-t-4 border-t-clay p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REFUSAL TEST · REFUSAL IS A FEATURE
@@ -169,7 +154,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
             ACTION PROPOSED · MAX ALLOWED ${MANDATE_FIXTURE.maxTradeValueUsdt}
           </p>
         </div>
-        <p className="mt-3 inline-block rounded-full bg-clay px-3 py-1 text-[13px] font-bold leading-[18px] text-white">
+        <p className="state-mark mt-3 bg-clay text-softwhite">
           REFUSED
         </p>
         <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">

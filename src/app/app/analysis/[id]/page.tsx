@@ -22,7 +22,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
     <div className="anim-rise flex flex-col gap-10 pt-8 sm:pt-12">
       <DecisionRail current="INTELLIGENCE" />
 
-      <section aria-label="Intelligence" className="float-module p-6 sm:p-10">
+      <section aria-label="Intelligence" className="material-flat p-0 pb-2 sm:pb-4">
         <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             INTELLIGENCE_01 · FLOW {id}
@@ -54,7 +54,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
             </div>
             <div style={staggerStyle(2)} className="path-node">
               <span className="path-node-dot mb-3 block h-2.5 w-2.5 rounded-full bg-ink" aria-hidden="true" />
-              <p className="value-live inline-block rounded-2xl bg-signal px-3 py-1 text-[56px] font-extrabold leading-none tracking-[-0.03em] text-ink shadow-[0_0_34px_-6px_rgba(245,255,59,0.8)] sm:text-[80px]">
+              <p className="value-live inline-block rounded-[6px] bg-signal px-3 py-1 text-[56px] font-extrabold leading-none tracking-[-0.03em] text-ink sm:text-[80px]">
                 ${analysis.authority.calculatedTradeValueUsdt}
               </p>
               <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
@@ -65,16 +65,16 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="mt-8 max-w-2xl border-t-2 border-ink pt-6">
-          <p className="font-syslabel inline-block rounded-full bg-ink px-2.5 py-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+          <p className="state-mark bg-ink text-signal">
             ◇ DEV · DEVELOPMENT ANALYSIS — REASONING ONLY, AUTHORIZES NOTHING
           </p>
           <p className="mt-3 text-[20px] font-bold leading-[28px]">{analysis.reasoning.summary}</p>
-          <ul className="tx-stagger mt-4 flex flex-col gap-2">
+          <ul className="mt-4 flex flex-col gap-2">
             {analysis.reasoning.riskObservations.map((observation, i) => (
               <li
                 key={observation}
                 style={staggerStyle(i)}
-                className="rounded-r-[12px] border-l-2 border-ink bg-softwhite/60 py-1 pl-3 text-[16px] leading-[24px]"
+                className="border-l-2 border-ink py-1 pl-3 text-[16px] leading-[24px]"
               >
                 {observation}
               </li>
@@ -84,16 +84,16 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
         </div>
 
         <div className="mt-8">
-          <div className="float-module-dark border-l-4 border-l-signal p-5 text-softwhite sm:p-6">
-          <div className="flex flex-wrap items-center gap-3">
+          <div className="material-authority border-l-4 border-l-signal p-5 text-softwhite sm:p-6">
+            <div className="flex flex-wrap items-center gap-3">
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
               EVIDENCE RAIL · EXPOSURE → EVIDENCE → PROPOSAL
             </p>
-            <span className="signal-glow ml-auto rounded-full border border-signal/40 px-2.5 py-1 text-signal">
+              <span className="state-mark ml-auto text-signal">
               <LiveDot label="LIVE" />
             </span>
           </div>
-          <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
+            <dl className="mt-4 grid grid-cols-1 gap-x-8 gap-y-3 sm:grid-cols-3">
             <div className="border-t instrument-divider pt-3">
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">● LIVE</dt>
               <dd className="mt-1 text-[13px] font-bold leading-[18px]">BITGET REALITY</dd>
@@ -106,17 +106,17 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">MARKET</dt>
               <dd className="mt-1 text-[13px] font-bold leading-[18px]">RNVDAUSDT</dd>
             </div>
-          </dl>
-          <ul className="tx-stagger mt-4 flex flex-col gap-1.5 text-[11px] leading-[14px] text-softwhite/60">
+            </dl>
+            <ul className="mt-4 flex flex-col gap-1.5 text-[11px] leading-[14px] text-softwhite/60">
             {analysis.reasoning.evidenceRefs.map((ref, i) => (
               <li key={ref} style={staggerStyle(i)}>▸ {ref}</li>
             ))}
-          </ul>
+            </ul>
           </div>
         </div>
       </section>
 
-      <section aria-label="Next step" className="float-module-dark p-5 text-softwhite sm:p-8">
+      <section aria-label="Next step" className="rounded-[14px] bg-ink p-5 text-softwhite sm:p-8">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
           NEXT
         </p>
@@ -126,7 +126,7 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </p>
           <Link
             href={`/app/approval/${id}`}
-            className="btn-living rounded-full inline-flex min-h-12 items-center justify-center bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:ml-auto"
+            className="btn-living inline-flex min-h-12 items-center justify-center rounded-[12px] bg-signal px-8 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:ml-auto"
           >
             CHECK AGAINST MANDATE <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>

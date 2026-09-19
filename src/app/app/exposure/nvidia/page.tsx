@@ -5,7 +5,7 @@ import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
-import { Card, Chip, DecisionRail, ProvenanceStrip } from "../../_components/ui";
+import { Card, DecisionRail, ProvenanceStrip } from "../../_components/ui";
 
 export const dynamic = "force-dynamic";
 
@@ -23,7 +23,7 @@ export default async function ExposurePage() {
         <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
           NVIDIA
         </h1>
-        <p className="mt-2 max-w-xl text-[16px] leading-[24px] text-muted">
+        <p className="mt-2 max-w-xl text-[16px] leading-[24px] text-mutedink">
           The economic exposure. Everything below is a representation of it — never the same
           thing.
         </p>
@@ -33,28 +33,28 @@ export default async function ExposurePage() {
         <Card title="NVIDIA — underlying exposure" meta="Economic object · $500 simulated">
           <p className="text-[13px] font-semibold leading-[18px]">rNVDA · Bitget Reality</p>
         </Card>
-        <p className="pl-4 text-muted" aria-hidden="true">
+        <p className="pl-4 text-mutedink" aria-hidden="true">
           ↓
         </p>
         <Card
           title="rNVDA — your representation"
           meta={`${rep.symbol} · ${rep.venue}`}
-          action={<Chip tone="live">You are here</Chip>}
+          action={<span className="state-mark bg-signal text-ink">YOU ARE HERE</span>}
         >
           <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-[13px] leading-[18px] sm:grid-cols-3">
-            <dt className="text-muted">Value</dt>
+            <dt className="text-mutedink">Value</dt>
             <dd className="font-semibold">$500 simulated</dd>
-            <dt className="text-muted">Instrument status</dt>
+            <dt className="text-mutedink">Instrument status</dt>
             <dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd>
-            <dt className="text-muted">Reality flag</dt>
+            <dt className="text-mutedink">Reality flag</dt>
             <dd className="font-semibold">{live ? (instrument?.isReality ? "yes" : "—") : "—"}</dd>
-            <dt className="text-muted">Trading periods</dt>
+            <dt className="text-mutedink">Trading periods</dt>
             <dd className="font-semibold">{live ? trading?.tradingPeriods.join(" · ") : "—"}</dd>
-            <dt className="text-muted">Weekend tradable</dt>
+            <dt className="text-mutedink">Weekend tradable</dt>
             <dd className="font-semibold">
               {live ? (trading?.weekendTradable ? "yes" : "—") : "—"}
             </dd>
-            <dt className="text-muted">Order constraints</dt>
+            <dt className="text-mutedink">Order constraints</dt>
             <dd className="font-semibold">
               min {rep.minOrderQty} rNVDA · min ${rep.minOrderAmount}
             </dd>
@@ -65,16 +65,16 @@ export default async function ExposurePage() {
       <Card
         title="Other known representations"
         meta="Informational only — no execution outside Bitget Reality"
-        action={<Chip tone="muted">INFORMATIONAL ONLY</Chip>}
+          action={<span className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">INFORMATIONAL ONLY</span>}
       >
         <ul className="flex flex-col gap-2 text-[13px] leading-[18px]">
-          <li className="rounded-[10px] bg-cream px-3 py-2">
+            <li className="rounded-[4px] border-t border-ink/10 bg-ink/[0.04] px-3 py-2">
             <span className="font-semibold">NVDAx</span>{" "}
-            <span className="text-muted">· xStocks ecosystem · no live data in this slice</span>
+              <span className="text-mutedink">· xStocks ecosystem · no live data in this slice</span>
           </li>
-          <li className="rounded-[10px] bg-cream px-3 py-2">
+            <li className="rounded-[4px] border-t border-ink/10 bg-ink/[0.04] px-3 py-2">
             <span className="font-semibold">Ondo NVIDIA</span>{" "}
-            <span className="text-muted">· Ondo ecosystem · no live data in this slice</span>
+              <span className="text-mutedink">· Ondo ecosystem · no live data in this slice</span>
           </li>
         </ul>
       </Card>
@@ -82,7 +82,7 @@ export default async function ExposurePage() {
       <div>
         <Link
           href="/app/protect/nvidia"
-          className="btn-living inline-flex h-12 items-center justify-center bg-signal px-6 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
+          className="btn-living inline-flex min-h-12 items-center justify-center rounded-[12px] bg-signal px-6 py-3 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95"
         >
           Protect this exposure <span className="btn-arrow" aria-hidden="true">↗</span>
         </Link>

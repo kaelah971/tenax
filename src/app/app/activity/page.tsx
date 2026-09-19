@@ -17,14 +17,14 @@ export default async function ActivityPage() {
         <h1 className="text-[30px] font-bold leading-[34px] tracking-[-0.5px] sm:text-[46px] sm:leading-[50px] sm:tracking-[-1px]">
           Activity
         </h1>
-        <Chip tone="muted">CURRENT SESSION ONLY</Chip>
+          <span className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">CURRENT SESSION ONLY</span>
       </div>
 
       {flows.length === 0 ? (
         <Card title="No activity yet" meta="Start the golden path to create history">
           <p className="text-[16px] leading-[24px]">
             No protection flows this session.{" "}
-            <Link href="/app/protect/nvidia" className="font-medium text-deep">
+            <Link href="/app/protect/nvidia" className="font-medium text-ink underline decoration-signal underline-offset-4">
               Protect this exposure →
             </Link>
           </p>
@@ -38,7 +38,7 @@ export default async function ActivityPage() {
               return (
                 <li
                   key={flowId}
-                  className="row-living flex flex-wrap items-center gap-3 rounded-[10px] border border-transparent bg-cream px-3 py-2 text-[13px] leading-[18px]"
+                  className="row-living flex flex-wrap items-center gap-3 rounded-[4px] border-t border-ink/10 bg-ink/[0.04] px-3 py-3 text-[13px] leading-[18px]"
                 >
                   <span className="font-semibold">{flowId}</span>
                   <Chip tone={done ? "pass" : state === "FAILED" ? "refused" : "dryrun"}>
@@ -46,7 +46,7 @@ export default async function ActivityPage() {
                   </Chip>
                   <Link
                     href={done ? `/app/receipts/${flowId}` : `/app/analysis/${flowId}`}
-                    className="ml-auto font-medium text-deep"
+                    className="ml-auto min-h-11 rounded-[10px] px-3 py-2 font-medium text-ink underline decoration-signal underline-offset-4"
                   >
                     {done ? "View receipt →" : "Continue →"}
                   </Link>
@@ -56,7 +56,7 @@ export default async function ActivityPage() {
           </ul>
         </Card>
       )}
-      <p className="text-[11px] leading-[14px] text-muted">{SESSION_ONLY_NOTICE}</p>
+      <p className="text-[11px] leading-[14px] text-mutedink">{SESSION_ONLY_NOTICE}</p>
     </div>
   );
 }

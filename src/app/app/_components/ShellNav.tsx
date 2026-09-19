@@ -21,7 +21,7 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
   if (mobile) {
     return (
       <nav
-        className="absolute z-10 mt-2 flex flex-col gap-1 rounded-[6px] bg-graphite p-2"
+        className="absolute z-10 mt-2 flex flex-col gap-1 rounded-[10px] bg-graphite p-2"
         aria-label="Primary mobile"
       >
         {NAV.map((item) => {
@@ -30,7 +30,7 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
             <Link
               key={item.href}
               href={item.href}
-              className={`font-syslabel px-4 py-2 text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
+                className={`font-syslabel min-h-11 px-4 py-3 text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
                 active ? "bg-signal font-bold text-ink" : "text-softwhite hover:bg-ink"
               }`}
             >

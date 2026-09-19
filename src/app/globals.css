@@ -11,16 +11,6 @@
   --color-mutedink: #6e6d66;
   --color-pass: #177a50;
   --color-clay: #c74b3b;
-  /* Legacy Phase 1D tokens (kept for not-yet-redesigned slices). */
-  --color-cream: #efe8dc;
-  --color-muted: #656565;
-  --color-primary: #4e80e8;
-  --color-deep: #3e6dd6;
-  --color-pressed: #3560c4;
-  --color-badgefill: #dce6f2;
-  --color-secondaryhover: #f7f3ea;
-  --color-secondaryborder: #d8d2c4;
-  --color-caution: #966d12;
   --font-sans: "Inter Tight", "General Sans", Inter, ui-sans-serif, sans-serif;
   --font-syslabel: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
@@ -264,7 +254,7 @@
     rgba(245, 255, 59, 0.12) 55%,
     transparent 72%
   );
-  animation: tx-bloom-breathe 9s ease-in-out infinite;
+  animation: none;
 }
 
 .tx-env-bloom-pass {
@@ -306,7 +296,7 @@
   position: absolute;
   border-radius: 9999px;
   filter: blur(70px);
-  animation: tx-drift 16s ease-in-out infinite;
+  animation: none;
 }
 
 .tx-env-blob-a {
@@ -323,7 +313,7 @@
   right: -200px;
   top: 48%;
   background: radial-gradient(circle, rgba(17, 17, 17, 0.1), transparent 68%);
-  animation-delay: -8s;
+  animation: none;
 }
 
 .tx-env-glow {
@@ -371,8 +361,8 @@
 .glass-surface {
   position: relative;
   background: rgba(255, 253, 248, 0.72);
-  backdrop-filter: blur(14px) saturate(1.08);
-  -webkit-backdrop-filter: blur(14px) saturate(1.08);
+  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
   border: 1px solid rgba(17, 17, 17, 0.1);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.65),
@@ -382,8 +372,8 @@
 .glass-dark {
   position: relative;
   background: linear-gradient(158deg, rgba(42, 42, 42, 0.9), rgba(17, 17, 17, 0.94));
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   border: 1px solid rgba(245, 255, 59, 0.16);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.09),
@@ -423,7 +413,68 @@
     0 8px 24px -12px rgba(17, 17, 17, 0.28),
     0 44px 90px -36px rgba(17, 17, 17, 0.6),
     0 0 0 1px rgba(245, 255, 59, 0.1),
-    0 0 72px -20px rgba(245, 255, 59, 0.5);
+    0 0 48px -22px rgba(245, 255, 59, 0.38);
+}
+
+/* Material hierarchy: editorial field first, then only the depth the object
+   earns. These are deliberately not interchangeable card skins. */
+.material-flat {
+  background: transparent;
+  border-top: 2px solid rgba(17, 17, 17, 0.9);
+}
+
+.material-flat.border-t-clay {
+  border-top-color: var(--tx-clay);
+  border-top-width: 4px;
+}
+
+.material-instrument {
+  position: relative;
+  border-radius: 16px;
+  background: rgba(255, 253, 248, 0.66);
+  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
+  border: 1px solid rgba(17, 17, 17, 0.11);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.72),
+    0 18px 42px -24px rgba(17, 17, 17, 0.3);
+}
+
+.material-authority {
+  position: relative;
+  border-radius: 16px;
+  background: linear-gradient(155deg, rgba(52, 52, 52, 0.88), rgba(17, 17, 17, 0.95));
+  backdrop-filter: blur(12px) saturate(1.08);
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
+  border: 1px solid rgba(245, 255, 59, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 26px 58px -30px rgba(17, 17, 17, 0.6);
+}
+
+.event-evidence {
+  border: 1px solid rgba(255, 253, 248, 0.14);
+  border-radius: 10px;
+  background: rgba(255, 253, 248, 0.05);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.material-critical {
+  position: relative;
+  overflow: hidden;
+  border-radius: 20px;
+  background: #111111;
+  border: 1px solid rgba(255, 253, 248, 0.16);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.18),
+    inset 0 0 52px -24px rgba(245, 255, 59, 0.36),
+    0 38px 78px -36px rgba(17, 17, 17, 0.72);
+}
+
+.material-critical.gate-refused {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.12),
+    0 28px 62px -32px rgba(17, 17, 17, 0.66);
 }
 
 .signal-glow {
@@ -559,7 +610,7 @@ button.row-living:hover {
   bottom: 0;
   width: 32%;
   background: linear-gradient(90deg, transparent, var(--tx-signal), transparent);
-  animation: tx-travel 2.6s var(--tx-ease) infinite;
+  animation: tx-travel 1.1s var(--tx-ease) 0.2s both;
 }
 
 /* Animated sparkline stroke. */
@@ -569,22 +620,26 @@ button.row-living:hover {
 }
 
 .spark-end {
-  animation: tx-live-dot 2.2s ease-out infinite;
+  animation: none;
 }
 
 /* Event radar: expanding signal rings. */
 .radar-ring {
   transform-origin: center;
   transform-box: fill-box;
-  animation: tx-radar 3s ease-out infinite;
+  animation: tx-radar 1.2s ease-out 0.2s both;
 }
 
 .radar-ring-delay {
-  animation-delay: 1.5s;
+  animation-delay: 0.65s;
 }
 
 /* TenaxAgent Sentinel. */
 .tx-agent {
+  animation: none;
+}
+
+.tx-agent-watching {
   animation: tx-float 5s ease-in-out infinite;
 }
 
@@ -597,13 +652,13 @@ button.row-living:hover {
 }
 
 .tx-agent-scan {
-  animation: tx-scan 3.2s ease-in-out infinite;
+  animation: tx-scan 0.9s ease-in-out 0.15s both;
 }
 
 .tx-agent-orbit {
   transform-origin: center;
   transform-box: fill-box;
-  animation: tx-orbit 4s linear infinite;
+  animation: none;
 }
 
 /* Gate dimensionality: perspective stage, layered planes, lit core. */
@@ -643,7 +698,7 @@ button.row-living:hover {
 }
 
 .gate-bloom {
-  animation: tx-bloom-breathe 4.5s ease-in-out infinite;
+  animation: none;
 }
 
 /* Receipt seal stamp. */
@@ -663,13 +718,11 @@ button.row-living:hover {
 }
 
 .tx-rail-node-active {
-  box-shadow:
-    0 0 18px -2px rgba(245, 255, 59, 0.8),
-    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
 }
 
 .tx-rail-pulse {
-  animation: tx-live-dot 2.4s ease-out infinite;
+  animation: none;
 }
 
 /* ---- Tenax Phase 1E-D — premium glass refinement ---------------------------
@@ -698,12 +751,12 @@ button.row-living:hover {
    panels, previews, and records. Rounded, translucent, internally lit. */
 .float-module {
   position: relative;
-  border-radius: 26px;
+  border-radius: 16px;
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 38%),
     linear-gradient(155deg, rgba(255, 253, 248, 0.78), rgba(243, 239, 230, 0.62));
-  backdrop-filter: blur(20px) saturate(1.12);
-  -webkit-backdrop-filter: blur(20px) saturate(1.12);
+  backdrop-filter: blur(10px) saturate(1.04);
+  -webkit-backdrop-filter: blur(10px) saturate(1.04);
   border: 1px solid rgba(255, 255, 255, 0.75);
   outline: 1px solid rgba(17, 17, 17, 0.08);
   box-shadow:
@@ -716,12 +769,12 @@ button.row-living:hover {
 
 .float-module-dark {
   position: relative;
-  border-radius: 26px;
+  border-radius: 16px;
   background:
     linear-gradient(115deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 32%, rgba(0, 0, 0, 0.05) 72%, rgba(17, 17, 17, 0.14)),
     linear-gradient(160deg, rgba(64, 64, 64, 0.6), rgba(22, 22, 22, 0.66));
-  backdrop-filter: blur(26px) saturate(1.4);
-  -webkit-backdrop-filter: blur(26px) saturate(1.4);
+  backdrop-filter: blur(12px) saturate(1.08);
+  -webkit-backdrop-filter: blur(12px) saturate(1.08);
   border: 1px solid rgba(255, 253, 248, 0.24);
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.24),
@@ -781,7 +834,7 @@ button.row-living:hover {
   border-radius: 9999px;
   background: linear-gradient(90deg, transparent, rgba(245, 255, 59, 0.9), transparent);
   filter: blur(0.5px);
-  animation: tx-scan 3.2s ease-in-out infinite;
+  animation: tx-scan 0.9s ease-in-out 0.15s both;
 }
 
 .tx-agent-glow-clay {
@@ -814,7 +867,7 @@ button.row-living:hover {
   border-radius: inherit;
   background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
   transform: translateX(-30%);
-  animation: tx-sheen-drift 14s ease-in-out infinite;
+  animation: none;
   pointer-events: none;
 }
 
@@ -845,7 +898,7 @@ button.row-living:hover {
   bottom: 0;
   width: 34%;
   background: linear-gradient(90deg, transparent, rgba(245, 255, 59, 0.22), transparent);
-  animation: tx-beam 2.8s var(--tx-ease) 0.3s both;
+  animation: tx-beam 1.2s var(--tx-ease) 0.15s both;
   pointer-events: none;
 }
 
@@ -859,7 +912,7 @@ button.row-living:hover {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 22px;
+  border-radius: 14px;
   background: rgba(255, 253, 248, 0.5);
   border: 1px solid rgba(17, 17, 17, 0.07);
   z-index: -1;
@@ -903,14 +956,13 @@ button.row-living:hover {
   box-shadow:
     0 0 0 3px var(--tx-signal),
     0 0 0 5px var(--tx-ink),
-    0 18px 40px -16px rgba(17, 17, 17, 0.5),
-    0 0 34px -8px rgba(245, 255, 59, 0.65);
+    0 18px 40px -16px rgba(17, 17, 17, 0.38);
 }
 
 @media (max-width: 640px) {
   .float-module,
   .float-module-dark {
-    border-radius: 18px;
+    border-radius: 14px;
     backdrop-filter: blur(12px) saturate(1.08);
     -webkit-backdrop-filter: blur(12px) saturate(1.08);
   }
@@ -936,21 +988,8 @@ button.row-living:hover {
 }
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #f3efe6;
+  --foreground: #111111;
 }
 
 body {
@@ -958,4 +997,52 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
+}
+
+/* One focus treatment across ivory, authority, and signal controls. */
+:where(a, button, summary, input, select, textarea):focus-visible {
+  outline: 2px solid var(--tx-ink);
+  outline-offset: 3px;
+}
+
+/* Text and values must remain inspectable at narrow widths. */
+:where(dd, p, span, a, button) {
+  overflow-wrap: anywhere;
+}
+
+.receipt-document {
+  position: relative;
+  border: 1px solid rgba(17, 17, 17, 0.14);
+  border-radius: 14px;
+  background: var(--tx-softwhite);
+  box-shadow: 0 22px 46px -28px rgba(17, 17, 17, 0.38);
+}
+
+.technical-inset {
+  border-radius: 10px;
+  background: var(--tx-graphite);
+  color: var(--tx-softwhite);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.state-mark {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-family: var(--font-syslabel);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+@media (max-width: 640px) {
+  .tx-env-blob,
+  .tx-env-shape,
+  .tx-env-glow {
+    filter: blur(36px);
+  }
 }

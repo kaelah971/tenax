@@ -21,7 +21,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </Link>
           <ShellNav />
           <details className="md:hidden">
-            <summary className="font-syslabel cursor-pointer list-none border border-softwhite/30 px-3 py-1.5 text-[11px] uppercase leading-[20px] tracking-[0.08em]">
+            <summary className="font-syslabel min-h-11 cursor-pointer list-none rounded-[10px] border border-softwhite/30 px-3 py-2.5 text-[11px] uppercase leading-[20px] tracking-[0.08em]">
               Menu
             </summary>
             <ShellNav mobile />

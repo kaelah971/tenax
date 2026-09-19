@@ -76,11 +76,15 @@ export default function ApproveExecutePanel({
 
   if (phase === "preview" && preview) {
     return (
-      <div className="anim-rise float-module-dark p-5 text-softwhite sm:p-8">
+      <div className="anim-rise material-authority p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
-              ACTION_01 · EXECUTION PREVIEW CREATED
+              EXECUTION PREVIEW
+            </p>
+            <p className="state-mark mt-3 bg-signal text-ink">NO FUNDS MOVED</p>
+            <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+              ACTION_01 · PREVIEW CREATED
             </p>
             <p className="value-live mt-3 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[88px]">
               ${tradeValueUsdt}
@@ -93,8 +97,8 @@ export default function ApproveExecutePanel({
             <TenaxAgent state="complete" size={72} caption="PREVIEW COMPLETE" className="mascot-scale" />
           </div>
         </div>
-        <p className="mt-4 inline-block rounded-full bg-signal px-3 py-1 text-[13px] font-bold leading-[18px] text-ink">
-          □ DRY RUN · NO FUNDS MOVED
+        <p className="font-syslabel mt-4 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/70">
+          □ DRY RUN · NEVER SUBMITTED
         </p>
         <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
           {[
@@ -116,7 +120,7 @@ export default function ApproveExecutePanel({
         <button
           type="button"
           onClick={() => router.push(`/app/receipts/${flowId}`)}
-          className="btn-living rounded-full mt-6 inline-flex min-h-12 w-full items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:w-auto"
+          className="btn-living mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-[12px] bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:w-auto"
         >
           VIEW DECISION RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
         </button>
@@ -127,11 +131,8 @@ export default function ApproveExecutePanel({
   if (phase === "approved" || phase === "executing") {
     return (
       <div className="flex flex-col gap-4">
-        <div className="float-module flex items-center gap-4 p-4 sm:p-5">
-          <div className="agent-stage">
-            <TenaxAgent state="approved" size={72} caption="CLEARED BY YOU" className="mascot-scale" />
-          </div>
-          <ol className="anim-rise flex flex-1 flex-col gap-1.5 overflow-hidden">
+        <div className="material-instrument flex items-center gap-4 p-4 sm:p-5">
+            <ol className="anim-rise flex flex-1 flex-col gap-1.5 overflow-hidden">
             {[
               ["HUMAN", "APPROVED", "text-signal"],
               ["MANDATE", "PASS", "text-pass"],
@@ -140,7 +141,7 @@ export default function ApproveExecutePanel({
               <li
                 key={label}
                 style={staggerStyle(i)}
-                className="tx-rule flex items-baseline gap-4 rounded-[12px] bg-softwhite px-4 py-3 shadow-[0_8px_20px_-12px_rgba(17,17,17,0.3)]"
+                className="tx-rule flex flex-wrap items-baseline gap-4 rounded-[4px] border-t border-ink/10 bg-softwhite/60 px-4 py-3"
               >
               <span className="font-syslabel w-20 shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                 {label}
@@ -162,7 +163,7 @@ export default function ApproveExecutePanel({
           type="button"
           onClick={onExecute}
           disabled={phase === "executing"}
-          className="btn-living rounded-full inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+          className="btn-living inline-flex min-h-12 items-center justify-center rounded-[12px] bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
         >
           {phase === "executing" ? "CREATING PREVIEW…" : "CREATE EXECUTION PREVIEW "}
           {phase === "executing" ? null : (
@@ -174,21 +175,13 @@ export default function ApproveExecutePanel({
   }
 
   return (
-    <div className="float-module flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
-      <div className="agent-stage">
-        <TenaxAgent
-          state="waiting"
-          size={84}
-          caption={phase === "approving" ? "CHECKING…" : "AWAITING YOUR DECISION"}
-          className="mascot-scale"
-        />
-      </div>
+    <div className="material-instrument flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
       <div className="flex flex-1 flex-col gap-2">
       <button
         type="button"
         onClick={onApprove}
         disabled={phase === "approving"}
-        className="btn-living rounded-full inline-flex min-h-12 items-center justify-center bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
+        className="btn-living inline-flex min-h-12 items-center justify-center rounded-[12px] bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
       >
         {phase === "approving" ? "APPROVING…" : `${approveCta(tradeValueUsdt)} `}
         {phase === "approving" ? null : (
