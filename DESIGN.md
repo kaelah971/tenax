@@ -1,7 +1,7 @@
 ---
 version: beta-signal
 name: Tenax
-description: "Institutional capital infrastructure x editorial product design x high-energy signal system — one yellow, ink authority, honest states."
+description: "Institutional capital infrastructure x editorial product design x high-energy signal system — one yellow, ink authority, honest states, selective premium glass and depth."
 colors:
   signal: "#F5FF3B"
   ink: "#111111"
@@ -113,7 +113,14 @@ Blue is retired as a brand color. It appears nowhere in new surfaces.
   `DRY RUN`, session markers. A color never speaks alone.
 - Refusal gets dignity, not alarm: clay state word, flat surface, recorded
   reason. Refusal never glows yellow.
-- No second accent color. No gradients, no glass, no terminal cosplay.
+- No second accent color. No terminal cosplay.
+- Glass, gradients, and blur are **selective instruments, not a default
+  finish**: they add depth to important interactive and critical surfaces
+  only (live-signal panels, mandate surfaces, the Gate, approval and action
+  controls). Flat ivory and ink surfaces remain the base. Glass never
+  carries meaning on its own — state words and provenance markers do.
+- No generic crypto neon, no gamer HUD aesthetic, no excessive blur, no
+  uncontrolled glassmorphism. Surfaces stay legible and performant.
 
 ### Accessibility
 - Ink on Signal Yellow ≈ 15:1 — the primary action pair.
@@ -158,6 +165,31 @@ A deliberate mix, never identical rounded white cards for everything:
 Sharper large surfaces welcome: 2px on fields and blocks, 6px on controls,
 10px where a card is truly a card. Pills (`9999px`) are for state words
 only — never decoration, never nav, never buttons.
+
+### Surfaces, glass, and depth
+Selective premium glass and subtle gradients give the interface depth and
+presence. Three elevation levels are authoritative:
+
+- **LEVEL 0 — page/environment.** The Tenax environment: warm ivory field
+  with a soft radial Signal Yellow bloom, faint technical grid,
+  decision-path lines, diffused depth blobs, and extremely subtle grain.
+  It stays restrained and may respond to important states (a PASS verdict
+  may bloom faint yellow behind the Gate).
+- **LEVEL 1 — content surfaces.** Translucent ivory glass
+  (`.glass-surface`), controlled blur, fine borders, soft realistic
+  shadows, subtle internal highlight.
+- **LEVEL 2 — important interactive/control surfaces.** Dark layered
+  glass (`.glass-dark`), deeper shadow, luminous 1px signal borders where
+  appropriate: live-signal panels, mandate surfaces, evidence rails.
+- **LEVEL 3 — critical active state.** Maximum elevation reserved for the
+  Mandate Gate, approval, and action controls only
+  (`.glass-dark` + `.depth-critical`, inner illumination, ambient bloom).
+  Nothing else reaches this level.
+
+Rules: glass is never the default finish; most surfaces stay flat. Blur
+stays controlled and legible. Luminous borders are 1–2px and reserved for
+live, active, or critical states. No blur or translucency may ever obscure
+provenance markers, state words, figures, or timestamps.
 
 ### Grid and container
 Max width `1280px`, centred. Desktop judge view first (1440px), laptop
@@ -205,7 +237,25 @@ geometric gate object illuminated in Signal Yellow. Oversized PASS /
 REFUSED state word. Rules arranged with clear index numbers (01–06),
 approval state visually separated from rule pass state. A financial
 permission engine, not a checklist card. No sci-fi decoration; the glow
-means "check running" and nothing else.
+means "check running" and nothing else. The Gate is the highest-priority
+critical visual surface in the product (LEVEL 3): layered rings and
+planes, depth, subtle glass, Signal Yellow inner illumination on PASS,
+rules activating sequentially, approval pulse, gate clearing motion.
+Refusal stays flat clay with reduced yellow — the Gate does not open.
+
+### Tenax Sentinel (approved agent character)
+Tenax is an agent watching the user's capital, and the Sentinel is its
+recognizable face: an original small rounded guardian orb in
+graphite/ink with expressive glowing eyes, a Signal Yellow core, a subtle
+shield motif, and a tiny market-wave detail. Premium, calm, protective —
+never childish. A reusable component with states: idle, watching,
+analyzing, gate-check, approved, refused, complete. State reads through
+small expressive changes (eyes, glow, position, pulse, shield/light) plus
+a gentle float — never complex animation. Integrated meaningfully and
+sparingly: watching near Capital exposure, analyzing during reasoning,
+observing the Gate, waiting-to-cleared across approval, calm/complete on
+the Receipt. Never on every card. Always respects
+`prefers-reduced-motion`.
 
 ### State words
 `PASS` (green) · `REFUSED` (clay) · `DRY RUN` (ink on yellow) ·
@@ -253,12 +303,20 @@ Editorial receipt header (id + timestamp in mono), hairline decision rows,
 would-be request in a graphite code field, refused alternative in a flat
 clay-edged block. Provenance strip closes the page.
 
-## Motion (lightweight, purposeful, CSS only)
-- Rail stage activation: quick opacity settle.
-- Gate illumination: single soft yellow bloom on PASS.
-- View entrance: short fade/slide on hero fields.
-- Approval signal: CTA press feedback.
-No animation library. All motion disabled under
+## Motion (purposeful, state-driven, CSS only)
+Motion communicates state — never decoration:
+- Rail stage activation: active node pulses, completed nodes illuminate,
+  connection line reads as a live circuit.
+- Gate illumination: layered bloom on PASS; rules activate sequentially
+  with a very short stagger.
+- Live data: pulsing LIVE indicator; updated values briefly pulse/fade,
+  never flash aggressively.
+- View entrance: short fade/slide on hero fields; staged content rises in
+  sequence; receipt artifacts assemble then seal.
+- Approval signal: CTA press feedback — slight lift, subtle glow, arrow
+  motion. Clickable rows shift 2–4px with border/light response.
+- Sentinel: gentle float; eye/glow/position changes carry agent state.
+No animation library. No Three.js/WebGL. All motion disabled under
 `prefers-reduced-motion`; states remain fully legible static.
 
 ## Do's and Don'ts
@@ -278,6 +336,15 @@ No animation library. All motion disabled under
 - Don't use pills for decoration — state words only.
 - Don't let color speak alone for any state.
 - Don't glow refusals, errors, or marketing claims yellow.
+- Don't apply glass, blur, gradients, or glow indiscriminately — selective
+  premium surfaces only, never the default finish.
+- Don't use generic crypto neon or gamer HUD aesthetics.
+- Don't use excessive blur or uncontrolled glassmorphism, and never let
+  translucency obscure provenance, figures, or state words.
+- Don't animate continuously or decoratively — motion communicates state.
 - Don't fabricate dates, prices, fills, order IDs, or hashes — ever.
+- Don't make premium UI make simulated behavior appear live: LIVE, DEMO,
+  DEV, and DRY markers keep full visual authority on every relevant
+  screen.
 - Don't make it look like a terminal: mono is for labels, never body copy.
 - Don't add heavy animation libraries for this system.
