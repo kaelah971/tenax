@@ -55,7 +55,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             GATE_001 · PERMISSION BOUNDARY · FLOW {id}
           </p>
-          <div className="agent-stage agent-stage-dark">
+          <div className="agent-stage">
             <TenaxAgent
               state={passed ? "gate-check" : "refused"}
               size={88}

@@ -89,7 +89,7 @@ export default function ApproveExecutePanel({
               WOULD-BE PROTECTION · NEVER SUBMITTED
             </p>
           </div>
-          <div className="agent-stage agent-stage-dark">
+          <div className="agent-stage">
             <TenaxAgent state="complete" size={72} caption="PREVIEW COMPLETE" className="mascot-scale" />
           </div>
         </div>

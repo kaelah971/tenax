@@ -376,7 +376,7 @@ export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
   const refused = state === "REFUSED";
   return (
     <div
-      className={`glass-dark depth-critical gate-stage gate-chamber relative px-6 py-8 text-softwhite sm:px-10 ${lit ? "gate-bloom" : ""}`}
+      className={`float-module-dark depth-critical gate-stage gate-chamber relative px-6 py-8 text-softwhite sm:px-10 ${lit ? "gate-bloom glass-sheen" : ""}`}
       aria-label="Mandate Gate"
     >
       {lit ? <span className="gate-beam" aria-hidden="true" /> : null}

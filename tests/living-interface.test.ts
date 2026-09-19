@@ -5,7 +5,7 @@
 // provenance behavior is unchanged and covered by the existing suites.
 import { describe, expect, it } from "vitest";
 
-import { agentPresence, staggerStyle, type AgentState } from "../src/app/app/_components/living";
+import { agentPresence, staggerStyle, TENAX_AGENT_ASSET, type AgentState } from "../src/app/app/_components/living";
 
 const STATES: AgentState[] = [
   "idle",
@@ -49,6 +49,12 @@ describe("tenax sentinel presence", () => {
 
   it("falls back to idle presence on unknown states", () => {
     expect(agentPresence("idle")).toMatchObject({ eyes: "soft", glow: "dim", label: "IDLE" });
+  });
+});
+
+describe("agent asset contract", () => {
+  it("points at the brand asset path the component expects", () => {
+    expect(TENAX_AGENT_ASSET).toBe("/brand/tenax-agent.png");
   });
 });
 

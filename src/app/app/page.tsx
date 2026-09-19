@@ -39,44 +39,47 @@ export default async function CapitalPage() {
         </h1>
       </div>
 
-      <section aria-label="Primary exposure" className="float-module float-lift relative p-6 sm:p-10">
-        <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
-          <div className="min-w-0 flex-1">
-            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-              NVIDIA EXPOSURE
-            </p>
-            <p className="mt-1 text-[64px] font-extrabold leading-none tracking-[-0.03em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[112px]">
+      <section aria-label="Primary exposure" className="float-module float-lift glass-sheen relative overflow-hidden p-6 sm:p-10">
+        <Sparkline className="pointer-events-none absolute inset-x-0 top-1/2 hidden h-[120px] w-full -translate-y-1/4 opacity-40 sm:block" />
+        <div className="relative flex flex-wrap items-center gap-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            NVIDIA EXPOSURE · CAPITAL_001
+          </p>
+          {live ? (
+            <span className="ml-auto inline-flex rounded-full bg-signal/70 px-2.5 py-1 text-ink backdrop-blur-sm">
+              <LiveDot label={`LIVE · ${instrument?.status?.toUpperCase() ?? "—"}`} />
+            </span>
+          ) : (
+            <span className="font-syslabel ml-auto text-[11px] uppercase leading-[14px] tracking-[0.08em] text-clay">
+              ○ MARKET OFFLINE
+            </span>
+          )}
+        </div>
+        <div className="relative mt-2 flex flex-col-reverse items-start gap-6 sm:flex-row sm:items-center sm:justify-between">
+          <div className="min-w-0">
+            <p className="text-[72px] font-extrabold leading-none tracking-[-0.03em] drop-shadow-[0_12px_28px_rgba(17,17,17,0.2)] sm:text-[128px]">
               $500
             </p>
-            <Sparkline className="mt-5 h-[84px] w-full max-w-md" />
-            <p className="font-syslabel mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
-              <span className="rounded-full bg-signal px-2.5 py-1 font-bold text-ink shadow-[0_0_22px_-4px_rgba(245,255,59,0.8)]">rNVDA · BITGET REALITY</span>{" "}
-              {live ? (
-                <span className="inline-flex items-center gap-2 text-ink">
-                  <LiveDot label={`LIVE MARKET · ${instrument?.status?.toUpperCase() ?? "—"}`} />
-                </span>
-              ) : (
-                <span className="text-clay">○ MARKET OFFLINE</span>
-              )}
+            <p className="font-syslabel mt-4 text-[11px] uppercase leading-[18px] tracking-[0.08em]">
+              <span className="rounded-full bg-signal px-2.5 py-1 font-bold text-ink shadow-[0_0_22px_-4px_rgba(245,255,59,0.8)]">rNVDA · BITGET REALITY</span>
             </p>
           </div>
-          <div className="agent-stage">
-            <TenaxAgent state="watching" size={124} caption="WATCHING YOUR NVIDIA EXPOSURE" className="mascot-scale" />
-          </div>
+          <TenaxAgent state="watching" size={148} caption="WATCHING YOUR NVIDIA EXPOSURE" className="mascot-scale" />
         </div>
-        <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+        <Sparkline className="relative mt-4 h-[64px] w-full sm:hidden" />
+        <p className="font-syslabel relative mt-4 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           ○ DEMO · SIMULATED PORTFOLIO — NOT A LIVE POSITION
         </p>
-        <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+        <div className="relative mt-6 flex flex-col gap-3 sm:flex-row">
           <Link
             href="/app/protect/nvidia"
-            className="btn-living inline-flex min-h-12 flex-1 items-center justify-center bg-signal px-6 py-4 text-center text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:flex-none sm:px-10"
+            className="btn-living rounded-full inline-flex min-h-12 flex-1 items-center justify-center bg-signal px-6 py-4 text-center text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:flex-none sm:px-10"
           >
             PROTECT THROUGH EARNINGS <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
           <Link
             href="/app/exposure/nvidia"
-            className="btn-living inline-flex min-h-12 items-center justify-center border-2 border-ink px-6 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
+            className="btn-living rounded-full inline-flex min-h-12 items-center justify-center border-2 border-ink px-6 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
           >
             VIEW EXPOSURE
           </Link>
@@ -98,7 +101,7 @@ export default async function CapitalPage() {
           <div className="mt-5 grid grid-cols-2 gap-x-6 gap-y-5 lg:grid-cols-4">
             <div className="border-t instrument-divider pt-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">LAST</p>
-              <p className="value-live signal-glow mt-1 text-[36px] font-extrabold leading-none tracking-[-0.02em] text-signal" key={ticker?.lastPrice ?? "none"}>
+              <p className="value-live signal-glow mt-1 text-[44px] font-extrabold leading-none tracking-[-0.02em] text-signal sm:text-[56px]" key={ticker?.lastPrice ?? "none"}>
                 {ticker?.lastPrice ? `$${ticker.lastPrice}` : "—"}
               </p>
             </div>
@@ -179,8 +182,8 @@ export default async function CapitalPage() {
           >
             PROTECT THIS POSITION <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
-          <div className="agent-stage agent-stage-dark">
-            <TenaxAgent state="watching" size={84} caption="AGENT · EVENT WATCH" className="mascot-scale" />
+          <div className="agent-stage">
+            <TenaxAgent state="watching" size={72} caption="AGENT · EVENT WATCH" className="mascot-scale" />
           </div>
         </div>
       </section>
