@@ -1,13 +1,17 @@
 // Tenax Phase 2A — Bitget Demo authenticated read-only helper.
 //
 // Safety contract (do not weaken without owner approval):
-// - Read-only. Exactly three allowed requests, all GET:
+// - Read-only. Exactly six allowed requests, all GET:
 //   GET /api/v3/account/info (account metadata, no permission required)
 //   GET /api/v3/trade/unfilled-orders (open-orders query, UTA trade read)
-//   GET /api/v3/account/assets (account balances, Phase 2B discovery).
+//   GET /api/v3/account/assets (account balances, Phase 2B discovery)
+//   GET /api/v3/position/current-position (position query, Phase 2C)
+//   GET /api/v3/account/settings (account config query, Phase 2C)
+//   GET /api/v3/account/pre-set-leverage (leverage preview query, Phase 2C).
 //   No POST/PUT/PATCH/DELETE, no order placement/cancel, no leverage
 //   changes, no transfers, no withdrawals, no account-settings writes,
-//   no fund movements.
+//   no fund movements. In particular POST /api/v3/account/set-leverage
+//   is never permitted — only its documented GET preview.
 // - Credentials are never logged, printed, or embedded in reports.
 //   Reports carry only safe fields (codes, permType, permissions).
 // - Demo requests send `paptrading: 1`. Live trading is out of scope.
@@ -31,6 +35,20 @@ export const DEMO_TRADE_UNFILLED_ORDERS_PATH = "/api/v3/trade/unfilled-orders" a
 /** The Phase 2B account-assets endpoint (balances query only). */
 export const DEMO_ACCOUNT_ASSETS_PATH = "/api/v3/account/assets" as const;
 
+/** The Phase 2C position query endpoint (read-only, UTA trade read). */
+export const DEMO_POSITION_CURRENT_PATH = "/api/v3/position/current-position" as const;
+
+/** The Phase 2C account-config query endpoint (read-only, UTA mgt read). */
+export const DEMO_ACCOUNT_SETTINGS_PATH = "/api/v3/account/settings" as const;
+
+/**
+ * The Phase 2C leverage preview endpoint (GET only).
+ * The name contains "set-leverage" but the documented GET endpoint only
+ * previews a leverage change and never applies it. The POST setter stays
+ * refused by the method guard, the allowlist, and the write-path guard.
+ */
+export const DEMO_PRE_SET_LEVERAGE_PATH = "/api/v3/account/pre-set-leverage" as const;
+
 /** Demo header name (exact lowercase per Bitget UTA guide). */
 export const DEMO_PAPTRADING_HEADER = "paptrading" as const;
 
@@ -39,6 +57,9 @@ export const READ_ONLY_ALLOWLIST: readonly string[] = [
   DEMO_AUTH_ACCOUNT_INFO_PATH,
   DEMO_TRADE_UNFILLED_ORDERS_PATH,
   DEMO_ACCOUNT_ASSETS_PATH,
+  DEMO_POSITION_CURRENT_PATH,
+  DEMO_ACCOUNT_SETTINGS_PATH,
+  DEMO_PRE_SET_LEVERAGE_PATH,
 ];
 
 /**
@@ -126,6 +147,10 @@ export function buildDemoAuthHeaders(input: DemoAuthHeadersInput): Record<string
 /** True when a path looks state-changing regardless of HTTP method. */
 export function isWritePath(requestPath: string): boolean {
   const lower = requestPath.toLowerCase();
+  // Exact carve-out: the documented GET leverage preview shares a name
+  // fragment with the POST setter but never mutates state. The setter
+  // itself (POST /api/v3/account/set-leverage) stays refused.
+  if (lower === DEMO_PRE_SET_LEVERAGE_PATH) return false;
   return WRITE_PATH_FRAGMENTS.some((fragment) => lower.includes(fragment));
 }
 

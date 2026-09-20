@@ -206,6 +206,9 @@ describe("read-only boundary", () => {
       "/api/v3/account/info",
       "/api/v3/trade/unfilled-orders",
       "/api/v3/account/assets",
+      "/api/v3/position/current-position",
+      "/api/v3/account/settings",
+      "/api/v3/account/pre-set-leverage",
     ]);
   });
 });
