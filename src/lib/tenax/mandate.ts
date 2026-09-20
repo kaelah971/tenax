@@ -47,9 +47,11 @@ export function evaluateMandate(
       `${proposal.proposedTradeValueUsdt} USDT <= ${mandate.maxTradeValueUsdt} USDT`,
     ),
     check(
-      "leverage_disabled",
-      mandate.leverageAllowed ? true : proposal.leverageUsed === false,
-      `leverageUsed=${proposal.leverageUsed} leverageAllowed=${mandate.leverageAllowed}`,
+      "max_leverage",
+      Number.isFinite(proposal.leverageUsed) &&
+        proposal.leverageUsed > 0 &&
+        proposal.leverageUsed <= mandate.maxLeverage,
+      `leverageUsed=${proposal.leverageUsed}x maxLeverage=${mandate.maxLeverage}x`,
     ),
     // Approval is a gate acknowledgement, not a bypass: PASS still requires
     // a separate human approval before any execution adapter call.

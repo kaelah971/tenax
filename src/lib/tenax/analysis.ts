@@ -95,7 +95,7 @@ export function analyzeProtectionFixture(
     underlying: exposure.underlying,
     protectionPct: proposedProtectionPct,
     proposedTradeValueUsdt: calculatedTradeValueUsdt,
-    leverageUsed: false,
+    leverageUsed: 1,
   };
   const mandateDecision = evaluateMandate(proposal, mandate, exposure, evaluatedAt);
 
@@ -124,7 +124,7 @@ export function analyzeProtectionFixture(
     underlying: exposure.underlying,
     protectionPct: 40,
     proposedTradeValueUsdt: 200,
-    leverageUsed: false,
+    leverageUsed: 1,
   };
 
   return {

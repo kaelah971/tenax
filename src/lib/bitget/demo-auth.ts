@@ -1,14 +1,16 @@
 // Tenax Phase 2A — Bitget Demo authenticated read-only helper.
 //
 // Safety contract (do not weaken without owner approval):
-// - Read-only. Exactly six allowed requests, all GET:
+// - Read-only. Exactly seven allowed requests, all GET:
 //   GET /api/v3/account/info (account metadata, no permission required)
 //   GET /api/v3/trade/unfilled-orders (open-orders query, UTA trade read)
 //   GET /api/v3/account/assets (account balances, Phase 2B discovery)
 //   GET /api/v3/position/current-position (position query, Phase 2C)
 //   GET /api/v3/account/settings (account config query, Phase 2C)
-//   GET /api/v3/account/pre-set-leverage (leverage preview query, Phase 2C).
-//   No POST/PUT/PATCH/DELETE, no order placement/cancel, no leverage
+//   GET /api/v3/account/pre-set-leverage (leverage preview query, Phase 2C)
+//   GET /api/v3/trade/order-info (post-submission verification, Phase 2D-A).
+//   POST capability lives ONLY in demo-trade.ts (place-order exactly).
+//   No POST/PUT/PATCH/DELETE here, no order placement/cancel, no leverage
 //   changes, no transfers, no withdrawals, no account-settings writes,
 //   no fund movements. In particular POST /api/v3/account/set-leverage
 //   is never permitted — only its documented GET preview.
@@ -49,6 +51,9 @@ export const DEMO_ACCOUNT_SETTINGS_PATH = "/api/v3/account/settings" as const;
  */
 export const DEMO_PRE_SET_LEVERAGE_PATH = "/api/v3/account/pre-set-leverage" as const;
 
+/** The Phase 2D-A post-submission verification endpoint (GET order status). */
+export const DEMO_TRADE_ORDER_INFO_PATH = "/api/v3/trade/order-info" as const;
+
 /** Demo header name (exact lowercase per Bitget UTA guide). */
 export const DEMO_PAPTRADING_HEADER = "paptrading" as const;
 
@@ -60,6 +65,7 @@ export const READ_ONLY_ALLOWLIST: readonly string[] = [
   DEMO_POSITION_CURRENT_PATH,
   DEMO_ACCOUNT_SETTINGS_PATH,
   DEMO_PRE_SET_LEVERAGE_PATH,
+  DEMO_TRADE_ORDER_INFO_PATH,
 ];
 
 /**

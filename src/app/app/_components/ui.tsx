@@ -226,7 +226,7 @@ export const CHECK_GLYPHS: Record<MandateCheckId, string> = {
   underlying_allowed: "M10 2.5 L17 7.5 V12.5 L10 17.5 L3 12.5 V7.5 Z",
   max_protection_pct: "M15 5 L5 15 M7.5 7.5 m-2 0 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0 M14.5 14.5 m-2 0 a2 2 0 1 0 4 0 a2 2 0 1 0 -4 0",
   max_trade_value: "M10 3 v14 M13.5 6.5 h-6 a2.5 2.5 0 0 0 0 5 h5 a2.5 2.5 0 0 1 0 5 h-7",
-  leverage_disabled: "M4 4 L16 16 M6 17.5 h12 M10 2.5 V6",
+  max_leverage: "M4 4 L16 16 M6 17.5 h12 M10 2.5 V6",
   approval_required: "M4 10.5 L8.5 15 L16 6.5",
   min_order_amount: "M3 7 h14 M3 12 h14 M3 17 h8",
 };
@@ -235,7 +235,7 @@ export const CHECK_TITLES: Record<MandateCheckId, string> = {
   underlying_allowed: "Allowed asset",
   max_protection_pct: "Max hedge",
   max_trade_value: "Max trade",
-  leverage_disabled: "Leverage",
+  max_leverage: "Leverage",
   approval_required: "Human approval",
   min_order_amount: "Min order size",
 };
@@ -310,7 +310,7 @@ const LEDGER_TITLES: Record<MandateCheckId, string> = {
   underlying_allowed: "EXPOSURE",
   max_protection_pct: "MAX HEDGE",
   max_trade_value: "MAX TRADE",
-  leverage_disabled: "LEVERAGE",
+  max_leverage: "LEVERAGE",
   approval_required: "HUMAN APPROVAL",
   min_order_amount: "MIN SIZE",
 };
@@ -327,8 +327,8 @@ function ledgerValue(
       return `${proposal.protectionPct}% / ${limits.maxPct}%`;
     case "max_trade_value":
       return `$${proposal.proposedTradeValueUsdt} / $${limits.maxTrade}`;
-    case "leverage_disabled":
-      return proposal.leverageUsed ? "USED" : "OFF";
+    case "max_leverage":
+      return `${proposal.leverageUsed}x`;
     case "approval_required":
       return "REQUIRED";
     case "min_order_amount":

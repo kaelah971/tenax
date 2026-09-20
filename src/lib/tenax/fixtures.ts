@@ -45,7 +45,7 @@ export const MANDATE_FIXTURE: Mandate = {
   allowedUnderlying: "NVDA",
   maxProtectionPct: 30,
   maxTradeValueUsdt: 150,
-  leverageAllowed: false,
+  maxLeverage: 1,
   approvalRequired: true,
 };
 
@@ -54,7 +54,7 @@ export const PROPOSAL_PASS_FIXTURE: ProtectionProposal = {
   underlying: "NVDA",
   protectionPct: 20,
   proposedTradeValueUsdt: 100,
-  leverageUsed: false,
+  leverageUsed: 1,
 };
 
 /** REFUSE A: 200 USDT exceeds the 150 USDT mandate cap. */
@@ -62,7 +62,7 @@ export const PROPOSAL_REFUSE_VALUE_FIXTURE: ProtectionProposal = {
   underlying: "NVDA",
   protectionPct: 40,
   proposedTradeValueUsdt: 200,
-  leverageUsed: false,
+  leverageUsed: 1,
 };
 
 /** REFUSE B: 40% exceeds the 30% mandate cap. */
@@ -70,7 +70,7 @@ export const PROPOSAL_REFUSE_PCT_FIXTURE: ProtectionProposal = {
   underlying: "NVDA",
   protectionPct: 40,
   proposedTradeValueUsdt: 100,
-  leverageUsed: false,
+  leverageUsed: 1,
 };
 
 /** REFUSE C: underlying not covered by the mandate. */
@@ -78,5 +78,5 @@ export const PROPOSAL_REFUSE_ASSET_FIXTURE: ProtectionProposal = {
   underlying: "AAPL",
   protectionPct: 10,
   proposedTradeValueUsdt: 50,
-  leverageUsed: false,
+  leverageUsed: 1,
 };

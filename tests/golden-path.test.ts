@@ -168,9 +168,9 @@ describe("approval binding", () => {
     expect(() => approveProtectionProposal(store, { flowId, actor: "human" })).toThrow();
     const pending = createApprovalRequest(
       "intent-x",
-      { underlying: "NVDA", protectionPct: 20, proposedTradeValueUsdt: 100, leverageUsed: false },
+      { underlying: "NVDA", protectionPct: 20, proposedTradeValueUsdt: 100, leverageUsed: 1 },
       evaluateMandate(
-        { underlying: "NVDA", protectionPct: 20, proposedTradeValueUsdt: 100, leverageUsed: false },
+        { underlying: "NVDA", protectionPct: 20, proposedTradeValueUsdt: 100, leverageUsed: 1 },
         MANDATE_FIXTURE,
         NVDA_EXPOSURE_FIXTURE,
       ),

@@ -209,6 +209,7 @@ describe("read-only boundary", () => {
       "/api/v3/position/current-position",
       "/api/v3/account/settings",
       "/api/v3/account/pre-set-leverage",
+      "/api/v3/trade/order-info",
     ]);
   });
 });

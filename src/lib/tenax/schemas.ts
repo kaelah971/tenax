@@ -39,14 +39,14 @@ export const protectionProposalSchema = z.object({
   underlying: z.string().min(1),
   protectionPct: z.number().min(0).max(100),
   proposedTradeValueUsdt: z.number().nonnegative(),
-  leverageUsed: z.boolean(),
+  leverageUsed: z.number().positive(),
 });
 
 export const mandateSchema = z.object({
   allowedUnderlying: z.string().min(1),
   maxProtectionPct: z.number().min(0).max(100),
   maxTradeValueUsdt: z.number().positive(),
-  leverageAllowed: z.boolean(),
+  maxLeverage: z.number().positive(),
   approvalRequired: z.boolean(),
 });
 

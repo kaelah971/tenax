@@ -14,7 +14,7 @@ const RAW_TEXT = "Protect my NVIDIA through earnings, but don't hedge more than 
 const MANDATE_ROWS: Array<[string, string]> = [
   ["MAX HEDGE", `${MANDATE_FIXTURE.maxProtectionPct}%`],
   ["MAX TRADE", `$${MANDATE_FIXTURE.maxTradeValueUsdt}`],
-  ["LEVERAGE", MANDATE_FIXTURE.leverageAllowed ? "ON" : "OFF"],
+  ["LEVERAGE", `MAX ${MANDATE_FIXTURE.maxLeverage}X`],
   ["APPROVAL", MANDATE_FIXTURE.approvalRequired ? "REQUIRED" : "OPEN"],
   ["EXPOSURE", MANDATE_FIXTURE.allowedUnderlying],
 ];

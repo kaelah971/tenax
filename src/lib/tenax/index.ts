@@ -9,6 +9,7 @@ export * from "./execution";
 export * from "./receipt";
 export * from "./analysis";
 export * from "./approval";
+export * from "./demo-executor";
 export * from "./orchestrator";
 export * from "./dev-store";
 export * from "./service";

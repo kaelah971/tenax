@@ -63,7 +63,12 @@ export interface ProtectionProposal {
   readonly underlying: Underlying;
   readonly protectionPct: number;
   readonly proposedTradeValueUsdt: number;
-  readonly leverageUsed: boolean;
+  /**
+   * Effective leverage multiple the proposal would use. 1 = unleveraged.
+   * Unknown/unverifiable leverage is represented outside this type as
+   * null and is always refused by the mandate gate.
+   */
+  readonly leverageUsed: number;
 }
 
 /** User-defined authority boundary. */
@@ -71,7 +76,12 @@ export interface Mandate {
   readonly allowedUnderlying: Underlying;
   readonly maxProtectionPct: number;
   readonly maxTradeValueUsdt: number;
-  readonly leverageAllowed: boolean;
+  /**
+   * Maximum effective leverage multiple. 1 means 1x only: unleveraged
+   * execution is allowed, anything above is refused. Tenax never sets
+   * leverage itself; this bounds what execution may run under.
+   */
+  readonly maxLeverage: number;
   readonly approvalRequired: boolean;
 }
 
@@ -80,7 +90,7 @@ export const MANDATE_CHECK_IDS = [
   "underlying_allowed",
   "max_protection_pct",
   "max_trade_value",
-  "leverage_disabled",
+  "max_leverage",
   "approval_required",
   "min_order_amount",
 ] as const;

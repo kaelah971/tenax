@@ -9,7 +9,7 @@ export default function MandatePage() {
     ["Allowed exposure", MANDATE_FIXTURE.allowedUnderlying],
     ["Maximum hedge", `${MANDATE_FIXTURE.maxProtectionPct}% of position`],
     ["Maximum trade", `$${MANDATE_FIXTURE.maxTradeValueUsdt}`],
-    ["Leverage", MANDATE_FIXTURE.leverageAllowed ? "Allowed" : "Disabled"],
+    ["Leverage", `max ${MANDATE_FIXTURE.maxLeverage}x`],
     ["Human approval", MANDATE_FIXTURE.approvalRequired ? "Required" : "Not required"],
   ];
 

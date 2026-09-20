@@ -9,7 +9,7 @@ export const INTENT_LINE = "Protect my NVIDIA through earnings";
 export const INTENT_PLACEHOLDER = "Protect my NVIDIA through earnings — max 30%, max $150.";
 
 export const MANDATE_SUMMARY =
-  "You're allowing up to 30% of this position, up to $150, no leverage, with your approval before anything executes.";
+  "You're allowing up to 30% of this position, up to $150, max 1x leverage, with your approval before anything executes.";
 
 export const DRY_RUN_PRE_NOTICE = "Dry run — no funds will move.";
 
