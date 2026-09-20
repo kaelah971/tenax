@@ -80,7 +80,7 @@ export function Card({
   children: ReactNode;
 }) {
   return (
-    <section className="material-flat p-4 text-ink sm:p-5">
+    <section className="tx-material-editorial border-t-2 border-ink p-4 text-ink sm:p-5">
       <div className="mb-4 flex items-start justify-between gap-3 border-b border-ink/15 pb-3">
         <div>
           <h2 className="text-[13px] font-bold leading-[18px]">{title}</h2>
@@ -126,31 +126,26 @@ export function railStages(current: string): RailStageView[] {
 export function DecisionRail({ current }: { current: string }) {
   const stages = railStages(current);
   return (
-    <ol className="tx-rail flex flex-wrap items-center gap-x-2 gap-y-1" aria-label="Decision rail">
-      {stages.map((stage, i) => (
-        <li key={stage.label} className="flex items-center gap-2">
-          <span
-            className={`${
-              stage.state === "active"
-                ? "tx-rail-node-active anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
-                : stage.state === "done"
-                  ? "tx-rail-node-done font-bold text-ink"
-                  : "text-mutedink/60"
-            }`}
-          >
-            {stage.index} {stage.label}
-          </span>
-          {i < stages.length - 1 ? (
+    <div className="tx-rail-shell">
+      <span className="tx-rail-line" aria-hidden="true" />
+      <ol className="tx-rail relative flex min-w-max items-center gap-1" aria-label="Decision rail">
+        {stages.map((stage) => (
+          <li key={stage.label}>
             <span
-              className={stage.state === "done" ? "text-ink" : "text-mutedink/50"}
-              aria-hidden="true"
+              className={`font-syslabel tx-rail-stage text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
+                stage.state === "active"
+                  ? "tx-rail-stage-active font-bold text-ink"
+                  : stage.state === "done"
+                    ? "tx-rail-stage-done font-bold text-ink"
+                    : "text-mutedink/60"
+              }`}
             >
-              ━
+              {stage.index} {stage.label}
             </span>
-          ) : null}
-        </li>
-      ))}
-    </ol>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -375,50 +370,16 @@ export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
   const refused = state === "REFUSED";
   return (
     <div
-      className={`material-critical gate-stage relative px-5 py-7 text-softwhite sm:px-10 ${lit ? "anim-gate" : ""} ${refused ? "gate-refused" : ""}`}
+      className={`tx-material-critical relative rounded-[18px] px-5 py-7 text-softwhite sm:px-10 ${refused ? "tx-gate-refused" : ""}`}
       aria-label="Mandate Gate"
     >
-      {lit ? <span className="gate-beam" aria-hidden="true" /> : null}
+      {lit ? <span className="tx-gate-beam" aria-hidden="true" /> : null}
       <p className="font-syslabel relative text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
         MANDATE_GATE · ENFORCED · DETERMINISTIC
       </p>
-      <div className="gate-plane relative mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
-        <div className="relative rounded-[10px]">
-          <div
-            className={`relative flex items-end justify-center gap-3.5 overflow-hidden rounded-[10px] border px-9 py-7 ${
-              lit ? "gate-core-lit border-ink" : refused ? "border-clay/60" : "border-softwhite/15"
-            }`}
-            style={lit ? undefined : { backgroundColor: "#242424" }}
-            aria-hidden="true"
-          >
-            {lit ? (
-              <span
-                className="pointer-events-none absolute inset-x-6 top-2 h-8 rounded-full"
-                style={{ background: "radial-gradient(ellipse 50% 100% at 50% 0%, rgba(255,255,255,0.65), transparent 70%)" }}
-              />
-            ) : null}
-            <span
-              className="h-20 w-4 rounded-full"
-              style={{
-                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
-                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
-              }}
-            />
-            <span
-              className="h-14 w-4 rounded-full"
-              style={{
-                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
-                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
-              }}
-            />
-            <span
-              className="h-20 w-4 rounded-full"
-              style={{
-                backgroundColor: lit ? "#111111" : refused ? "#C74B3B" : "#6E6D66",
-                boxShadow: lit ? "0 0 12px rgba(17,17,17,0.5)" : undefined,
-              }}
-            />
-          </div>
+      <div className="relative mt-4 flex flex-col items-center gap-5 sm:flex-row sm:gap-8">
+        <div className={`tx-gate-aperture ${refused ? "tx-gate-refused" : ""}`} aria-hidden="true">
+          {lit ? <span className="tx-gate-floor" /> : null}
         </div>
         <div className="text-center sm:text-left">
           <p
@@ -436,7 +397,7 @@ export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
           </p>
         </div>
       </div>
-      {lit ? <span className="gate-floor" aria-hidden="true" /> : null}
+      {lit ? <span className="tx-gate-floor" aria-hidden="true" /> : null}
     </div>
   );
 }

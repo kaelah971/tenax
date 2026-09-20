@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { DRY_RUN_PRE_NOTICE, approveCta } from "../../_copy";
+import { AuthorityInstrument, LightInstrument } from "../../_components/materials";
 import { TenaxAgent, staggerStyle } from "../../_components/living";
 
 type Phase = "ready" | "approving" | "approved" | "executing" | "preview" | "error";
@@ -76,7 +77,7 @@ export default function ApproveExecutePanel({
 
   if (phase === "preview" && preview) {
     return (
-      <div className="anim-rise material-authority p-5 text-softwhite sm:p-8">
+      <AuthorityInstrument className="tx-preview-sheet tx-observatory-entry p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
@@ -124,14 +125,14 @@ export default function ApproveExecutePanel({
         >
           VIEW DECISION RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
         </button>
-      </div>
+      </AuthorityInstrument>
     );
   }
 
   if (phase === "approved" || phase === "executing") {
     return (
       <div className="flex flex-col gap-4">
-        <div className="material-instrument flex items-center gap-4 p-4 sm:p-5">
+        <LightInstrument className="tx-material-light-frost flex items-center gap-4 rounded-[16px] p-4 sm:p-5">
             <ol className="anim-rise flex flex-1 flex-col gap-1.5 overflow-hidden">
             {[
               ["HUMAN", "APPROVED", "text-signal"],
@@ -155,7 +156,7 @@ export default function ApproveExecutePanel({
             </li>
           ))}
           </ol>
-        </div>
+        </LightInstrument>
         <p className="text-[16px] leading-[24px]">
           Approved — one action authorized. {DRY_RUN_PRE_NOTICE}
         </p>
@@ -175,7 +176,7 @@ export default function ApproveExecutePanel({
   }
 
   return (
-    <div className="material-instrument flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
+    <LightInstrument className="tx-material-light-frost flex flex-col gap-3 rounded-[16px] p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
       <div className="flex flex-1 flex-col gap-2">
       <button
         type="button"
@@ -198,6 +199,6 @@ export default function ApproveExecutePanel({
         </p>
       )}
       </div>
-    </div>
+    </LightInstrument>
   );
 }

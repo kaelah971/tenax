@@ -92,12 +92,33 @@ controls, Mandate Gate illumination, and interaction feedback.
 
 Blue is retired as a brand color. It appears nowhere in new surfaces.
 
+## Bounded Authority Observatory (approved visual direction)
+
+Tenax app screens are composed as spatial scenes, not stacks of equivalent
+cards. The reading order is: **editorial field → observation instruments →
+authority object → floating control → mascot as environmental witness**.
+
+The app uses four material roles with distinct jobs: flat editorial ivory,
+light frosted evidence, compact clear instruments, and dark authority glass.
+Critical authority depth is reserved for the Mandate Gate. Rounded geometry is
+allowed on floating instruments and tactile controls when it establishes
+elevation; editorial fields, rails, and ledger truth remain comparatively
+sharp. Glass must reveal a meaningful backdrop and may not obscure provenance,
+state words, figures, or timestamps.
+
+The NVIDIA event surface uses a layered evidence/status observation stack. It
+must not use generic radar, orb, target, or decorative circle graphics. The
+mascot remains the asset-backed `/brand/tenax-agent.png`, placed with overlap,
+contact shadow, and state-relevant light rather than as a sticker or standalone
+card. Only LIVE may animate continuously; all other motion is finite and
+state-triggered, with reduced-motion fallbacks.
+
 ## Colors
 
 | Token | Hex | Role |
 |---|---|---|
 | Signal Yellow | `#F5FF3B` | The dominant brand signal: active rail stage, gate illumination, approval CTAs, event blocks, key numerals, interaction feedback. Always paired with Ink text, never alone as decoration. |
-| Ink | `#111111` | Authority and control: header bar, gate surface, control panels, primary text. |
+| Ink | `#111111` | Authority and control: detached navigation instrument, gate surface, control panels, primary text. |
 | Graphite | `#242424` | Secondary dark surface: data regions, event blocks, footer fields. |
 | Warm Ivory | `#F3EFE6` | Page field. Warm, never clinical. |
 | Soft White | `#FFFDF8` | Selective cards and inputs on ivory. Not the page base. |
@@ -232,30 +253,26 @@ PORTFOLIO, DEVELOPMENT ANALYSIS, DRY_RUN EXECUTION. Unavailable data is
 marked `○ OFFLINE` in clay with the reason beside it.
 
 ### Mandate Gate core (signature primitive)
-The visual icon of Tenax: a dark ink control surface holding a large
-geometric gate object illuminated in Signal Yellow. Oversized PASS /
-REFUSED state word. Rules arranged with clear index numbers (01–06),
-approval state visually separated from rule pass state. A financial
-permission engine, not a checklist card. No sci-fi decoration; the glow
-means "check running" and nothing else. The Gate is the highest-priority
-critical visual surface in the product (LEVEL 3): layered rings and
-planes, depth, subtle glass, Signal Yellow inner illumination on PASS,
-rules activating sequentially, approval pulse, gate clearing motion.
-Refusal stays flat clay with reduced yellow — the Gate does not open.
+The visual icon of Tenax: a deep authority chamber holding an angular
+permission aperture illuminated in Signal Yellow. Oversized PASS / REFUSED
+state word. Rules arranged with clear index numbers (01–06), approval state
+visually separated from rule pass state. A financial permission engine, not a
+checklist card. The Gate is the highest-priority critical visual surface in
+the product (LEVEL 3): architectural depth, one internal signal beam,
+contact reflection, and finite rule activation. Refusal stays flat clay with
+reduced yellow — the Gate does not open.
 
 ### Tenax Sentinel (approved agent character)
-Tenax is an agent watching the user's capital, and the Sentinel is its
-recognizable face: an original small rounded guardian orb in
-graphite/ink with expressive glowing eyes, a Signal Yellow core, a subtle
-shield motif, and a tiny market-wave detail. Premium, calm, protective —
-never childish. A reusable component with states: idle, watching,
-analyzing, gate-check, approved, refused, complete. State reads through
-small expressive changes (eyes, glow, position, pulse, shield/light) plus
-a gentle float — never complex animation. Integrated meaningfully and
-sparingly: watching near Capital exposure, analyzing during reasoning,
-observing the Gate, waiting-to-cleared across approval, calm/complete on
-the Receipt. Never on every card. Always respects
-`prefers-reduced-motion`.
+Tenax is an agent watching the user's capital, represented only by the
+asset-backed `/brand/tenax-agent.png`. Never redraw or turn it into an orb.
+Place it as an environmental witness with overlap, a receiving-surface
+contact shadow, and light caused by a nearby signal/action surface. A
+reusable component has states: idle, watching, analyzing, gate-check,
+approved, refused, complete. State reads through the asset context, halo,
+badge, caption, and finite settling movement — never permanent floating or
+complex animation. Integrate it sparingly: near Capital exposure, during
+reasoning, beside the Gate, across approval, and on the Receipt. Never on
+every support panel. Always respects `prefers-reduced-motion`.
 
 ### State words
 `PASS` (green) · `REFUSED` (clay) · `DRY RUN` (ink on yellow) ·
@@ -275,17 +292,20 @@ rows. Never a fabricated date, never a countdown to an unknown.
 ## Components
 
 ### App shell
-Ink header bar: strong `TENAX` wordmark with a yellow square mark;
-Capital / Events / Mandate / Activity in semibold ivory; active route in
-Signal Yellow; compact mono `DRY RUN` indicator outlined in yellow at the
-right edge. Mobile: wordmark + DRY RUN persist; nav collapses to a menu.
+Detached dark authority-glass navigation instrument centered inside the app
+max width, with visible contact shadow and subtle backdrop response. Strong
+`TENAX` wordmark with a yellow square mark; Capital / Events / Mandate /
+Activity as tactile route segments; active route is an inset Signal Yellow
+segment; compact mono `DRY RUN` remains at the right edge. Mobile: wordmark
++ DRY RUN persist and the nav opens as an anchored glass tray.
 
 ### Capital hero
 `CAPITAL_001` system label, editorial headline ("What should your capital
 do?"), then the dominant object: `$500 / NVIDIA EXPOSURE` at signal scale
-with `rNVDA · BITGET REALITY` and `LIVE MARKET · ONLINE` markers. A yellow
-CTA band: `PROTECT THROUGH EARNINGS →`. Market data lives in a secondary
-graphite signal region — distinctive, not an equal white card.
+with `rNVDA · BITGET REALITY` and `LIVE MARKET · ONLINE` markers. A small
+yellow control dock carries `PROTECT THROUGH EARNINGS →`; market data lives
+in a compact floating instrument that partially overlaps the scene, not an
+equal white card or footer slab.
 
 ### Mandate control surface
 `MANDATE_001` label, hairline rows (`MAX HEDGE 30%`, `MAX TRADE $150`,
@@ -307,15 +327,16 @@ clay-edged block. Provenance strip closes the page.
 Motion communicates state — never decoration:
 - Rail stage activation: active node pulses, completed nodes illuminate,
   connection line reads as a live circuit.
-- Gate illumination: layered bloom on PASS; rules activate sequentially
-  with a very short stagger.
+- Gate illumination: the angular aperture lights once on PASS; rules activate
+  sequentially with a very short stagger.
 - Live data: pulsing LIVE indicator; updated values briefly pulse/fade,
   never flash aggressively.
 - View entrance: short fade/slide on hero fields; staged content rises in
   sequence; receipt artifacts assemble then seal.
 - Approval signal: CTA press feedback — slight lift, subtle glow, arrow
   motion. Clickable rows shift 2–4px with border/light response.
-- Sentinel: gentle float; eye/glow/position changes carry agent state.
+- Sentinel: halo, caption, and brief settling movement carry agent state;
+  there is no permanent float or decorative orbit.
 No animation library. No Three.js/WebGL. All motion disabled under
 `prefers-reduced-motion`; states remain fully legible static.
 

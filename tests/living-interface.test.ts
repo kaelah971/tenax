@@ -6,6 +6,7 @@
 import { describe, expect, it } from "vitest";
 
 import { agentPresence, staggerStyle, TENAX_AGENT_ASSET, type AgentState } from "../src/app/app/_components/living";
+import { materialClass, OBSERVATORY_SCENE_ORDER } from "../src/app/app/_components/materials";
 
 const STATES: AgentState[] = [
   "idle",
@@ -40,10 +41,9 @@ describe("tenax sentinel presence", () => {
     expect(agentPresence("refused").glow).not.toBe(agentPresence("approved").glow);
   });
 
-  it("reserves orbital motion for the analyzing state only", () => {
-    expect(agentPresence("analyzing").orbit).toBe(true);
-    for (const state of STATES.filter((s) => s !== "analyzing")) {
-      expect(agentPresence(state).orbit).toBe(false);
+  it("keeps mascot state expression free of decorative orbit graphics", () => {
+    for (const state of STATES) {
+      expect("orbit" in agentPresence(state)).toBe(false);
     }
   });
 
@@ -62,5 +62,32 @@ describe("stagger helper", () => {
   it("assigns the sequence index as a CSS custom property", () => {
     expect(staggerStyle(0)).toMatchObject({ "--i": 0 });
     expect(staggerStyle(4)).toMatchObject({ "--i": 4 });
+  });
+});
+
+describe("observatory material contract", () => {
+  it("keeps the five spatial roles distinct", () => {
+    expect(materialClass("editorial")).toBe("tx-material-editorial");
+    expect(materialClass("light-frost")).toBe("tx-material-light-frost");
+    expect(materialClass("clear-instrument")).toBe("tx-material-clear-instrument");
+    expect(materialClass("authority")).toBe("tx-material-authority");
+    expect(materialClass("critical")).toBe("tx-material-critical");
+    expect(new Set([
+      materialClass("editorial"),
+      materialClass("light-frost"),
+      materialClass("clear-instrument"),
+      materialClass("authority"),
+      materialClass("critical"),
+    ]).size).toBe(5);
+  });
+
+  it("defines the observatory reading order", () => {
+    expect(OBSERVATORY_SCENE_ORDER).toEqual([
+      "editorial",
+      "observation",
+      "authority",
+      "control",
+      "witness",
+    ]);
   });
 });

@@ -7,6 +7,7 @@ import { notFound } from "next/navigation";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { DRY_RUN_PRE_NOTICE, refusalSentence } from "../../_copy";
+import { AuthorityInstrument, SceneAnchor } from "../../_components/materials";
 import {
   DecisionRail,
   GateCore,
@@ -40,17 +41,12 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
       <DecisionRail current="MANDATE" />
 
-      <section aria-label="Permission boundary" className="relative rounded-[14px] bg-graphite p-4 text-softwhite sm:p-8">
+      <section aria-label="Permission boundary" className="tx-material-authority relative rounded-[18px] p-4 text-softwhite sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             GATE_001 · PERMISSION BOUNDARY · FLOW {id}
           </p>
-          <TenaxAgent
-            state={passed ? "gate-check" : "refused"}
-            size={72}
-            caption={passed ? "OBSERVING GATE" : "HOLDING"}
-            className="mascot-scale"
-          />
+          <SceneAnchor className="tx-floating-mascot -mr-2 -mt-3"><TenaxAgent state={passed ? "gate-check" : "refused"} size={72} caption={passed ? "OBSERVING GATE" : "HOLDING"} className="mascot-scale" /></SceneAnchor>
         </div>
 
         <div className="relative">
@@ -61,7 +57,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           {cleared} / {total} RULES CLEARED
         </p>
 
-        <ol className="relative mx-auto mt-5 flex max-w-2xl flex-col gap-1.5">
+        <ol className="tx-ledger-sheet relative mx-auto mt-5 flex max-w-2xl flex-col gap-1.5 p-3 sm:p-4">
           {rows.map((row, i) => (
             <li
               key={row.index}
@@ -107,7 +103,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       {passed ? (
         <section aria-label="Human authority" className="flex flex-col gap-6">
-          <div className="material-authority p-5 text-softwhite sm:p-6">
+          <AuthorityInstrument className="rounded-[16px] p-5 text-softwhite sm:p-6">
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
               AUTHORITY HANDOFF
             </p>
@@ -121,7 +117,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
                 <p className="mt-1 text-[32px] font-extrabold leading-none text-signal sm:text-[40px]">WAITING</p>
               </div>
             </div>
-          </div>
+          </AuthorityInstrument>
 
           <div>
             <p className="text-[30px] font-extrabold leading-[1.0] tracking-[-0.02em] sm:text-[48px]">
@@ -141,7 +137,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       <section
         aria-label="Refusal test"
-        className="material-flat border-t-4 border-t-clay p-5 sm:p-8"
+        className="tx-material-editorial border-t-4 border-t-clay p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REFUSAL TEST · REFUSAL IS A FEATURE

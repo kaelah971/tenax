@@ -6,6 +6,7 @@ import { notFound } from "next/navigation";
 import { getDecisionReceipt } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { NOT_ADVICE } from "../../_copy";
+import { SceneAnchor } from "../../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
 import { TenaxAgent, staggerStyle } from "../../_components/living";
 
@@ -56,7 +57,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     <div className="anim-rise flex flex-col gap-10 pt-8 sm:pt-12">
       <DecisionRail current="RECEIPT" />
 
-       <section aria-label="Decision hero" className="receipt-document record-stack p-6 sm:p-10">
+       <section aria-label="Decision hero" className="tx-record-stack tx-material-light-frost rounded-[16px] p-6 sm:p-10">
         <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
@@ -72,19 +73,17 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               PROTECTION · NVIDIA · RNVDAUSDT
             </p>
           </div>
-          <div className="flex flex-col items-center gap-4">
-            <div className="agent-stage">
-              <TenaxAgent state="complete" size={104} caption="DECISION RECORDED" className="mascot-scale" />
-            </div>
+          <SceneAnchor className="tx-floating-mascot flex flex-col items-center gap-4">
+            <TenaxAgent state="complete" size={104} caption="DECISION RECORDED" className="mascot-scale" />
             <p
-              className="seal-stamp seal-ring rounded-full border-2 border-ink bg-signal px-4 py-2 text-center text-[13px] font-extrabold leading-[18px] tracking-[0.06em] text-ink"
+              className="tx-seal seal-stamp seal-ring rounded-full border-2 border-ink bg-signal px-4 py-2 text-center text-[13px] font-extrabold leading-[18px] tracking-[0.06em] text-ink"
               aria-label={`Tenax decision record sealed at ${receipt.timestamp}`}
             >
               TENAX DECISION RECORD
               <br />
               SEALED
             </p>
-          </div>
+          </SceneAnchor>
         </div>
       </section>
 
@@ -117,7 +116,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
       <section
         aria-label="Rejected alternative"
-        className="material-flat border-t-4 border-t-clay p-5 sm:p-8"
+        className="tx-material-editorial border-t-4 border-t-clay p-5 sm:p-8"
       >
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           REJECTED ALTERNATIVE · REFUSAL IS A FEATURE
@@ -139,7 +138,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
       </section>
 
-      <section aria-label="Technical details" className="technical-inset p-5 sm:p-8">
+      <section aria-label="Technical details" className="tx-technical-drawer p-5 sm:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
             TECHNICAL · WOULD-BE BITGET REQUEST

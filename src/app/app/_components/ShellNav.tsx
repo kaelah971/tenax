@@ -20,8 +20,8 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
   if (mobile) {
     return (
-      <nav
-        className="absolute z-10 mt-2 flex flex-col gap-1 rounded-[10px] bg-graphite p-2"
+    <nav
+        className="tx-authority-dock absolute right-0 z-20 mt-2 flex min-w-48 flex-col gap-1 rounded-[14px] p-2"
         aria-label="Primary mobile"
       >
         {NAV.map((item) => {
@@ -31,7 +31,9 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
               key={item.href}
               href={item.href}
                 className={`font-syslabel min-h-11 px-4 py-3 text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
-                active ? "bg-signal font-bold text-ink" : "text-softwhite hover:bg-ink"
+                active
+                  ? "rounded-[7px] bg-signal font-bold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_12px_-8px_rgba(17,17,17,0.65)]"
+                  : "rounded-[7px] text-softwhite hover:bg-softwhite/10"
               }`}
             >
               {item.label}
@@ -42,7 +44,7 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
     );
   }
   return (
-    <nav className="hidden items-center gap-6 md:flex" aria-label="Primary">
+    <nav className="hidden items-center gap-1 rounded-[11px] border border-softwhite/10 bg-softwhite/[0.035] p-1 md:flex" aria-label="Primary">
       {NAV.map((item) => {
         const active = isActive(pathname, item.href);
         return (
@@ -51,8 +53,8 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
             href={item.href}
             className={`font-syslabel text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
               active
-                ? "anim-rail bg-signal px-1.5 py-0.5 font-bold text-ink"
-                : "text-softwhite/70 hover:text-softwhite"
+                ? "tx-nav-active rounded-[7px] bg-signal font-bold text-ink"
+                : "rounded-[7px] text-softwhite/65 hover:bg-softwhite/[0.08] hover:text-softwhite"
             }`}
           >
             {item.label}

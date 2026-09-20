@@ -3,7 +3,7 @@
 // TenaxAgent is asset-backed: the final hooded-robot character lands at
 // TENAX_AGENT_ASSET (/brand/tenax-agent.png). Until then an abstract frosted
 // stand-in renders — the orb/icon direction is retired. State reads through
-// the world around the asset (halo, badge, orbit, shimmer, float).
+// the world around the asset (halo, badge, shimmer, finite settling).
 // Pure display mapping (agentPresence) stays unit-tested; rendering is
 // covered by typecheck + production build.
 import type { CSSProperties, ReactNode } from "react";
@@ -23,7 +23,6 @@ export type AgentState =
 export interface AgentPresence {
   readonly eyes: "soft" | "open" | "narrow" | "half" | "happy" | "flat" | "calm";
   readonly glow: "dim" | "signal" | "clay";
-  readonly orbit: boolean;
   readonly scan: boolean;
   readonly label: string;
 }
@@ -32,22 +31,22 @@ export interface AgentPresence {
 export function agentPresence(state: AgentState): AgentPresence {
   switch (state) {
     case "watching":
-      return { eyes: "open", glow: "signal", orbit: false, scan: true, label: "WATCHING" };
+      return { eyes: "open", glow: "signal", scan: true, label: "WATCHING" };
     case "analyzing":
-      return { eyes: "narrow", glow: "signal", orbit: true, scan: false, label: "ANALYZING" };
+      return { eyes: "narrow", glow: "signal", scan: false, label: "ANALYZING" };
     case "gate-check":
-      return { eyes: "open", glow: "signal", orbit: false, scan: true, label: "OBSERVING GATE" };
+      return { eyes: "open", glow: "signal", scan: true, label: "OBSERVING GATE" };
     case "waiting":
-      return { eyes: "half", glow: "dim", orbit: false, scan: false, label: "WAITING" };
+      return { eyes: "half", glow: "dim", scan: false, label: "WAITING" };
     case "approved":
-      return { eyes: "happy", glow: "signal", orbit: false, scan: false, label: "CLEARED" };
+      return { eyes: "happy", glow: "signal", scan: false, label: "CLEARED" };
     case "refused":
-      return { eyes: "flat", glow: "clay", orbit: false, scan: false, label: "REFUSED" };
+      return { eyes: "flat", glow: "clay", scan: false, label: "REFUSED" };
     case "complete":
-      return { eyes: "calm", glow: "signal", orbit: false, scan: false, label: "COMPLETE" };
+      return { eyes: "calm", glow: "signal", scan: false, label: "COMPLETE" };
     case "idle":
     default:
-      return { eyes: "soft", glow: "dim", orbit: false, scan: false, label: "IDLE" };
+      return { eyes: "soft", glow: "dim", scan: false, label: "IDLE" };
   }
 }
 
@@ -64,8 +63,8 @@ export function agentPresence(state: AgentState): AgentPresence {
  * direction is retired and must not be re-polished as the final mascot.
  *
  * State reads through the world around the asset: surrounding halo glow,
- * small state badge, orbit ring (analyzing), shimmer (watching/gate-check),
- * and float. Never drawn onto the asset itself.
+ * small state badge, shimmer (watching/gate-check), and finite settling
+ * movement. Never drawn onto the asset itself.
  */
 export const TENAX_AGENT_ASSET = "/brand/tenax-agent.png";
 
@@ -106,16 +105,6 @@ export function TenaxAgent({
     >
       <div className={`tx-agent ${state === "watching" ? "tx-agent-watching" : ""} agent-stage ${haloClass} ${glowClass}`}>
         <span className="relative block" style={{ width: size, height: size }}>
-          {presence.orbit ? (
-            <svg
-              viewBox="0 0 120 120"
-              aria-hidden="true"
-              className="tx-agent-orbit absolute inset-0 h-full w-full"
-            >
-              <circle cx="60" cy="60" r="54" stroke="#F5FF3B" strokeWidth="1.6" strokeDasharray="12 16" opacity="0.8" />
-              <circle cx="60" cy="6" r="3" fill="#F5FF3B" />
-            </svg>
-          ) : null}
           <AgentFigure src={assetSrc} size={size} glowColor={glowColor} />
           {presence.scan ? <span className="agent-shimmer" aria-hidden="true" /> : null}
         </span>

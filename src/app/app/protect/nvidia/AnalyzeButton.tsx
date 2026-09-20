@@ -6,6 +6,7 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { LightInstrument } from "../../_components/materials";
 import { TenaxAgent } from "../../_components/living";
 
 export default function AnalyzeButton({
@@ -43,7 +44,7 @@ export default function AnalyzeButton({
   }
 
   return (
-    <div className="material-instrument float-lift flex flex-col gap-3 p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
+    <LightInstrument className="tx-material-light-frost flex flex-col gap-3 rounded-[16px] p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
       <div className="agent-stage">
         <TenaxAgent
           state={state === "working" ? "analyzing" : state === "error" ? "waiting" : "watching"}
@@ -71,6 +72,6 @@ export default function AnalyzeButton({
           </p>
         ) : null}
       </div>
-    </div>
+    </LightInstrument>
   );
 }
