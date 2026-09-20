@@ -1,9 +1,10 @@
 // Tenax Phase 2A — Bitget Demo authenticated read-only helper.
 //
 // Safety contract (do not weaken without owner approval):
-// - Read-only. Exactly two allowed requests, both GET:
+// - Read-only. Exactly three allowed requests, all GET:
 //   GET /api/v3/account/info (account metadata, no permission required)
-//   GET /api/v3/trade/unfilled-orders (open-orders query, UTA trade read).
+//   GET /api/v3/trade/unfilled-orders (open-orders query, UTA trade read)
+//   GET /api/v3/account/assets (account balances, Phase 2B discovery).
 //   No POST/PUT/PATCH/DELETE, no order placement/cancel, no leverage
 //   changes, no transfers, no withdrawals, no account-settings writes,
 //   no fund movements.
@@ -27,13 +28,17 @@ export const DEMO_AUTH_ACCOUNT_INFO_PATH = "/api/v3/account/info" as const;
 /** The Phase 2A UTA trade-read probe endpoint (open-orders query only). */
 export const DEMO_TRADE_UNFILLED_ORDERS_PATH = "/api/v3/trade/unfilled-orders" as const;
 
+/** The Phase 2B account-assets endpoint (balances query only). */
+export const DEMO_ACCOUNT_ASSETS_PATH = "/api/v3/account/assets" as const;
+
 /** Demo header name (exact lowercase per Bitget UTA guide). */
 export const DEMO_PAPTRADING_HEADER = "paptrading" as const;
 
-/** Exact allowlist for Phase 2A — nothing else may be requested. */
+/** Exact allowlist for authenticated Demo reads — nothing else may be requested. */
 export const READ_ONLY_ALLOWLIST: readonly string[] = [
   DEMO_AUTH_ACCOUNT_INFO_PATH,
   DEMO_TRADE_UNFILLED_ORDERS_PATH,
+  DEMO_ACCOUNT_ASSETS_PATH,
 ];
 
 /**
@@ -125,9 +130,9 @@ export function isWritePath(requestPath: string): boolean {
 }
 
 /**
- * Enforce the Phase 2A read-only boundary. Throws on anything that is
- * not exactly GET <allowlisted path>. Query strings are never part of
- * the path argument — sign and append them separately. No network,
+ * Enforce the authenticated Demo read-only boundary. Throws on anything
+ * that is not exactly GET <allowlisted path>. Query strings are never
+ * part of the path argument — sign and append them separately. No network,
  * no secrets involved.
  */
 export function assertReadOnlyRequest(method: string, requestPath: string): void {
@@ -138,7 +143,9 @@ export function assertReadOnlyRequest(method: string, requestPath: string): void
     throw new Error(`refused: path ${requestPath} looks state-changing`);
   }
   if (!(READ_ONLY_ALLOWLIST as readonly string[]).includes(requestPath)) {
-    throw new Error(`refused: path ${requestPath} is not in the Phase 2A read-only allowlist`);
+    throw new Error(
+      `refused: path ${requestPath} is not in the authenticated read-only allowlist`,
+    );
   }
 }
 
@@ -326,7 +333,7 @@ export interface DemoReadOnlyFetchOptions {
 }
 
 /**
- * Minimal reusable Phase 2A fetch for allowlisted GET endpoints only.
+ * Minimal reusable authenticated Demo fetch for allowlisted GET endpoints only.
  * The read-only guard runs before any credential is touched; the query
  * string (when present) is part of both the signature prehash and the URL.
  * Callers own credential loading, reporting, and redaction.

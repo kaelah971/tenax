@@ -201,10 +201,11 @@ describe("read-only boundary", () => {
     expect(() => assertReadOnlyRequest("GET", "/api/v3/account/balance")).toThrow();
   });
 
-  it("allowlist contains exactly the two Phase 2A endpoints", () => {
+  it("allowlist contains exactly the authenticated Demo read endpoints", () => {
     expect([...READ_ONLY_ALLOWLIST]).toEqual([
       "/api/v3/account/info",
       "/api/v3/trade/unfilled-orders",
+      "/api/v3/account/assets",
     ]);
   });
 });
