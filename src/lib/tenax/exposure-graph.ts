@@ -14,6 +14,9 @@
 //   through the aggregation instead of being estimated.
 // - Simulated stays simulated: the $500 rNVDA leg is valueSource "fixture"
 //   and must be labelled as such in any UI. It is NOT live ownership.
+// - Available is not owned: "available" leaves describe discoverable
+//   external assets (no quantity, no value, no direction). A real token
+//   existing somewhere does NOT mean the user owns it.
 // - Plain language only: "approximate protected notional" and "remaining
 //   mapped exposure". Never delta-neutral, never fully hedged, never an
 //   equity beta/delta equivalence claim.
@@ -28,8 +31,8 @@ export type ExposureSubjectId = typeof NVDA_SUBJECT_ID;
 /** Where a graph fact came from. Mirrors receipt/provenance vocabulary. */
 export type GraphProvenance = "REAL" | "SIMULATED" | "DEMO" | "DEV" | "UNAVAILABLE";
 
-/** A representation either carries the exposure or protects the subject. */
-export type RepresentationRole = "exposure" | "protection";
+/** A representation either carries the exposure, protects the subject, or is a discoverable external asset the user does not hold. */
+export type RepresentationRole = "exposure" | "protection" | "available";
 
 /** Ecosystems with a typed adapter today; everything else is "unknown". */
 export type RepresentationEcosystem = "Bitget" | "unknown";
