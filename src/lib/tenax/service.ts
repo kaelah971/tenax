@@ -34,7 +34,8 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
-import type { ApprovalState, ExecutionMode } from "./domain";
+import type { ApprovalState, ExecutionMode, ProtectionProposal } from "./domain";
+import type { ProtectionAnalysis } from "./analysis";
 import {
   buildExposureGraph,
   withRepresentation,
@@ -51,6 +52,22 @@ import {
   type NvdaxDiscovery,
   type NvdaxDisplayFacts,
 } from "../xstocks/public";
+import {
+  resolveAiConfig,
+  type AiFetchImpl,
+  type AiProviderConfig,
+} from "../ai/provider.ts";
+import {
+  runAiAnalysis,
+  type AiPipelineMarket,
+} from "../ai/pipeline.ts";
+import type { AiAnalysisAudit } from "../ai/schemas.ts";
+import type { AiDecision } from "../ai/schemas.ts";
+import type {
+  FuturesTicker,
+  OhlcCandle,
+} from "../bitget/market-series.ts";
+import type { NvdaInstrument } from "../bitget/nvda-hedge.ts";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -97,6 +114,22 @@ function getFlow(store: TenaxDevStore, flowId: string): ProtectionFlow {
   return flow;
 }
 
+/**
+ * Defense-in-depth: a model analysis that decided WAIT or NO_ACTION can
+ * never enter approval or execution, even if flow state were ever
+ * inconsistent. Fixture analyses and PROTECT model analyses pass through.
+ */
+function assertActionableAnalysis(flow: ProtectionFlow): void {
+  const { analysis, aiAudit } = flow.getContext();
+  if (analysis?.reasoning.kind === "model" && aiAudit && aiAudit.decision !== "PROTECT") {
+    throw new FlowTransitionError(
+      flow.getFlowState(),
+      "authorize model analysis",
+      `AI decision is ${aiAudit.decision} — no actionable proposal exists`,
+    );
+  }
+}
+
 export async function getCapitalContext(provider: SnapshotBundleProvider) {
   const snapshot = normalizeNvidiaSnapshot(await provider());
   return {
@@ -141,6 +174,139 @@ export function analyzeProtectionIntent(
   };
 }
 
+/** Test/prod injection for the AI path. Production resolves config from server env. */
+export interface AiAnalyzeDeps {
+  readonly futuresTicker?: FuturesTicker | null;
+  readonly candles?: readonly OhlcCandle[] | null;
+  readonly nvdax?: NvdaxDiscovery | null;
+  readonly instrument?: NvdaInstrument | null;
+  readonly config?: AiProviderConfig | null;
+  readonly fetchImpl?: AiFetchImpl;
+  readonly nowMs?: number;
+}
+
+/**
+ * Phase 4B-A — model analysis path (explicit TENAX_ANALYSIS_MODE=ai only).
+ *
+ * Runs the evidence pack through the configured provider, validates the
+ * structured output, derives the proposal deterministically, and seats it
+ * into the flow. PROTECT continues through mandate evaluation (including
+ * REFUSE for over-mandate recommendations — never clamped). WAIT and
+ * NO_ACTION stop here with the analysis stored but unevaluated: the flow
+ * stays ANALYZED and can never reach approval or execution.
+ *
+ * AI failures surface as AI_UNAVAILABLE / AI_PROVIDER_ERROR /
+ * AI_ANALYSIS_INVALID errors. The fixture is never substituted.
+ */
+export async function analyzeProtectionIntentWithAi(
+  store: TenaxDevStore,
+  flowId: string,
+  snapshot: NvidiaMarketSnapshot,
+  deps: AiAnalyzeDeps = {},
+) {
+  const flow = getFlow(store, flowId);
+  const { exposure, intent } = flow.getContext();
+  if (!exposure || !intent) {
+    throw new FlowTransitionError(flow.getFlowState(), "analyze with model", "no exposure/intent yet");
+  }
+  const market: AiPipelineMarket = {
+    futuresTicker: deps.futuresTicker ?? null,
+    candles: deps.candles ?? null,
+    nvdax: deps.nvdax ?? null,
+    instrument: deps.instrument ?? null,
+  };
+  const result = await runAiAnalysis({
+    exposure,
+    intent,
+    mandate: MANDATE_FIXTURE,
+    snapshot,
+    market,
+    config: deps.config ?? resolveAiConfig(process.env),
+    fetchImpl: deps.fetchImpl,
+    nowMs: deps.nowMs,
+  });
+  if (!result.ok) {
+    throw new Error(`${result.failure.code}: ${result.failure.reason}`);
+  }
+  if (!result.proposal || !result.mandateDecision) {
+    // WAIT / NO_ACTION: store the analysis for display, then stop.
+    // No mandate verdict is produced and nothing becomes approvable.
+    const idleProposal: ProtectionProposal = {
+      underlying: exposure.underlying,
+      protectionPct: 0,
+      proposedTradeValueUsdt: 0,
+      leverageUsed: 1,
+    };
+    const oversized: ProtectionProposal = {
+      underlying: exposure.underlying,
+      protectionPct: 40,
+      proposedTradeValueUsdt: 200,
+      leverageUsed: 1,
+    };
+    flow.adoptAnalysis(
+      snapshot,
+      MANDATE_FIXTURE,
+      {
+        reasoning: result.reasoning,
+        proposal: idleProposal,
+        authority: {
+          calculatedTradeValueUsdt: 0,
+          mandateDecision: evaluateMandate(idleProposal, MANDATE_FIXTURE, exposure),
+          approvalRequired: MANDATE_FIXTURE.approvalRequired,
+          executionEligible: false,
+        },
+        consideredAlternative: {
+          proposal: oversized,
+          decision: evaluateMandate(oversized, MANDATE_FIXTURE, exposure),
+        },
+      },
+      result.audit,
+    );
+    throw new FlowTransitionError(
+      flow.getFlowState(),
+      "analyze with model",
+      `AI decision is ${result.analysis.decision} — no actionable proposal; stopped before approval`,
+    );
+  }
+  const oversized: ProtectionProposal = {
+    underlying: exposure.underlying,
+    protectionPct: 40,
+    proposedTradeValueUsdt: 200,
+    leverageUsed: 1,
+  };
+  const analysis: ProtectionAnalysis = {
+    reasoning: result.reasoning,
+    proposal: result.proposal,
+    authority: {
+      calculatedTradeValueUsdt: result.proposal.proposedTradeValueUsdt,
+      mandateDecision: result.mandateDecision,
+      approvalRequired: MANDATE_FIXTURE.approvalRequired,
+      executionEligible: result.mandateDecision.verdict === "PASS",
+    },
+    consideredAlternative: {
+      proposal: oversized,
+      decision: evaluateMandate(oversized, MANDATE_FIXTURE, exposure),
+    },
+  };
+  flow.adoptAnalysis(snapshot, MANDATE_FIXTURE, analysis, result.audit);
+  const decision = flow.evaluate();
+  const { aiAudit } = flow.getContext();
+  return {
+    flowId,
+    state: flow.getFlowState() as FlowState,
+    proposal: analysis.proposal,
+    calculatedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+    reasoning: analysis.reasoning,
+    aiDecision: result.analysis.decision as AiDecision,
+    aiAudit: aiAudit as AiAnalysisAudit,
+    mandateVerdict: decision.verdict,
+    mandateChecks: decision.checks,
+    failedRules: decision.failedRules,
+    executionEligible: analysis.authority.executionEligible,
+    provenance: provenanceFor(snapshot, "NOT_EXECUTED"),
+  };
+}
+
 export function evaluateProtectionProposal(store: TenaxDevStore, flowId: string) {
   const flow = getFlow(store, flowId);
   const { analysis } = flow.getContext();
@@ -164,6 +330,7 @@ export function approveProtectionProposal(
 ) {
   const parsed = approveInputSchema.parse(input);
   const flow = getFlow(store, parsed.flowId);
+  assertActionableAnalysis(flow);
   const actor: ApprovalActor = parsed.actor;
   // Request + grant collapse into the single MVP human action. The
   // approval binds the server-resolved execution mode: switching modes
@@ -202,6 +369,7 @@ export async function executeProtectionProposal(
 ) {
   const parsed = executeInputSchema.parse(input);
   const flow = getFlow(store, parsed.flowId);
+  assertActionableAnalysis(flow);
   const { analysis } = flow.getContext();
   if (!analysis) {
     throw new FlowTransitionError(flow.getFlowState(), "execute proposal", "no analysis yet");

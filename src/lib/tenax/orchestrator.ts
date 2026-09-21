@@ -32,6 +32,7 @@ import { dryRunAdapter } from "./execution";
 import { buildDecisionReceipt } from "./receipt";
 import type { NvidiaMarketSnapshot } from "../intelligence/snapshot";
 import type { DemoAuthCredentials } from "../bitget/demo-auth";
+import type { AiAnalysisAudit } from "../ai/schemas.ts";
 import {
   DEFAULT_APPROVAL_MAX_AGE_MS,
   deriveDemoHedgeSizing,
@@ -135,6 +136,8 @@ export class ProtectionFlow {
   private demoExecution: DemoFlowExecution | null = null;
   private executionModeUsed: ExecutionMode | null = null;
   private receipt: DecisionReceipt | null = null;
+  /** Validated model-analysis audit trail; null for the fixture path. */
+  private aiAudit: AiAnalysisAudit | null = null;
 
   constructor(readonly flowId: string) {}
 
@@ -170,6 +173,30 @@ export class ProtectionFlow {
     this.snapshot = snapshot;
     this.mandate = mandate;
     this.analysis = analyzeProtectionFixture(exposure, intent, mandate, snapshot);
+    this.aiAudit = null;
+    this.state = "ANALYZED";
+    return this.analysis;
+  }
+
+  /**
+   * Adopt a validated model analysis (Phase 4B-A). The analysis must
+   * already be schema-validated and post-checked by the AI pipeline;
+   * this method only seats it into the flow at INTENT_READY. Approval
+   * and execution gates downstream are unchanged: a WAIT/NO_ACTION
+   * analysis never reaches them (service stops the flow first), and a
+   * PROTECT analysis still needs mandate PASS + human approval.
+   */
+  adoptAnalysis(
+    snapshot: NvidiaMarketSnapshot,
+    mandate: Mandate,
+    analysis: ProtectionAnalysis,
+    audit: AiAnalysisAudit,
+  ): ProtectionAnalysis {
+    this.require("INTENT_READY", "adopt model analysis");
+    this.snapshot = snapshot;
+    this.mandate = mandate;
+    this.analysis = analysis;
+    this.aiAudit = audit;
     this.state = "ANALYZED";
     return this.analysis;
   }
@@ -485,6 +512,7 @@ export class ProtectionFlow {
     readonly demoExecution: DemoFlowExecution | null;
     readonly executionModeUsed: ExecutionMode | null;
     readonly proposalHash: string | null;
+    readonly aiAudit: AiAnalysisAudit | null;
   } {
     return {
       state: this.state,
@@ -496,6 +524,7 @@ export class ProtectionFlow {
       demoExecution: this.demoExecution,
       executionModeUsed: this.executionModeUsed,
       proposalHash: this.analysis ? hashProposal(this.analysis.proposal) : null,
+      aiAudit: this.aiAudit,
     };
   }
 }

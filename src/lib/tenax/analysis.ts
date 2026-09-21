@@ -20,7 +20,7 @@ import type {
   ProtectionIntent,
   ProtectionProposal,
 } from "./domain";
-import { evaluateMandate } from "./mandate";
+import { evaluateMandate } from "./mandate.ts";
 import type { NvidiaMarketSnapshot } from "../intelligence/snapshot";
 
 /** Reasoning output shape a future model must conform to. */

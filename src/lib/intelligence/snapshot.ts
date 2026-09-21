@@ -27,7 +27,7 @@ import {
   type MarketSessionState,
   type MarketStateClassification,
   classifyMarketState,
-} from "./market-state";
+} from "./market-state.ts";
 
 export type SectionAvailability = "AVAILABLE" | "PARTIAL" | "UNAVAILABLE";
 
