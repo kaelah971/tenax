@@ -204,6 +204,17 @@ export interface DecisionReceipt {
   readonly request: ExecutionRequest | DemoOrderRequest;
   /** Present only for BITGET_DEMO executions (safe normalized fields). */
   readonly demoExecution?: DemoExecutionRecord;
+  /**
+   * Phase 4B-B1 receipt-audit preparation (optional, populated by future
+   * execution paths only — current builders leave these absent):
+   * which authority authorized the action, and which standing mandate
+   * (by id + activation-bound hash) when authority is STANDING_MANDATE.
+   */
+  readonly authoritySource?: "HUMAN_APPROVAL" | "STANDING_MANDATE";
+  readonly standingMandateId?: string | null;
+  readonly standingMandateHash?: string | null;
+  readonly authorityDecision?: "AUTHORIZED" | "ESCALATE" | "REFUSED" | null;
+  readonly authorityEvaluatedAt?: string | null;
   readonly rejectedAlternatives: ReadonlyArray<{
     readonly proposedTradeValueUsdt: number;
     readonly protectionPct: number;

@@ -20,14 +20,17 @@
 // server pages, and tests may.
 
 import { ProtectionFlow } from "./orchestrator";
+import type { StandingMandate } from "./standing-mandate";
 
 export interface TenaxDevStore {
   readonly flows: Map<string, ProtectionFlow>;
   counter: number;
+  /** Standing mandates (B1). Same non-durable caveats as flows. */
+  readonly mandates: Map<string, StandingMandate>;
 }
 
 export function createDevStore(): TenaxDevStore {
-  return { flows: new Map<string, ProtectionFlow>(), counter: 0 };
+  return { flows: new Map<string, ProtectionFlow>(), counter: 0, mandates: new Map<string, StandingMandate>() };
 }
 
 export function nextFlowId(store: TenaxDevStore): string {

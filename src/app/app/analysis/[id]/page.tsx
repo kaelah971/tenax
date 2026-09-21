@@ -3,6 +3,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
+import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
+import {
+  evaluateStandingAuthorityForProposal,
+  getActiveStandingMandate,
+} from "@/lib/tenax/service";
 import { AuthorityInstrument, LightInstrument, SceneAnchor } from "../../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
 import { LiveDot, TenaxAgent, staggerStyle } from "../../_components/living";
@@ -17,6 +22,20 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
   if (!flow || !analysis) notFound();
   const isModel = analysis.reasoning.kind === "model";
   const audit = context?.aiAudit ?? null;
+  // Display-only standing-authority read: never consumes executions, never
+  // authorizes. Only for model PROTECT analyses with a derived proposal.
+  const showStanding =
+    isModel && audit?.decision === "PROTECT" && analysis.proposal.protectionPct > 0;
+  const standingMandate = showStanding ? getActiveStandingMandate(getTenaxDevStore()) : null;
+  const standingAuthority =
+    showStanding && standingMandate
+      ? evaluateStandingAuthorityForProposal(getTenaxDevStore(), {
+          underlying: analysis.proposal.underlying,
+          protectionPct: analysis.proposal.protectionPct,
+          tradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+          leverageUsed: analysis.proposal.leverageUsed,
+        })
+      : null;
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -73,6 +92,46 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
               </div>
             ))}
           </dl>
+        </section>
+      ) : null}
+
+      {showStanding ? (
+        <section aria-label="Standing authority" className="tx-material-editorial border-t-2 border-ink pt-6 sm:pt-8">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            STANDING AUTHORITY · EVALUATION ONLY
+          </p>
+          <div className="mt-4 grid gap-4 sm:grid-cols-3">
+            <div className="border-t-2 border-ink pt-3">
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AI RECOMMENDATION</p>
+              <p className="mt-1 text-[26px] font-extrabold leading-none">
+                {analysis.proposal.protectionPct}% · ${analysis.authority.calculatedTradeValueUsdt}
+              </p>
+            </div>
+            <div className="border-t-2 border-ink pt-3">
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">POLICY</p>
+              <p className="mt-1 text-[26px] font-extrabold leading-none">
+                max {MANDATE_FIXTURE.maxProtectionPct}% · ${MANDATE_FIXTURE.maxTradeValueUsdt}
+              </p>
+            </div>
+            <div className="border-t-2 border-ink pt-3">
+              <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">STANDING AUTHORITY</p>
+              {standingAuthority ? (
+                <p className="mt-1 text-[26px] font-extrabold leading-none">
+                  {standingAuthority.decision}
+                </p>
+              ) : (
+                <p className="mt-1 text-[26px] font-extrabold leading-none">NO MANDATE</p>
+              )}
+              <p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+                {standingAuthority
+                  ? standingAuthority.reasonCodes.join(" · ").toUpperCase()
+                  : "HUMAN APPROVAL PATH ONLY"}
+              </p>
+            </div>
+          </div>
+          <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+            Display evaluation only — no executions consumed, nothing authorized
+          </p>
         </section>
       ) : null}
 

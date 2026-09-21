@@ -5,6 +5,7 @@ export * from "./schemas";
 export * from "./fixtures";
 export * from "./intent";
 export * from "./mandate";
+export * from "./standing-mandate";
 export * from "./execution";
 export * from "./receipt";
 export * from "./analysis";

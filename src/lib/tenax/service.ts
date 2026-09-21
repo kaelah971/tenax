@@ -68,6 +68,20 @@ import type {
   OhlcCandle,
 } from "../bitget/market-series.ts";
 import type { NvdaInstrument } from "../bitget/nvda-hedge.ts";
+import {
+  AUTHORITY_MODES,
+  STANDING_ACTION_SHORT_HEDGE,
+  STANDING_INTENT_TYPE,
+  STANDING_SYMBOL_NVDAUSDT,
+  activateStandingMandate,
+  consumeStandingExecution,
+  createStandingMandate,
+  evaluateStandingAuthority,
+  revokeStandingMandate,
+  type StandingAuthorityAction,
+  type StandingAuthorityEvaluation,
+  type StandingMandate,
+} from "./standing-mandate";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -82,6 +96,16 @@ export const approveInputSchema = z.object({
 
 export const executeInputSchema = z.object({
   flowId: z.string().min(1).max(64),
+});
+
+export const standingMandateCreateSchema = z.object({
+  authorityMode: z.enum(AUTHORITY_MODES),
+  maxExecutions: z.number().int().min(1).max(100).default(1),
+  expiresAt: z.string().datetime({ offset: true }).nullish(),
+});
+
+export const standingMandateIdSchema = z.object({
+  id: z.string().min(1).max(64),
 });
 
 export interface Provenance {
@@ -633,4 +657,163 @@ export async function getExposureGraph(
           flowId: latest.flowId,
         });
   return attachAvailable(base, await resolveAvailableNvdax(deps));
+}
+
+// ---- Standing mandates (Phase 4B-B1, dev-store backed) ----------------------
+//
+// A standing mandate pre-authorizes a NARROW CLASS of protection actions.
+// Policy bounds (except mode/executions/expiry) come from the canonical
+// mandate fixture — B1 offers no custom limits. Creating is not
+// authorizing: only activateStandingMandate binds the hash. At most one
+// ACTIVE mandate exists at a time; activating revokes nothing
+// automatically — revoke the current one first.
+
+function getMandateRecord(store: TenaxDevStore, id: string): StandingMandate {
+  const mandate = store.mandates.get(id);
+  if (!mandate) throw new FlowTransitionError("IDLE", "locate mandate", `unknown mandate ${id}`);
+  return mandate;
+}
+
+export function createStandingMandateRecord(
+  store: TenaxDevStore,
+  input: z.infer<typeof standingMandateCreateSchema>,
+  nowMs: number = Date.now(),
+): StandingMandate {
+  const parsed = standingMandateCreateSchema.parse(input);
+  const mandate = createStandingMandate({
+    maxProtectionPct: MANDATE_FIXTURE.maxProtectionPct,
+    maxNotionalUsdt: MANDATE_FIXTURE.maxTradeValueUsdt,
+    maxLeverage: MANDATE_FIXTURE.maxLeverage,
+    allowedSymbols: [STANDING_SYMBOL_NVDAUSDT],
+    allowedActionTypes: [STANDING_ACTION_SHORT_HEDGE],
+    authorityMode: parsed.authorityMode,
+    maxExecutions: parsed.maxExecutions,
+    expiresAt: parsed.expiresAt ?? null,
+  }, nowMs);
+  store.mandates.set(mandate.id, mandate);
+  return mandate;
+}
+
+export function activateStandingMandateRecord(
+  store: TenaxDevStore,
+  input: z.infer<typeof standingMandateIdSchema>,
+  nowMs: number = Date.now(),
+): StandingMandate {
+  const parsed = standingMandateIdSchema.parse(input);
+  for (const other of store.mandates.values()) {
+    if (other.id !== parsed.id && other.status === "ACTIVE") {
+      throw new FlowTransitionError(
+        "IDLE",
+        "activate mandate",
+        `mandate ${other.id} is already ACTIVE — revoke it first (one active mandate at a time)`,
+      );
+    }
+  }
+  const activated = activateStandingMandate(getMandateRecord(store, parsed.id), nowMs);
+  store.mandates.set(activated.id, activated);
+  return activated;
+}
+
+export function revokeStandingMandateRecord(
+  store: TenaxDevStore,
+  input: z.infer<typeof standingMandateIdSchema>,
+  nowMs: number = Date.now(),
+): StandingMandate {
+  const parsed = standingMandateIdSchema.parse(input);
+  const revoked = revokeStandingMandate(getMandateRecord(store, parsed.id), nowMs);
+  store.mandates.set(revoked.id, revoked);
+  return revoked;
+}
+
+/** Most recently activated ACTIVE mandate, or null. Never a human approval. */
+export function getActiveStandingMandate(store: TenaxDevStore): StandingMandate | null {
+  let active: StandingMandate | null = null;
+  for (const mandate of store.mandates.values()) {
+    if (mandate.status !== "ACTIVE") continue;
+    if (!active || (mandate.activatedAt ?? "") > (active.activatedAt ?? "")) active = mandate;
+  }
+  return active;
+}
+
+/**
+ * Canonical derived action for a protection proposal: NVDAUSDT SHORT_HEDGE
+ * with no sell/transfer/leverage-change requests. The model never
+ * constructs this — code maps the proposal deterministically.
+ */
+export function standingActionFromProposal(input: {
+  readonly underlying: string;
+  readonly protectionPct: number;
+  readonly tradeValueUsdt: number;
+  readonly leverageUsed: number;
+  readonly proposalAtMs?: number | null;
+}): StandingAuthorityAction {
+  return {
+    subjectId: input.underlying,
+    intentType: STANDING_INTENT_TYPE,
+    protectionPct: input.protectionPct,
+    notionalUsdt: input.tradeValueUsdt,
+    leverage: input.leverageUsed,
+    symbol: STANDING_SYMBOL_NVDAUSDT,
+    actionType: STANDING_ACTION_SHORT_HEDGE,
+    requestsSellUnderlying: false,
+    requestsTransfer: false,
+    requestsLeverageChange: false,
+    proposalAtMs: input.proposalAtMs ?? null,
+  };
+}
+
+/**
+ * Evaluate a proposal against the active standing mandate (display and
+ * future-gate use). Returns null when no ACTIVE mandate exists — callers
+ * then fall back to the human-approval path. Never consumes executions.
+ */
+export function evaluateStandingAuthorityForAction(
+  store: TenaxDevStore,
+  action: StandingAuthorityAction,
+  nowMs: number = Date.now(),
+): StandingAuthorityEvaluation | null {
+  const mandate = getActiveStandingMandate(store);
+  if (!mandate) return null;
+  return evaluateStandingAuthority(mandate, action, nowMs);
+}
+
+/**
+ * Convenience: build the canonical derived action from a proposal and
+ * evaluate it as of now (display freshness assumption, documented).
+ */
+export function evaluateStandingAuthorityForProposal(
+  store: TenaxDevStore,
+  proposal: {
+    readonly underlying: string;
+    readonly protectionPct: number;
+    readonly tradeValueUsdt: number;
+    readonly leverageUsed: number;
+  },
+  nowMs: number = Date.now(),
+): StandingAuthorityEvaluation | null {
+  return evaluateStandingAuthorityForAction(
+    store,
+    standingActionFromProposal({
+      underlying: proposal.underlying,
+      protectionPct: proposal.protectionPct,
+      tradeValueUsdt: proposal.tradeValueUsdt,
+      leverageUsed: proposal.leverageUsed,
+      proposalAtMs: nowMs,
+    }),
+    nowMs,
+  );
+}
+
+/**
+ * Consume one standing execution (called by future execution paths only
+ * after every Phase-2 gate passes — unwired in B1, tested offline).
+ */
+export function consumeStandingMandateExecution(
+  store: TenaxDevStore,
+  input: z.infer<typeof standingMandateIdSchema>,
+): StandingMandate {
+  const parsed = standingMandateIdSchema.parse(input);
+  const consumed = consumeStandingExecution(getMandateRecord(store, parsed.id));
+  store.mandates.set(consumed.id, consumed);
+  return consumed;
 }
