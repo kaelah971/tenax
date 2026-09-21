@@ -81,3 +81,18 @@ export function getExecutionAdapter(mode: ExecutionMode): ExecutionAdapter {
       throw new Error(`Unknown execution mode (got ${mode satisfies never})`);
   }
 }
+
+/**
+ * Server-side execution-mode resolution. TENAX_EXECUTION_MODE=BITGET_DEMO
+ * selects Demo; anything else (unset, DRY_RUN, unknown, LIVE) resolves to
+ * DRY_RUN. LIVE is impossible: it is not a member of ExecutionMode and
+ * never maps to a live adapter — there is no live adapter in this codebase.
+ */
+export function resolveExecutionMode(env: Record<string, string | undefined>): ExecutionMode {
+  return (env.TENAX_EXECUTION_MODE ?? "").trim() === "BITGET_DEMO" ? "BITGET_DEMO" : "DRY_RUN";
+}
+
+/** BITGET_DEMO additionally requires the Demo trading backend. */
+export function isDemoTradingMode(env: Record<string, string | undefined>): boolean {
+  return (env.BITGET_TRADING_MODE ?? "").trim().toLowerCase() === "demo";
+}

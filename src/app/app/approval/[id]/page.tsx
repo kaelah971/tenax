@@ -5,8 +5,9 @@
 import { notFound } from "next/navigation";
 
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
+import { resolveExecutionMode } from "@/lib/tenax/execution";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
-import { DRY_RUN_PRE_NOTICE, refusalSentence } from "../../_copy";
+import { DEMO_FUNDS_NOTICE, DRY_RUN_PRE_NOTICE, refusalSentence } from "../../_copy";
 import { AuthorityInstrument, SceneAnchor } from "../../_components/materials";
 import {
   DecisionRail,
@@ -29,6 +30,8 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
   const decision = analysis.authority.mandateDecision;
   const passed = decision.verdict === "PASS";
+  const executionMode = resolveExecutionMode(process.env);
+  const modeNotice = executionMode === "BITGET_DEMO" ? DEMO_FUNDS_NOTICE : DRY_RUN_PRE_NOTICE;
   const { cleared, total } = rulesCleared(decision);
   const rows = ledgerRows(
     decision,
@@ -124,13 +127,14 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
               YOU ARE THE FINAL AUTHORITY.
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
-              DRY RUN · {DRY_RUN_PRE_NOTICE.toUpperCase()}
+              {executionMode === "BITGET_DEMO" ? "BITGET DEMO" : "DRY RUN"} · {modeNotice.toUpperCase()}
             </p>
           </div>
 
           <ApproveExecutePanel
             flowId={id}
             tradeValueUsdt={analysis.authority.calculatedTradeValueUsdt}
+            executionMode={executionMode}
           />
         </section>
       ) : null}
@@ -159,7 +163,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
       </section>
 
       <ProvenanceStrip
-        items={["LIVE BITGET DATA", "SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS", "DRY_RUN EXECUTION"]}
+        items={["LIVE BITGET DATA", "SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS", `${executionMode} EXECUTION`]}
       />
     </div>
   );

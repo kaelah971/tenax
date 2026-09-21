@@ -8,7 +8,12 @@
 // - Approval records carry id, bound proposal/decision identity, status,
 //   timestamp, and actor/type.
 
-import type { ApprovalState, MandateDecision, ProtectionProposal } from "./domain";
+import type {
+  ApprovalState,
+  ExecutionMode,
+  MandateDecision,
+  ProtectionProposal,
+} from "./domain";
 
 export type ApprovalActor = "human";
 
@@ -20,6 +25,14 @@ export interface ProtectionApproval {
   readonly state: ApprovalState;
   readonly actor: ApprovalActor;
   readonly approvedAt: string | null;
+  /**
+   * Execution mode this approval authorizes. Bound at creation from the
+   * server-resolved mode: a DRY_RUN approval can never authorize a
+   * BITGET_DEMO submission and vice versa — switching modes requires a
+   * fresh flow. Approvals predating this field are incompatible with
+   * BITGET_DEMO execution.
+   */
+  readonly executionMode: ExecutionMode;
 }
 
 /** Deterministic content hash (FNV-1a over canonical JSON). No imports. */
@@ -48,11 +61,13 @@ export function __resetApprovalCounterForTests(): void {
 /**
  * Open an approval request for a PASS decision. REFUSE decisions cannot
  * even enter the approval pipeline — requesting approval for one throws.
+ * The execution mode is bound now; execution under any other mode refuses.
  */
 export function createApprovalRequest(
   intentId: string,
   proposal: ProtectionProposal,
   decision: MandateDecision,
+  options?: { readonly executionMode?: ExecutionMode },
 ): ProtectionApproval {
   if (decision.verdict !== "PASS") {
     throw new Error(
@@ -68,6 +83,7 @@ export function createApprovalRequest(
     state: "REQUIRED",
     actor: "human",
     approvedAt: null,
+    executionMode: options?.executionMode ?? "DRY_RUN",
   };
 }
 

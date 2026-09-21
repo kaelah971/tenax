@@ -1,7 +1,7 @@
 // Tenax Phase 2D-A — guarded Demo executor tests (offline, no network).
 //
 // Covers: max-1x mandate semantics (1 PASS, >1 REFUSE, unknown REFUSE),
-// all 15 pre-execution gates, derived (never hardcoded) quantities,
+// all 16 pre-execution gates, derived (never hardcoded) quantities,
 // exact market short body, explicit-confirmation gating (no write without
 // it), single-endpoint POST restriction, success != filled until
 // order-info confirms, and secret-scrubbed owner script.
@@ -78,7 +78,9 @@ const MARKET: DemoHedgeMarketState = {
 
 function makeApproval(proposal = PROPOSAL_PASS_FIXTURE, ageMs = 60_000) {
   const decision = evaluateMandate(proposal, MANDATE_FIXTURE);
-  const pending = createApprovalRequest("intent-test", proposal, decision);
+  const pending = createApprovalRequest("intent-test", proposal, decision, {
+    executionMode: "BITGET_DEMO",
+  });
   return {
     decision,
     approval: approveProtection(
@@ -149,9 +151,9 @@ describe("max-1x mandate semantics", () => {
 });
 
 describe("pre-execution gates", () => {
-  it("passes all 15 gates for the verified Demo state", () => {
+  it("passes all 16 gates for the verified Demo state", () => {
     const report = evaluateDemoHedgeGates(makeInput());
-    expect(report.gates).toHaveLength(15);
+    expect(report.gates).toHaveLength(16);
     expect(report.refused).toBe(false);
     expect(report.failedGateIds).toEqual([]);
   });
@@ -244,9 +246,20 @@ describe("pre-execution gates", () => {
     expect(failedIds(makeInput({ decision: bad }))).toContain("mandate_pass");
   });
 
+  it("refuses a DRY_RUN-bound approval for Demo execution", () => {
+    const decision = evaluateMandate(PROPOSAL_PASS_FIXTURE, MANDATE_FIXTURE);
+    const pending = createApprovalRequest("intent-test", PROPOSAL_PASS_FIXTURE, decision, {
+      executionMode: "DRY_RUN",
+    });
+    const approval = approveProtection(pending, "human", new Date(NOW_MS - 60_000).toISOString());
+    expect(failedIds(makeInput({ approval }))).toContain("approval_mode");
+  });
+
   it("refuses stale or ungranted approval", () => {
     const { decision } = makeApproval();
-    const pending = createApprovalRequest("intent-test", PROPOSAL_PASS_FIXTURE, decision);
+    const pending = createApprovalRequest("intent-test", PROPOSAL_PASS_FIXTURE, decision, {
+      executionMode: "BITGET_DEMO",
+    });
     expect(failedIds(makeInput({ approval: pending })).includes("approval_valid")).toBe(true);
     const { approval } = makeApproval(PROPOSAL_PASS_FIXTURE, DEFAULT_APPROVAL_MAX_AGE_MS + 1);
     expect(failedIds(makeInput({ approval })).includes("approval_valid")).toBe(true);
@@ -266,6 +279,7 @@ describe("pre-execution gates", () => {
       state: "APPROVED",
       actor: "human",
       approvedAt: new Date(NOW_MS).toISOString(),
+      executionMode: "BITGET_DEMO",
     };
     const failed = failedIds(makeInput({ proposal: big, decision, approval: forced }));
     expect(failed).toContain("notional_cap");

@@ -72,7 +72,7 @@ describe("canonical dev store", () => {
     const analysis = reread?.getContext().analysis;
     if (!analysis) throw new Error("test setup failed: no analysis");
     expect(approval.proposalHash).toBe(hashProposal(analysis.proposal));
-    const executed = executeProtectionProposal(getTenaxDevStore(), { flowId });
+    const executed = await executeProtectionProposal(getTenaxDevStore(), { flowId });
     expect(executed.state).toBe("COMPLETED");
     const { receipt } = getDecisionReceipt(getTenaxDevStore(), flowId);
     expect(receipt.receiptId).toContain(flowId);

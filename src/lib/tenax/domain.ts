@@ -150,6 +150,41 @@ export interface ExecutionResult {
   readonly disclaimer: "DRY_RUN — NO FUNDS MOVED";
 }
 
+/**
+ * BITGET_DEMO order request — the exact submitted shape, never a
+ * would-be payload. NVDAUSDT short hedge only.
+ */
+export interface DemoOrderRequest {
+  readonly mode: "BITGET_DEMO";
+  readonly operationId: "placeOrder";
+  readonly endpoint: "POST /api/v3/trade/place-order";
+  readonly category: "USDT-FUTURES";
+  readonly symbol: "NVDAUSDT";
+  readonly side: "sell";
+  readonly posSide: "short";
+  readonly orderType: "market";
+  readonly qty: string;
+  readonly clientOid: string;
+  readonly kind: "DEMO order — submitted, virtual funds only";
+}
+
+/** Safe normalized Bitget execution facts stored on a Demo receipt. */
+export interface DemoExecutionRecord {
+  readonly orderId: string | null;
+  readonly clientOid: string;
+  readonly orderStatus: string | null;
+  readonly filled: boolean;
+  readonly avgPrice: string | null;
+  readonly cumExecQty: string | null;
+  readonly cumExecValue: string | null;
+  readonly leverage: "1x";
+  readonly marginMode: "crossed";
+  readonly approvedNotionalUsdt: number;
+  readonly submittedAt: string | null;
+  readonly verifiedAt: string | null;
+  readonly fundsDisclaimer: "DEMO ORDER — VIRTUAL FUNDS ONLY";
+}
+
 /** Immutable-ish decision snapshot (receipts are not live recomputations). */
 export interface DecisionReceipt {
   readonly receiptId: string;
@@ -164,8 +199,11 @@ export interface DecisionReceipt {
   readonly mandateChecks: MandateCheck[];
   readonly approval: ApprovalState;
   readonly executionMode: ExecutionMode;
-  readonly fundsMoved: false;
-  readonly request: ExecutionRequest;
+  /** False for DRY_RUN; true for BITGET_DEMO (virtual funds moved). */
+  readonly fundsMoved: boolean;
+  readonly request: ExecutionRequest | DemoOrderRequest;
+  /** Present only for BITGET_DEMO executions (safe normalized fields). */
+  readonly demoExecution?: DemoExecutionRecord;
   readonly rejectedAlternatives: ReadonlyArray<{
     readonly proposedTradeValueUsdt: number;
     readonly protectionPct: number;

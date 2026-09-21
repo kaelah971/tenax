@@ -67,12 +67,13 @@ describe("golden path", () => {
     expect(approved.approval.actor).toBe("human");
     expect(approved.approval.approvedAt).not.toBeNull();
 
-    const executed = executeProtectionProposal(store, { flowId });
+    const executed = await executeProtectionProposal(store, { flowId });
     expect(executed.state).toBe("COMPLETED");
     expect(executed.executionMode).toBe("DRY_RUN");
     expect(executed.fundsMoved).toBe(false);
     expect(executed.submitted).toBe(false);
     expect(executed.disclaimer).toBe("DRY_RUN — NO FUNDS MOVED");
+    if (executed.executionMode !== "DRY_RUN") throw new Error("expected DRY_RUN shape");
     expect(executed.request.symbol).toBe("RNVDAUSDT");
 
     const { receipt } = getDecisionReceipt(store, flowId);
@@ -102,7 +103,7 @@ describe("execution gates", () => {
     const { store, snapshot, flowId } = await setupGolden();
     analyzeProtectionIntent(store, flowId, snapshot);
     // State is MANDATE_PASS; approval was never requested nor granted.
-    expect(() => executeProtectionProposal(store, { flowId })).toThrow(/FLOW_REJECTED/);
+    await expect(executeProtectionProposal(store, { flowId })).rejects.toThrow(/FLOW_REJECTED/);
   });
 
   it("blocks the whole tail on a REFUSE decision", async () => {
@@ -115,7 +116,7 @@ describe("execution gates", () => {
     expect(flow.getFlowState()).toBe("MANDATE_REFUSED");
     expect(() => flow.requestApproval()).toThrow(/FLOW_REJECTED/);
     expect(() => flow.approve()).toThrow(/FLOW_REJECTED/);
-    expect(() => flow.execute()).toThrow(/FLOW_REJECTED/);
+    await expect(flow.execute()).rejects.toThrow(/FLOW_REJECTED/);
   });
 
   it("never lets a REFUSE decision enter approval", () => {
@@ -158,7 +159,7 @@ describe("approval binding", () => {
     // Simulate untrusted mutation of the proposal after approval.
     (analysis as unknown as { proposal: { proposedTradeValueUsdt: number } }).proposal
       .proposedTradeValueUsdt = 999;
-    expect(() => executeProtectionProposal(store, { flowId })).toThrow(/FLOW_REJECTED/);
+    await expect(executeProtectionProposal(store, { flowId })).rejects.toThrow(/FLOW_REJECTED/);
   });
 
   it("rejects double approval and non-human actors", async () => {
@@ -245,9 +246,13 @@ describe("state machine", () => {
     flow.evaluate();
     flow.requestApproval();
     flow.approve();
-    flow.execute();
+    await flow.execute();
     expect(flow.getFlowState()).toBe("COMPLETED");
-    expect(() => flow.execute()).toThrow(/FLOW_REJECTED/);
+    // Re-execution reconciles the stored result instead of resubmitting:
+    // DRY_RUN returns the identical stored record, never a second action.
+    const again = await flow.execute();
+    expect(flow.getFlowState()).toBe("COMPLETED");
+    expect(again).toEqual(await flow.execute());
     expect(() => flow.approve()).toThrow(/FLOW_REJECTED/);
   });
 });

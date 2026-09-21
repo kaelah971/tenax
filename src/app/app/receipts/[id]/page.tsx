@@ -24,6 +24,8 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const cleared = receipt.mandateChecks.filter((c) => c.pass).length;
   const total = receipt.mandateChecks.length;
   const alternative = receipt.rejectedAlternatives[0];
+  const isDemo = receipt.executionMode === "BITGET_DEMO";
+  const demo = receipt.demoExecution ?? null;
 
   const stages: Array<{ index: string; title: string; lines: string[] }> = [
     { index: "01", title: "EXPOSURE", lines: [`$${receipt.exposureValueUsdt} NVIDIA`, "○ DEMO"] },
@@ -38,20 +40,46 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     {
       index: "06",
       title: "ACTION",
-      lines: [`${receipt.executionMode === "DRY_RUN" ? "DRY RUN" : receipt.executionMode} $${receipt.proposedTradeValueUsdt}`, "FUNDS MOVED NO"],
+      lines: [
+        `${isDemo ? "BITGET DEMO" : "DRY RUN"} $${receipt.proposedTradeValueUsdt}`,
+        isDemo ? "VIRTUAL FUNDS" : "FUNDS MOVED NO",
+      ],
     },
   ];
 
-  const requestRows: Array<[string, string]> = [
-    ["MODE", receipt.request.mode === "DRY_RUN" ? "DRY RUN" : receipt.request.mode],
-    ["OPERATION", receipt.request.operationId],
-    ["ENDPOINT", receipt.request.endpoint],
-    ["SYMBOL", receipt.request.symbol],
-    ["SIDE", receipt.request.side.toUpperCase()],
-    ["TYPE", receipt.request.orderType.toUpperCase()],
-    ["QTY", receipt.request.qty],
-    ["STATE", "WOULD-BE · NEVER SUBMITTED"],
-  ];
+  const requestRows: Array<[string, string]> =
+    isDemo && demo
+      ? [
+          ["MODE", "BITGET DEMO"],
+          ["OPERATION", receipt.request.operationId],
+          ["ENDPOINT", receipt.request.endpoint],
+          ["SYMBOL", "NVDAUSDT"],
+          ["SIDE", "SELL · SHORT"],
+          ["TYPE", "MARKET"],
+          ["LEVERAGE", `${demo.leverage.toUpperCase()} · MAX 1X`],
+          ["MARGIN", demo.marginMode.toUpperCase()],
+          ["APPROVED NOTIONAL", `$${demo.approvedNotionalUsdt}`],
+          ["QTY", receipt.request.qty],
+          ["ORDER ID", demo.orderId ?? "—"],
+          ["CLIENT OID", demo.clientOid],
+          ["STATUS", demo.filled ? "FILLED · VERIFIED" : String(demo.orderStatus ?? "UNKNOWN").toUpperCase()],
+          ["AVG PRICE", demo.avgPrice ?? "—"],
+          ["EXECUTED QTY", demo.cumExecQty ?? "—"],
+          ["EXECUTED VALUE", demo.cumExecValue ?? "—"],
+          ["SUBMITTED", demo.submittedAt ?? "—"],
+          ["VERIFIED", demo.verifiedAt ?? "—"],
+          ["STATE", "DEMO ORDER · VIRTUAL FUNDS ONLY"],
+        ]
+      : [
+          ["MODE", receipt.request.mode === "DRY_RUN" ? "DRY RUN" : receipt.request.mode],
+          ["OPERATION", receipt.request.operationId],
+          ["ENDPOINT", receipt.request.endpoint],
+          ["SYMBOL", receipt.request.symbol],
+          ["SIDE", receipt.request.side.toUpperCase()],
+          ["TYPE", receipt.request.orderType.toUpperCase()],
+          ["QTY", receipt.request.qty],
+          ["STATE", "WOULD-BE · NEVER SUBMITTED"],
+        ];
 
   return (
     <div className="anim-rise flex flex-col gap-10 pt-8 sm:pt-12">
@@ -141,10 +169,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
       <section aria-label="Technical details" className="tx-technical-drawer p-5 sm:p-8">
         <div className="flex flex-wrap items-center gap-3">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
-            TECHNICAL · WOULD-BE BITGET REQUEST
+            {isDemo ? "TECHNICAL · SUBMITTED DEMO BITGET ORDER" : "TECHNICAL · WOULD-BE BITGET REQUEST"}
           </p>
           <span className="state-mark ml-auto text-signal">
-            DRY RUN · NO FUNDS MOVED
+            {isDemo ? "DEMO ORDER · VIRTUAL FUNDS ONLY" : "DRY RUN · NO FUNDS MOVED"}
           </span>
         </div>
         <dl className="mt-4 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
@@ -167,7 +195,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           "LIVE BITGET DATA",
           "SIMULATED PORTFOLIO",
           "DEVELOPMENT ANALYSIS",
-          "DRY_RUN EXECUTION",
+          isDemo ? "BITGET_DEMO EXECUTION" : "DRY_RUN EXECUTION",
         ]}
       />
       <p className="text-[11px] leading-[14px] text-mutedink">{NOT_ADVICE}</p>

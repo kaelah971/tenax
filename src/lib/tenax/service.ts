@@ -6,20 +6,34 @@
 //
 // Authority rules (enforced here, never delegated to callers):
 // - Execution re-runs mandate evaluation from the stored proposal and
-//   re-verifies approval binding before touching the adapter. A client
+//   re-verifies approval binding before touching any adapter. A client
 //   asserting "mandate passed" is never trusted.
-// - executionMode defaults to DRY_RUN. BITGET_DEMO stays unavailable.
+// - executionMode resolves server-side (TENAX_EXECUTION_MODE, default
+//   DRY_RUN). BITGET_DEMO additionally requires BITGET_TRADING_MODE=demo;
+//   LIVE is unrepresentable. Missing/inconsistent config refuses.
 // - No database: demo state lives in an explicitly non-durable dev store.
 // - The mandate is the canonical development fixture until an editable
 //   mandate UI lands; the exposure is always the simulated 500 USDT fixture.
+// - Credentials never leave this server module: they are read from the
+//   environment at execution time and never serialized into responses,
+//   receipts, or logs.
 
 import { z } from "zod";
 
 import type { RealityPublicBundle } from "../bitget/reality";
+import type { DemoAuthCredentials } from "../bitget/demo-auth";
 import { normalizeNvidiaSnapshot, type NvidiaMarketSnapshot } from "../intelligence/snapshot";
 import { type ApprovalActor } from "./approval";
+import { isDemoTradingMode, resolveExecutionMode } from "./execution";
 import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "./fixtures";
 import { evaluateMandate } from "./mandate";
+import {
+  type DemoHedgeMarketState,
+  type DemoMarketReaderDeps,
+  type ReadFetchImpl,
+  type WriteFetchImpl,
+} from "./demo-executor";
+import type { ExecutionMode } from "./domain";
 import { type FlowState, FlowTransitionError, ProtectionFlow } from "./orchestrator";
 import { type TenaxDevStore, nextFlowId } from "./dev-store";
 
@@ -42,7 +56,7 @@ export interface Provenance {
   readonly marketData: "REAL" | "PARTIAL" | "UNAVAILABLE";
   readonly exposure: "SIMULATED";
   readonly analysis: "DEVELOPMENT_FIXTURE";
-  readonly execution: "DRY_RUN" | "NOT_EXECUTED";
+  readonly execution: "DRY_RUN" | "BITGET_DEMO" | "NOT_EXECUTED";
 }
 
 function provenanceFor(
@@ -136,15 +150,39 @@ export function approveProtectionProposal(
   const parsed = approveInputSchema.parse(input);
   const flow = getFlow(store, parsed.flowId);
   const actor: ApprovalActor = parsed.actor;
-  // Request + grant collapse into the single MVP human action.
-  if (flow.getFlowState() === "MANDATE_PASS") flow.requestApproval();
+  // Request + grant collapse into the single MVP human action. The
+  // approval binds the server-resolved execution mode: switching modes
+  // later requires a fresh flow.
+  const mode = resolveExecutionMode(process.env);
+  if (flow.getFlowState() === "MANDATE_PASS") flow.requestApproval(mode);
   const approval = flow.approve(actor);
   return { flowId: parsed.flowId, state: flow.getFlowState() as FlowState, approval };
 }
 
-export function executeProtectionProposal(
+/** Test/prod injection for Demo execution. Production reads env (server-only). */
+export interface DemoServiceDeps {
+  readonly credentials?: DemoAuthCredentials;
+  readonly baseUrl?: string;
+  readonly tradingMode?: string;
+  readonly marketReader?: (deps: DemoMarketReaderDeps) => Promise<DemoHedgeMarketState>;
+  readonly writeFetchImpl?: WriteFetchImpl;
+  readonly readFetchImpl?: ReadFetchImpl;
+  readonly nowMs?: number;
+  readonly executionMode?: ExecutionMode;
+}
+
+function readDemoCredentials(env: Record<string, string | undefined>): DemoAuthCredentials | null {
+  const apiKey = (env.BITGET_API_KEY ?? "").trim();
+  const secretKey = (env.BITGET_SECRET_KEY ?? "").trim();
+  const passphrase = (env.BITGET_PASSPHRASE ?? "").trim();
+  if (apiKey === "" || secretKey === "" || passphrase === "") return null;
+  return { apiKey, secretKey, passphrase };
+}
+
+export async function executeProtectionProposal(
   store: TenaxDevStore,
   input: z.infer<typeof executeInputSchema>,
+  deps: DemoServiceDeps = {},
 ) {
   const parsed = executeInputSchema.parse(input);
   const flow = getFlow(store, parsed.flowId);
@@ -163,11 +201,77 @@ export function executeProtectionProposal(
       `recomputed mandate verdict is ${fresh.verdict} — execution blocked`,
     );
   }
-  const result = flow.execute();
+  const mode = deps.executionMode ?? resolveExecutionMode(process.env);
+  if (mode === "BITGET_DEMO") {
+    const tradingMode = deps.tradingMode ?? process.env.BITGET_TRADING_MODE ?? "";
+    if (!isDemoTradingMode({ BITGET_TRADING_MODE: tradingMode })) {
+      throw new FlowTransitionError(
+        flow.getFlowState(),
+        "execute proposal",
+        "BITGET_DEMO requires BITGET_TRADING_MODE=demo — inconsistent config refuses",
+      );
+    }
+    const credentials = deps.credentials ?? readDemoCredentials(process.env);
+    if (!credentials) {
+      throw new FlowTransitionError(
+        flow.getFlowState(),
+        "execute proposal",
+        "BITGET_DEMO requires server-side credentials — refusing without them",
+      );
+    }
+    const baseUrl = deps.baseUrl ?? ((process.env.BITGET_API_BASE_URL ?? "").trim() ||
+      "https://api.bitget.com");
+    const demo = await flow.execute({
+      executionMode: "BITGET_DEMO",
+      tradingMode,
+      credentials,
+      baseUrl,
+      marketReader: deps.marketReader,
+      writeFetchImpl: deps.writeFetchImpl,
+      readFetchImpl: deps.readFetchImpl,
+      nowMs: deps.nowMs,
+    });
+    if (!("clientOid" in demo)) {
+      throw new FlowTransitionError(
+        flow.getFlowState(),
+        "execute proposal",
+        "BITGET_DEMO execution returned an unexpected shape",
+      );
+    }
+    // Safe serialization only: gate details, order facts, verification —
+    // never credentials, signatures, or headers (none exist on the record).
+    return {
+      flowId: parsed.flowId,
+      state: flow.getFlowState() as FlowState,
+      executionMode: "BITGET_DEMO" as const,
+      submitted: true,
+      filled: demo.filled,
+      orderId: demo.orderId,
+      clientOid: demo.clientOid,
+      orderStatus: demo.orderStatus,
+      qty: demo.qty,
+      approxNotional: demo.approxNotional,
+      avgPrice: demo.avgPrice,
+      cumExecQty: demo.cumExecQty,
+      cumExecValue: demo.cumExecValue,
+      submittedAt: demo.submittedAt,
+      verifiedAt: demo.verifiedAt,
+      disclaimer: "DEMO ORDER — VIRTUAL FUNDS ONLY" as const,
+      gates: demo.gates.map((g) => ({ id: g.id, pass: g.pass, detail: g.detail })),
+    };
+  }
+  const result = await flow.execute({ executionMode: "DRY_RUN", nowMs: deps.nowMs });
+  if (!("request" in result)) {
+    throw new FlowTransitionError(
+      flow.getFlowState(),
+      "execute proposal",
+      "DRY_RUN execution returned an unexpected shape",
+    );
+  }
   return {
     flowId: parsed.flowId,
     state: flow.getFlowState() as FlowState,
-    executionMode: result.mode,
+    executionMode: "DRY_RUN" as const,
     fundsMoved: result.fundsMoved,
     submitted: result.submitted,
     disclaimer: result.disclaimer,

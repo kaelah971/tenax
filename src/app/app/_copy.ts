@@ -13,6 +13,8 @@ export const MANDATE_SUMMARY =
 
 export const DRY_RUN_PRE_NOTICE = "Dry run — no funds will move.";
 
+export const DEMO_FUNDS_NOTICE = "Demo order — virtual funds only.";
+
 export const EXECUTION_PREVIEW_CREATED = "Execution preview created — no funds moved.";
 
 export const NOT_ADVICE = "Not investment advice. Tenax executes only within your mandate.";

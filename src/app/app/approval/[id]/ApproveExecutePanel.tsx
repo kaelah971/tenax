@@ -1,16 +1,19 @@
-// Client-side approve → transition → execution-preview panel. Every step
-// POSTs to the server; nothing here asserts authority, it only follows
-// server responses. Never claims a trade executed.
+// Client-side approve → transition → execution panel. Every step POSTs to
+// the server; nothing here asserts authority, it only follows server
+// responses. Execution mode comes from the server: DRY_RUN renders the
+// would-be preview, BITGET_DEMO renders the submitted Demo order state.
+// Never claims a trade executed; never touches Bitget directly.
 "use client";
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-import { DRY_RUN_PRE_NOTICE, approveCta } from "../../_copy";
+import type { ExecutionMode } from "@/lib/tenax/domain";
+import { DEMO_FUNDS_NOTICE, DRY_RUN_PRE_NOTICE, approveCta } from "../../_copy";
 import { AuthorityInstrument, LightInstrument } from "../../_components/materials";
 import { TenaxAgent, staggerStyle } from "../../_components/living";
 
-type Phase = "ready" | "approving" | "approved" | "executing" | "preview" | "error";
+type Phase = "ready" | "approving" | "approved" | "executing" | "preview" | "submitted" | "error";
 
 interface PreviewRequest {
   readonly symbol: string;
@@ -24,6 +27,16 @@ interface ServerReply {
   readonly ok: boolean;
   readonly error?: { message?: string };
   readonly request?: PreviewRequest;
+  readonly executionMode?: ExecutionMode;
+  readonly submitted?: boolean;
+  readonly filled?: boolean;
+  readonly orderId?: string | null;
+  readonly clientOid?: string | null;
+  readonly orderStatus?: string | null;
+  readonly qty?: string;
+  readonly avgPrice?: string | null;
+  readonly cumExecValue?: string | null;
+  readonly disclaimer?: string;
 }
 
 async function post(path: string, body: unknown): Promise<ServerReply> {
@@ -37,17 +50,29 @@ async function post(path: string, body: unknown): Promise<ServerReply> {
   return parsed;
 }
 
+const ACTION_SUMMARY: ReadonlyArray<readonly [string, string]> = [
+  ["INSTRUMENT", "NVDAUSDT"],
+  ["ACTION", "SHORT"],
+  ["MAX LEVERAGE", "1X"],
+];
+
 export default function ApproveExecutePanel({
   flowId,
   tradeValueUsdt,
+  executionMode,
 }: {
   flowId: string;
   tradeValueUsdt: number;
+  executionMode: ExecutionMode;
 }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("ready");
   const [message, setMessage] = useState("");
   const [preview, setPreview] = useState<PreviewRequest | null>(null);
+  const [submitted, setSubmitted] = useState<ServerReply | null>(null);
+
+  const isDemo = executionMode === "BITGET_DEMO";
+  const fundsNotice = isDemo ? DEMO_FUNDS_NOTICE : DRY_RUN_PRE_NOTICE;
 
   async function onApprove() {
     setPhase("approving");
@@ -66,13 +91,73 @@ export default function ApproveExecutePanel({
     setMessage("");
     try {
       const reply = await post("/api/protection/execute", { flowId });
+      if (isDemo) {
+        if (!reply.submitted) throw new Error("Demo submission missing");
+        setSubmitted(reply);
+        setPhase("submitted");
+        return;
+      }
       if (!reply.request) throw new Error("Execution preview missing");
       setPreview(reply.request);
       setPhase("preview");
     } catch (err) {
       setPhase("error");
-      setMessage(err instanceof Error ? err.message : "Execution preview failed");
+      setMessage(err instanceof Error ? err.message : "Execution failed");
     }
+  }
+
+  if (phase === "submitted" && submitted) {
+    const verified = submitted.filled === true;
+    return (
+      <AuthorityInstrument className="tx-preview-sheet tx-observatory-entry p-5 text-softwhite sm:p-8">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+              DEMO HEDGE SUBMITTED
+            </p>
+            <p className="state-mark mt-3 bg-signal text-ink">DEMO ORDER · VIRTUAL FUNDS ONLY</p>
+            <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+              ACTION_01 · {verified ? "VERIFIED · FILLED" : `STATUS ${String(submitted.orderStatus ?? "UNKNOWN").toUpperCase()}`}
+            </p>
+            <p className="value-live mt-3 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[88px]">
+              ${tradeValueUsdt}
+            </p>
+            <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+              SHORT NVDAUSDT · MARKET · QTY {submitted.qty ?? "—"}
+            </p>
+          </div>
+          <div className="agent-stage">
+            <TenaxAgent state="complete" size={72} caption="ORDER RECORDED" className="mascot-scale" />
+          </div>
+        </div>
+        <dl className="mt-5 grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+          {[
+            ["SYMBOL", "NVDAUSDT"],
+            ["SIDE", "SELL · SHORT"],
+            ["TYPE", "MARKET"],
+            ["QTY", submitted.qty ?? "—"],
+            ["ORDER ID", submitted.orderId ?? "—"],
+            ["STATUS", verified ? "FILLED" : String(submitted.orderStatus ?? "UNKNOWN").toUpperCase()],
+            ["AVG PRICE", submitted.avgPrice ?? "—"],
+            ["EXECUTED VALUE", submitted.cumExecValue ?? "—"],
+          ].map(([term, value]) => (
+            <div key={term} className="border-t instrument-divider pt-2">
+              <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+                {term}
+              </dt>
+              <dd className="mt-1 break-words text-[16px] font-bold leading-[20px]">{value}</dd>
+            </div>
+          ))}
+        </dl>
+        <button
+          type="button"
+          onClick={() => router.push(`/app/receipts/${flowId}`)}
+          className="btn-living mt-6 inline-flex min-h-12 w-full items-center justify-center rounded-[12px] bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:w-auto"
+        >
+          VIEW DECISION RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
+        </button>
+      </AuthorityInstrument>
+    );
   }
 
   if (phase === "preview" && preview) {
@@ -158,7 +243,7 @@ export default function ApproveExecutePanel({
           </ol>
         </LightInstrument>
         <p className="text-[16px] leading-[24px]">
-          Approved — one action authorized. {DRY_RUN_PRE_NOTICE}
+          Approved — one action authorized. {fundsNotice}
         </p>
         <button
           type="button"
@@ -166,7 +251,13 @@ export default function ApproveExecutePanel({
           disabled={phase === "executing"}
           className="btn-living inline-flex min-h-12 items-center justify-center rounded-[12px] bg-signal px-8 py-4 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
         >
-          {phase === "executing" ? "CREATING PREVIEW…" : "CREATE EXECUTION PREVIEW "}
+          {phase === "executing"
+            ? isDemo
+              ? "SUBMITTING DEMO HEDGE…"
+              : "CREATING PREVIEW…"
+            : isDemo
+              ? "SUBMIT DEMO HEDGE "
+              : "CREATE EXECUTION PREVIEW "}
           {phase === "executing" ? null : (
             <span className="btn-arrow" aria-hidden="true">→</span>
           )}
@@ -178,6 +269,21 @@ export default function ApproveExecutePanel({
   return (
     <LightInstrument className="tx-material-light-frost flex flex-col gap-3 rounded-[16px] p-5 sm:flex-row sm:items-center sm:gap-6 sm:p-6">
       <div className="flex flex-1 flex-col gap-2">
+      <dl className="grid grid-cols-2 gap-x-6 gap-y-2 sm:grid-cols-3">
+        {[
+          ["EXPOSURE", `PROTECT $${tradeValueUsdt} NVIDIA`],
+          ...ACTION_SUMMARY,
+          ["MODE", isDemo ? "BITGET DEMO" : "DRY RUN"],
+          ["FUNDS", isDemo ? "VIRTUAL ONLY" : "NONE MOVE"],
+        ].map(([term, value]) => (
+          <div key={term} className="border-t border-ink/10 pt-2">
+            <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+              {term}
+            </dt>
+            <dd className="mt-1 text-[16px] font-bold leading-[20px]">{value}</dd>
+          </div>
+        ))}
+      </dl>
       <button
         type="button"
         onClick={onApprove}
@@ -195,7 +301,7 @@ export default function ApproveExecutePanel({
         </p>
       ) : (
         <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
-          ONE ACTION · ONE APPROVAL · {DRY_RUN_PRE_NOTICE.toUpperCase()}
+          ONE ACTION · ONE APPROVAL · {fundsNotice.toUpperCase()}
         </p>
       )}
       </div>

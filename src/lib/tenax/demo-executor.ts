@@ -19,7 +19,21 @@ import type {
   DemoReadOnlyFetchResult,
 } from "../bitget/demo-auth.ts";
 import {
+  DEMO_ACCOUNT_SETTINGS_PATH,
+  DEMO_POSITION_CURRENT_PATH,
+  extractEnvelopeSafe,
+  fetchDemoReadOnly,
+} from "../bitget/demo-auth.ts";
+import {
+  createDefaultPublicClient,
+  BITGET_BASE_URL,
+} from "../bitget/reality.ts";
+import {
   computeHedgeSizing,
+  evaluatePositionProbe,
+  normalizeAccountSettings,
+  normalizeNvdaInstrument,
+  normalizeNvdaTicker,
   selectReferencePrice,
   type HedgeSizingResult,
   type NvdaInstrument,
@@ -40,6 +54,8 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "../bitget/demo-trade.ts";
+
+export type { ReadFetchImpl, WriteFetchImpl };
 import { hashProposal, isApprovalValidFor, type ProtectionApproval } from "./approval.ts";
 import type {
   ExecutionMode,
@@ -50,6 +66,85 @@ import type {
 
 /** Default human-approval freshness bound (15 minutes). */
 export const DEFAULT_APPROVAL_MAX_AGE_MS = 15 * 60 * 1000;
+
+const HEDGE_POSITION_QUERY = "category=USDT-FUTURES&symbol=NVDAUSDT";
+const SUCCESS_CODE = "00000";
+
+async function fetchPublicRow<T>(
+  path: string,
+  normalize: (body: unknown) => T | null,
+): Promise<T | null> {
+  try {
+    const res = await createDefaultPublicClient().getJson(`${BITGET_BASE_URL}${path}`);
+    if (res.httpStatus !== 200) return null;
+    const root =
+      typeof res.body === "object" && res.body !== null && !Array.isArray(res.body)
+        ? (res.body as Record<string, unknown>)
+        : null;
+    if (root?.code !== SUCCESS_CODE) return null;
+    return normalize(res.body);
+  } catch {
+    return null;
+  }
+}
+
+export interface DemoMarketReaderDeps {
+  readonly credentials: DemoAuthCredentials;
+  readonly baseUrl: string;
+}
+
+/**
+ * Fresh read-only market snapshot for the gates: public NVDAUSDT
+ * instrument/ticker plus authenticated position/settings. Any failed
+ * read yields null fields, which refuse the gates honestly. Never writes.
+ */
+export async function fetchLiveDemoHedgeMarket(
+  deps: DemoMarketReaderDeps,
+): Promise<DemoHedgeMarketState> {
+  const instrument = await fetchPublicRow(
+    `/api/v3/market/instruments?${HEDGE_POSITION_QUERY}`,
+    normalizeNvdaInstrument,
+  );
+  const ticker = await fetchPublicRow(
+    `/api/v3/market/tickers?${HEDGE_POSITION_QUERY}`,
+    normalizeNvdaTicker,
+  );
+  const positionResult = await fetchDemoReadOnly({
+    credentials: deps.credentials,
+    baseUrl: deps.baseUrl,
+    tradingMode: "demo",
+    requestPath: DEMO_POSITION_CURRENT_PATH,
+    queryString: HEDGE_POSITION_QUERY,
+  });
+  const positionEvaluation = evaluatePositionProbe({
+    httpStatus: positionResult.httpStatus,
+    body: positionResult.body,
+    transportError: positionResult.transportError,
+  });
+  const settingsResult = await fetchDemoReadOnly({
+    credentials: deps.credentials,
+    baseUrl: deps.baseUrl,
+    tradingMode: "demo",
+    requestPath: DEMO_ACCOUNT_SETTINGS_PATH,
+  });
+  const settings =
+    settingsResult.transportError === null &&
+    settingsResult.httpStatus === 200 &&
+    extractEnvelopeSafe(settingsResult.body).code === SUCCESS_CODE
+      ? normalizeAccountSettings(settingsResult.body)
+      : null;
+  return {
+    category: instrument?.category ?? null,
+    symbol: instrument?.symbol ?? null,
+    holdMode: settings?.holdMode ?? null,
+    nvdaSymbolConfigFound: settings?.nvdaSymbolConfigFound ?? false,
+    marginMode: settings?.nvdaMarginMode ?? settings?.marginMode ?? null,
+    configuredLeverage: settings?.nvdaLeverage ?? null,
+    position: positionEvaluation.probe === "PASS" ? positionEvaluation.position : null,
+    instrument,
+    ticker,
+  };
+}
 
 /** Fresh market/account snapshot the gates evaluate (all reads, no writes). */
 export interface DemoHedgeMarketState {
@@ -135,7 +230,7 @@ export function formatDemoHedgeQty(normalizedQty: number, quantityPrecision: num
 }
 
 /**
- * Evaluate all 15 pre-execution hard gates. Pure: no network, no writes.
+ * Evaluate all 16 pre-execution hard gates. Pure: no network, no writes.
  * ANY unknown/failed gate refuses the order.
  */
 export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGateReport {
@@ -260,6 +355,14 @@ export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGate
       "execution_mode_demo",
       input.executionMode === "BITGET_DEMO",
       `executionMode=${input.executionMode}`,
+    ),
+  );
+
+  gates.push(
+    gate(
+      "approval_mode",
+      approval.executionMode === "BITGET_DEMO",
+      `approvalExecutionMode=${approval.executionMode} — DRY_RUN approvals can never authorize a Demo submission`,
     ),
   );
 

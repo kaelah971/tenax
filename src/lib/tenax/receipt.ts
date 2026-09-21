@@ -7,6 +7,8 @@
 import type {
   ApprovalState,
   DecisionReceipt,
+  DemoExecutionRecord,
+  DemoOrderRequest,
   ExecutionRequest,
   Exposure,
   IntentType,
@@ -33,11 +35,15 @@ export interface BuildReceiptInput {
   mandateResult: MandateVerdict;
   mandateChecks: MandateCheck[];
   approval: ApprovalState;
-  request: ExecutionRequest;
+  request: ExecutionRequest | DemoOrderRequest;
   rejectedAlternatives: readonly RejectedAlternative[];
   evidenceRefs: readonly string[];
   intentType?: IntentType;
   timestamp?: string;
+  /** True only for BITGET_DEMO (virtual funds moved); default false. */
+  fundsMoved?: boolean;
+  /** Safe normalized Bitget facts; BITGET_DEMO only. */
+  demoExecution?: DemoExecutionRecord;
 }
 
 export function buildDecisionReceipt(input: BuildReceiptInput): DecisionReceipt {
@@ -54,8 +60,9 @@ export function buildDecisionReceipt(input: BuildReceiptInput): DecisionReceipt 
     mandateChecks: input.mandateChecks,
     approval: input.approval,
     executionMode: input.request.mode,
-    fundsMoved: false,
+    fundsMoved: input.fundsMoved ?? false,
     request: input.request,
+    demoExecution: input.demoExecution,
     rejectedAlternatives: input.rejectedAlternatives,
     evidenceRefs: input.evidenceRefs,
   };

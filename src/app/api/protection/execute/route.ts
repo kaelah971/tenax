@@ -1,8 +1,12 @@
-// Server-only: DRY_RUN execution with mandatory server-side re-verification.
+// Server-only: execution with mandatory server-side re-verification.
 // POST /api/protection/execute { flowId } — re-runs mandate evaluation from
-// the stored proposal and re-verifies approval binding before the adapter is
-// touched. Client PASS claims are never trusted. Defaults to DRY_RUN;
-// BITGET_DEMO remains unavailable.
+// the stored proposal and re-verifies approval binding before any adapter is
+// touched. Client PASS claims are never trusted, and only flowId is
+// accepted: quantity, symbol, side, and leverage are always derived
+// server-side and can never be overridden by the client.
+// Execution mode resolves server-side (TENAX_EXECUTION_MODE, default
+// DRY_RUN); BITGET_DEMO additionally requires BITGET_TRADING_MODE=demo.
+// Only POST executes — there is no GET execution path.
 import { ZodError } from "zod";
 
 import {
@@ -25,7 +29,7 @@ export async function POST(request: Request) {
   try {
     const parsed = executeInputSchema.parse(body);
     const store = getTenaxDevStore();
-    const execution = executeProtectionProposal(store, parsed);
+    const execution = await executeProtectionProposal(store, parsed);
     const { receipt } = getDecisionReceipt(store, parsed.flowId);
     return Response.json({ ok: true, ...execution, receipt });
   } catch (err) {
