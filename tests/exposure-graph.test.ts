@@ -379,15 +379,20 @@ afterEach(() => {
 });
 
 describe("service derivation (canonical state only)", () => {
+  // No provider in these tests: discovery resolves to "no external leaf",
+  // which also proves a provider gap never breaks the core graph.
+  const NO_EXTERNAL = { discoverNvdax: async () => null } as const;
+
   it("returns an exposure-only graph when no flow has completed", async () => {
     const store = createDevStore();
     const snapshot = await testSnapshot();
     const { flowId } = createProtectionIntent(store, { rawText: RAW_TEXT });
     analyzeProtectionIntent(store, flowId, snapshot);
-    const graph = getExposureGraph(store);
+    const { graph, nvdax } = await getExposureGraph(store, NO_EXTERNAL);
     expect(graph.protection).toBe("ABSENT");
     expect(graph.sourceFlowId).toBeNull();
     expect(graph.grossExposureUsd).toBe(500);
+    expect(nvdax).toBeNull();
   });
 
   it("keeps the leg ABSENT after a DRY_RUN completion", async () => {
@@ -397,7 +402,7 @@ describe("service derivation (canonical state only)", () => {
     analyzeProtectionIntent(store, flowId, snapshot);
     approveProtectionProposal(store, { flowId, actor: "human" });
     await executeProtectionProposal(store, { flowId });
-    const graph = getExposureGraph(store);
+    const { graph } = await getExposureGraph(store, NO_EXTERNAL);
     expect(graph.protection).toBe("ABSENT");
     expect(graph.representations).toHaveLength(1);
     expect(graph.sourceFlowId).toBe(flowId);
@@ -441,7 +446,7 @@ describe("service derivation (canonical state only)", () => {
         nowMs: Date.now(),
       },
     );
-    const graph = getExposureGraph(store);
+    const { graph } = await getExposureGraph(store, NO_EXTERNAL);
     expect(graph.protection).toBe("PRESENT");
     expect(graph.hedgeVerification).toBe("VERIFIED");
     expect(graph.sourceFlowId).toBe(flowId);
@@ -464,7 +469,7 @@ describe("service derivation (canonical state only)", () => {
     // A newer flow that never completes must not hide the completed graph.
     const second = createProtectionIntent(store, { rawText: RAW_TEXT });
     analyzeProtectionIntent(store, second.flowId, snapshot);
-    const graph = getExposureGraph(store);
+    const { graph } = await getExposureGraph(store, NO_EXTERNAL);
     expect(graph.sourceFlowId).toBe(first.flowId);
   });
 });

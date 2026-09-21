@@ -1,6 +1,7 @@
 // Tenax Exposure — semantic relationship view + canonical graph, presentation only.
 // The graph derives from canonical Tenax state (simulated fixture + latest
-// completed receipt); this page asserts no authority and submits nothing.
+// completed receipt + verified external availability); this page asserts no
+// authority and submits nothing.
 import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
@@ -24,15 +25,22 @@ function formatApproxUsd(value: number | null): string {
   return `~$${value.toFixed(2)}`;
 }
 
+/** Truncated official address for readable display; full value stays in title. */
+function truncateAddress(address: string): string {
+  if (address.length <= 12) return address;
+  return `${address.slice(0, 4)}…${address.slice(-4)}`;
+}
+
 export default async function ExposurePage() {
   const snapshot = await getDemoSnapshot();
   const live = snapshot.availability !== "UNAVAILABLE";
   const instrument = snapshot.instrument.data;
   const trading = snapshot.trading.data;
   const rep = NVDA_EXPOSURE_FIXTURE.representation;
-  const graph = getExposureGraph(getTenaxDevStore());
+  const { graph, nvdax } = await getExposureGraph(getTenaxDevStore());
   const exposureLeg = graph.representations.find((r) => r.role === "exposure");
   const protectionLeg = graph.representations.find((r) => r.role === "protection") ?? null;
+  const availableLeg = graph.representations.find((r) => r.role === "available") ?? null;
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -55,9 +63,8 @@ export default async function ExposurePage() {
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">REPRESENTATIONS · INFORMATIONAL RELATIONSHIPS</p>
           <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">rNVDA · Bitget Reality</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">YOUR REPRESENTATION</p></div><span className="state-mark bg-signal text-ink">YOU ARE HERE</span></div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px] sm:grid-cols-3"><dt className="text-mutedink">Value</dt><dd className="font-semibold">$500 simulated</dd><dt className="text-mutedink">Instrument</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Reality flag</dt><dd className="font-semibold">{live ? (instrument?.isReality ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Trading periods</dt><dd className="font-semibold">{live ? trading?.tradingPeriods.join(" · ") : "—"}</dd><dt className="text-mutedink">Weekend tradable</dt><dd className="font-semibold">{live ? (trading?.weekendTradable ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Order constraints</dt><dd className="font-semibold">min {rep.minOrderQty} rNVDA · min ${rep.minOrderAmount}</dd></dl>
+            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px] sm:grid-cols-3"><dt className="text-mutedink">Value</dt><dd className="font-semibold">$500 simulated</dd><dt className="text-mutedink">Status</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Reality flag</dt><dd className="font-semibold">{live ? (instrument?.isReality ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Trading periods</dt><dd className="font-semibold">{live ? trading?.tradingPeriods.join(" · ") : "—"}</dd><dt className="text-mutedink">Weekend tradable</dt><dd className="font-semibold">{live ? (trading?.weekendTradable ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Order constraints</dt><dd className="font-semibold">min {rep.minOrderQty} rNVDA · min ${rep.minOrderAmount}</dd></dl>
           </LightInstrument>
-          <div className="border-t border-ink/15 pt-4 text-[14px] leading-[20px]"><span className="font-semibold">NVDAx</span><span className="text-mutedink"> · xStocks ecosystem · informational only</span></div>
           <div className="border-t border-ink/15 pt-4 text-[14px] leading-[20px]"><span className="font-semibold">Ondo NVIDIA</span><span className="text-mutedink"> · Ondo ecosystem · informational only</span></div>
         </div>
       </section>
@@ -70,11 +77,12 @@ export default async function ExposurePage() {
         <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
           1 ECONOMIC EXPOSURE · {graph.representations.length} REPRESENTATION{graph.representations.length === 1 ? "" : "S"}
         </p>
-        <div className="relative mt-6 grid gap-5 border-l border-ink/20 pl-5 sm:grid-cols-2 sm:gap-8 sm:pl-8">
+        <p className="mt-3 max-w-xl text-[16px] leading-[24px] text-mutedink">Tenax maps different wrappers to the same economic exposure before applying protection.</p>
+        <div className="relative mt-6 grid gap-5 border-l border-ink/20 pl-5 sm:grid-cols-2 sm:gap-8 sm:pl-8 xl:grid-cols-3">
           <span className="absolute -left-[5px] top-8 h-2.5 w-2.5 rounded-full bg-ink" aria-hidden="true" />
           <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
             <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">{exposureLeg?.representationId} · {exposureLeg?.venue}</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EXPOSURE · {exposureLeg?.symbol}</p></div><span className="state-mark bg-signal text-ink">○ SIMULATED</span></div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Value</dt><dd className="font-semibold">{formatGraphUsd(graph.grossExposureUsd)} simulated</dd><dt className="text-mutedink">Direction</dt><dd className="font-semibold">LONG</dd><dt className="text-mutedink">Instrument</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Ownership</dt><dd className="font-semibold">NOT LIVE — SAMPLE HOLDING</dd></dl>
+            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Value</dt><dd className="font-semibold">{formatGraphUsd(graph.grossExposureUsd)} simulated</dd><dt className="text-mutedink">Direction</dt><dd className="font-semibold">LONG</dd><dt className="text-mutedink">Status</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Ownership</dt><dd className="font-semibold">NOT LIVE — SAMPLE HOLDING</dd></dl>
           </LightInstrument>
           {protectionLeg ? (
             <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
@@ -87,13 +95,24 @@ export default async function ExposurePage() {
               <p className="mt-5 text-[13px] leading-[18px] text-mutedink">No Demo hedge exists for the current state — nothing is shown rather than estimated. <Link href="/app/protect/nvidia" className="font-semibold text-ink underline">Protect this exposure</Link> to attach the NVDAUSDT leg.</p>
             </LightInstrument>
           )}
+          {availableLeg && nvdax ? (
+            <LightInstrument className="border border-dashed border-ink/40 p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">{availableLeg.representationId} · xStocks · {nvdax.network}</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AVAILABLE · ● REAL REPRESENTATION</p></div><span className="state-mark border border-ink/40 text-ink">◇ AVAILABLE</span></div>
+              <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Mint</dt><dd className="font-semibold" title={nvdax.address}>{truncateAddress(nvdax.address)}</dd><dt className="text-mutedink">Provider price</dt><dd className="font-semibold">{nvdax.price === null ? "UNAVAILABLE" : `$${nvdax.price}`}</dd><dt className="text-mutedink">Trading</dt><dd className="font-semibold">{nvdax.tradingHalted === null ? "UNAVAILABLE" : nvdax.tradingHalted ? "HALTED" : "NOT HALTED"}</dd><dt className="text-mutedink">Multiplier</dt><dd className="font-semibold" title="Rebase factor tracking splits and dividends so one token tracks one share of value">{nvdax.currentMultiplier === null ? "UNAVAILABLE" : nvdax.currentMultiplier}</dd><dt className="text-mutedink">Oracles</dt><dd className="font-semibold">{nvdax.oracleManagers.length === 0 ? "UNAVAILABLE" : nvdax.oracleManagers.join(" · ")}</dd><dt className="text-mutedink">Position</dt><dd className="font-semibold">NOT OWNED — NOT A POSITION</dd></dl>
+            </LightInstrument>
+          ) : (
+            <LightInstrument className="border border-dashed border-ink/25 p-5 sm:p-6">
+              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">NVDAx · xStocks</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AVAILABLE · UNVERIFIED</p></div><span className="state-mark border border-ink/30 text-ink">◇ UNAVAILABLE</span></div>
+              <p className="mt-5 text-[13px] leading-[18px] text-mutedink">The xStocks representation could not be verified right now — the core graph above is unaffected. Nothing is attached rather than assumed.</p>
+            </LightInstrument>
+          )}
         </div>
         <dl className="mt-6 grid gap-4 border-t border-ink/15 pt-5 sm:grid-cols-3">
           <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">ECONOMIC EXPOSURE</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatGraphUsd(graph.grossExposureUsd)}</dd></div>
           <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">APPROXIMATE PROTECTED NOTIONAL</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatApproxUsd(graph.protectedNotionalUsd)}</dd></div>
           <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">REMAINING MAPPED EXPOSURE</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatApproxUsd(graph.remainingExposureUsd)}</dd></div>
         </dl>
-        <p className="mt-4 max-w-xl text-[13px] leading-[18px] text-mutedink">Approximate mapping across representations — not delta-neutral, not a hedge-effectiveness claim. Verified executed value only; anything unverified stays unknown.</p>
+        <p className="mt-4 max-w-xl text-[13px] leading-[18px] text-mutedink">Approximate mapping across representations — not delta-neutral, not a hedge-effectiveness claim. Verified executed value only; anything unverified stays unknown. Available does not mean owned.</p>
         <p className="font-syslabel mt-4 border-t border-dashed border-ink/20 pt-4 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">◇ MORE REPRESENTATIONS CAN ATTACH HERE</p>
       </section>
 

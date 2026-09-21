@@ -34,9 +34,22 @@ import {
   type WriteFetchImpl,
 } from "./demo-executor";
 import type { ExecutionMode } from "./domain";
-import { buildExposureGraph, type ExposureGraph } from "./exposure-graph";
+import {
+  buildExposureGraph,
+  withRepresentation,
+  type ExposureGraph,
+  type GraphRepresentation,
+} from "./exposure-graph";
 import { type FlowState, FlowTransitionError, ProtectionFlow } from "./orchestrator";
 import { type TenaxDevStore, nextFlowId } from "./dev-store";
+import {
+  createDefaultXstocksClient,
+  fetchNvdaxDiscovery,
+  toAvailableRepresentation,
+  toNvdaxDisplayFacts,
+  type NvdaxDiscovery,
+  type NvdaxDisplayFacts,
+} from "../xstocks/public";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -287,11 +300,20 @@ export function getDecisionReceipt(store: TenaxDevStore, flowId: string) {
 
 /**
  * Phase 3A — canonical NVIDIA Exposure Graph for the current process.
+ * Phase 3B-B — optionally attaches the verified xStocks NVDAx available
+ * representation (same builder, then withRepresentation; no second builder).
  *
  * Derives from canonical state only: the simulated exposure fixture plus
  * the latest COMPLETED flow's receipt when one exists. No new source of
  * truth — the protection leg appears if and only if that receipt carries
- * a BITGET_DEMO execution record.
+ * a BITGET_DEMO execution record, and the available leg appears if and
+ * only if provider discovery proves identity + address.
+ *
+ * Provider failures are fully isolated: a throwing, timing-out, or
+ * unverified discovery resolves to "no external leaf" and the core
+ * exposure/protection graph renders untouched. No caching: public
+ * representation metadata is re-resolved per call so the page can never
+ * show stale availability semantics.
  *
  * In-memory limitation (minimal, documented): the dev store is
  * process-local and non-durable, so after a server restart no completed
@@ -299,19 +321,77 @@ export function getDecisionReceipt(store: TenaxDevStore, flowId: string) {
  * until a fresh flow completes. Latest COMPLETED wins; newer incomplete
  * flows never displace it.
  */
-export function getExposureGraph(store: TenaxDevStore): ExposureGraph {
+export interface ExposureGraphDeps {
+  /** Injected for tests; defaults to live provider discovery. Never cached. */
+  readonly discoverNvdax?: () => Promise<NvdaxDiscovery | null>;
+  /** Overall deadline for provider discovery; exceeded means "no leaf". */
+  readonly discoveryTimeoutMs?: number;
+}
+
+export interface ExposureGraphView {
+  readonly graph: ExposureGraph;
+  /** Render-only provider facts; null when discovery proves nothing. */
+  readonly nvdax: NvdaxDisplayFacts | null;
+}
+
+const DEFAULT_DISCOVERY_TIMEOUT_MS = 12_000;
+
+async function resolveAvailableNvdax(
+  deps: ExposureGraphDeps,
+): Promise<{ leaf: GraphRepresentation; facts: NvdaxDisplayFacts } | null> {
+  const timeoutMs = deps.discoveryTimeoutMs ?? DEFAULT_DISCOVERY_TIMEOUT_MS;
+  const discover =
+    deps.discoverNvdax ??
+    (() =>
+      fetchNvdaxDiscovery(createDefaultXstocksClient(8000), { gapMs: 300 }));
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  try {
+    const discovery = await Promise.race([
+      discover().catch(() => null),
+      new Promise<null>((resolve) => {
+        timer = setTimeout(() => resolve(null), timeoutMs);
+      }),
+    ]);
+    if (!discovery) return null;
+    const leaf = toAvailableRepresentation(discovery);
+    const facts = toNvdaxDisplayFacts(discovery);
+    if (!leaf || !facts) return null;
+    return { leaf, facts };
+  } catch {
+    return null;
+  } finally {
+    if (timer) clearTimeout(timer);
+  }
+}
+
+function attachAvailable(
+  base: ExposureGraph,
+  resolved: { leaf: GraphRepresentation; facts: NvdaxDisplayFacts } | null,
+): ExposureGraphView {
+  if (!resolved) return { graph: base, nvdax: null };
+  try {
+    return { graph: withRepresentation(base, resolved.leaf), nvdax: resolved.facts };
+  } catch {
+    return { graph: base, nvdax: null };
+  }
+}
+
+export async function getExposureGraph(
+  store: TenaxDevStore,
+  deps: ExposureGraphDeps = {},
+): Promise<ExposureGraphView> {
   let latest: { flowId: string; flow: ProtectionFlow } | null = null;
   for (const [flowId, flow] of store.flows) {
     if (flow.getFlowState() !== "COMPLETED") continue;
     latest = { flowId, flow };
   }
-  if (latest === null) {
-    return buildExposureGraph({ exposure: NVDA_EXPOSURE_FIXTURE });
-  }
-  const { exposure } = latest.flow.getContext();
-  return buildExposureGraph({
-    exposure: exposure ?? NVDA_EXPOSURE_FIXTURE,
-    receipt: latest.flow.getReceipt(),
-    flowId: latest.flowId,
-  });
+  const base =
+    latest === null
+      ? buildExposureGraph({ exposure: NVDA_EXPOSURE_FIXTURE })
+      : buildExposureGraph({
+          exposure: latest.flow.getContext().exposure ?? NVDA_EXPOSURE_FIXTURE,
+          receipt: latest.flow.getReceipt(),
+          flowId: latest.flowId,
+        });
+  return attachAvailable(base, await resolveAvailableNvdax(deps));
 }

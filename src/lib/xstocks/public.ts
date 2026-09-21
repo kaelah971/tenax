@@ -434,6 +434,56 @@ export async function fetchNvdaxDiscovery(
   };
 }
 
+// ---- Display facts (provider-backed, ownership-free) ------------------------
+
+/**
+ * Render-only facts for an available NVDAx leaf. Carries no quantity, no
+ * value-as-position, and no authority: the graph leaf keeps usdValue null
+ * so aggregates can never move; this object only feeds honest labels
+ * (price, halt state, multiplier, oracle names). Null unless identity
+ * PASSes and the preferred-network address is proven.
+ */
+export interface NvdaxDisplayFacts {
+  readonly symbol: string;
+  readonly network: string;
+  /** Official mint address, exactly as the API returned it. */
+  readonly address: string;
+  readonly price: number | null;
+  readonly currentMultiplier: number | null;
+  readonly newMultiplier: number | null;
+  readonly tradingHalted: boolean | null;
+  readonly atomicHalted: boolean | null;
+  /** Oracle managers covering the network, e.g. ["Pyth", "Chainlink"]. */
+  readonly oracleManagers: readonly string[];
+}
+
+export function toNvdaxDisplayFacts(discovery: NvdaxDiscovery): NvdaxDisplayFacts | null {
+  if (discovery.identity.mapping !== "PASS") return null;
+  const address = discovery.solana?.address;
+  if (!address) return null;
+  const managers: string[] = [];
+  for (const oracle of discovery.oracles) {
+    if (oracle.managedBy && !managers.includes(oracle.managedBy)) {
+      managers.push(oracle.managedBy);
+    }
+  }
+  return {
+    symbol: discovery.symbol,
+    network: discovery.network,
+    address,
+    price: discovery.price?.quote ?? null,
+    currentMultiplier: discovery.multiplier?.currentMultiplier ?? null,
+    newMultiplier: discovery.multiplier?.newMultiplier ?? null,
+    tradingHalted:
+      discovery.asset?.isTradingHalted ??
+      discovery.asset?.tradingHalted ??
+      discovery.systemStatus?.isMarketTradingHalted ??
+      null,
+    atomicHalted: discovery.systemStatus?.isAtomicTradingHalted ?? null,
+    oracleManagers: managers,
+  };
+}
+
 // ---- Graph bridge (availability, NOT ownership) -----------------------------
 
 /**
