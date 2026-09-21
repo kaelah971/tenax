@@ -20,7 +20,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
     <div className="tx-observatory-app min-h-screen bg-ivory/60 text-ink">
       <TenaxEnvironment />
       <header className="px-3 pt-3 text-softwhite sm:px-5 sm:pt-5">
-        <div className="tx-authority-dock mx-auto flex w-full max-w-[1280px] flex-wrap items-center gap-x-6 gap-y-3 rounded-[18px] px-4 py-3 sm:px-6 sm:py-3.5">
+        <div className="tx-authority-dock mx-auto flex w-full max-w-[1408px] flex-wrap items-center gap-x-6 gap-y-3 rounded-[18px] px-4 py-3 sm:px-6 sm:py-3.5">
           <Link href="/app" className="flex items-center gap-2.5" aria-label="Tenax Capital home">
             <span className="inline-block h-4 w-4 bg-signal" aria-hidden="true" />
             <span className="text-[17px] font-extrabold leading-[20px] tracking-[0.08em]">
@@ -39,7 +39,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           </span>
         </div>
       </header>
-      <main className="mx-auto w-full max-w-[1280px] px-4 pb-24 sm:px-6">{children}</main>
+      <main className="mx-auto w-full max-w-[1408px] px-4 pb-24 sm:px-6">{children}</main>
     </div>
   );
 }

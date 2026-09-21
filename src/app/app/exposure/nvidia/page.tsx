@@ -1,23 +1,42 @@
-// Tenax Exposure — semantic relationship view + canonical graph, presentation only.
-// The graph derives from canonical Tenax state (simulated fixture + latest
-// completed receipt + verified external availability); this page asserts no
-// authority and submits nothing.
+// Tenax Phase 4A.1 — compact NVIDIA operating surface, presentation only.
+//
+// Dashboard composition: summary → topology + market → coverage + mandate
+// → refusal → CTA + evidence. Every number derives from canonical state
+// (graph, latest evaluation, public candles); this page asserts no
+// authority, submits nothing, and invents no market data.
 import Link from "next/link";
 
+import {
+  CANDLE_INTERVAL_MS,
+  CANDLE_INTERVALS,
+  fetchNvdaCandles,
+  resolveCandleInterval,
+} from "@/lib/bitget/market-series";
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
-import { NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
-import { getExposureGraph } from "@/lib/tenax/service";
-import { LightInstrument } from "../../_components/materials";
+import { getDemoSurfaceView, toSurfaceResponse } from "@/lib/tenax/demo-surface";
+import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
+import { getExposureGraph, getLatestMandateEvaluation } from "@/lib/tenax/service";
+import { formatMultiplier } from "@/lib/tenax/format";
+import {
+  coveragePercent,
+  locateExecutionCandle,
+  mandateVisualRows,
+} from "@/lib/tenax/visuals";
+import { LightInstrument, SceneAnchor } from "../../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
+import { TenaxAgent } from "../../_components/living";
+import {
+  CoverageBar,
+  MandateRows,
+  CandleChart,
+  RefusalBanner,
+  TopologyStrip,
+  type TopologyNode,
+} from "./_visuals";
+import LiveSurface from "./_live-surface";
 
 export const dynamic = "force-dynamic";
-
-/** USD display: exact cents when known, an em dash when unknown — never a guess. */
-function formatGraphUsd(value: number | null): string {
-  if (value === null) return "—";
-  return `$${value.toFixed(2)}`;
-}
 
 /** Approximate display: "~" prefix marks a derived mapping, not a quote. */
 function formatApproxUsd(value: number | null): string {
@@ -25,96 +44,292 @@ function formatApproxUsd(value: number | null): string {
   return `~$${value.toFixed(2)}`;
 }
 
-/** Truncated official address for readable display; full value stays in title. */
-function truncateAddress(address: string): string {
-  if (address.length <= 12) return address;
-  return `${address.slice(0, 4)}…${address.slice(-4)}`;
-}
+export default async function ExposurePage({
+  searchParams,
+}: {
+  searchParams: Promise<{ interval?: string }>;
+}) {
+  const store = getTenaxDevStore();
+  const { interval: rawInterval } = await searchParams;
+  const interval = resolveCandleInterval(rawInterval);
+  const [snapshot, view, surface, candles] = await Promise.all([
+    getDemoSnapshot(),
+    getExposureGraph(store),
+    getDemoSurfaceView(),
+    fetchNvdaCandles(undefined, interval),
+  ]);
+  const { graph, nvdax } = view;
+  const evaluation = getLatestMandateEvaluation(store);
 
-export default async function ExposurePage() {
-  const snapshot = await getDemoSnapshot();
   const live = snapshot.availability !== "UNAVAILABLE";
   const instrument = snapshot.instrument.data;
   const trading = snapshot.trading.data;
   const rep = NVDA_EXPOSURE_FIXTURE.representation;
-  const { graph, nvdax } = await getExposureGraph(getTenaxDevStore());
-  const exposureLeg = graph.representations.find((r) => r.role === "exposure");
+
   const protectionLeg = graph.representations.find((r) => r.role === "protection") ?? null;
   const availableLeg = graph.representations.find((r) => r.role === "available") ?? null;
 
+  const coverage = coveragePercent(graph.protectedNotionalUsd, graph.grossExposureUsd);
+
+  const topologyNodes: readonly TopologyNode[] = [
+    {
+      id: "rNVDA",
+      symbol: "rNVDA",
+      venue: "Bitget Reality",
+      role: "EXPOSURE",
+      metric: "$500 SIMULATED",
+      tone: "exposure",
+    },
+    protectionLeg
+      ? {
+          id: "NVDAUSDT",
+          symbol: "NVDAUSDT",
+          venue: "Bitget Demo",
+          role: "PROTECTION",
+          metric:
+            protectionLeg.usdValue !== null
+              ? `${formatApproxUsd(protectionLeg.usdValue)} VERIFIED`
+              : `${protectionLeg.quantity ?? "—"} SUBMITTED`,
+          tone: "protection",
+        }
+      : {
+          id: "NVDAUSDT",
+          symbol: "NVDAUSDT",
+          venue: "Bitget Demo",
+          role: "PROTECTION",
+          metric: "NOT EXECUTED",
+          tone: "absent",
+        },
+    availableLeg && nvdax
+      ? {
+          id: "NVDAx",
+          symbol: "NVDAx",
+          venue: "xStocks · Solana",
+          role: "AVAILABLE",
+          metric: "NOT OWNED",
+          tone: "available",
+        }
+      : {
+          id: "NVDAx",
+          symbol: "NVDAx",
+          venue: "xStocks",
+          role: "AVAILABLE",
+          metric: "UNVERIFIED",
+          tone: "absent",
+        },
+  ];
+
+  const demo = evaluation?.demo ?? null;
+  const action =
+    demo && demo.filled && demo.avgPrice !== null
+      ? { qty: demo.qty, avgPrice: demo.avgPrice, submittedAt: demo.submittedAt }
+      : null;
+  const candleList = candles?.candles ?? [];
+  const markIndex =
+    action && candleList.length > 0
+      ? locateExecutionCandle(candleList, action.submittedAt, CANDLE_INTERVAL_MS[interval])
+      : null;
+  const outsideWindow = action !== null && candleList.length > 0 && markIndex === null;
+
+  const mandateRows = mandateVisualRows({
+    proposalPct: evaluation?.proposalPct ?? null,
+    tradeValueUsdt: evaluation?.tradeValueUsdt ?? null,
+    leverageUsed: evaluation?.leverageUsed ?? null,
+    approval: evaluation?.approval ?? null,
+    checks: evaluation?.checks ?? null,
+    maxPct: MANDATE_FIXTURE.maxProtectionPct,
+    maxTradeValueUsdt: MANDATE_FIXTURE.maxTradeValueUsdt,
+    maxLeverage: MANDATE_FIXTURE.maxLeverage,
+  });
+
+  const refused = evaluation?.rejected ?? null;
+
   return (
-    <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
+    <div className="tx-observatory-entry flex flex-col gap-6 pt-6 sm:gap-8 sm:pt-8">
       <DecisionRail current="EXPOSURE" />
-      <div className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EXPOSURE GRAPH · UNDERLYING OBJECT</p>
-        <h1 className="mt-3 text-[52px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[92px]">NVIDIA</h1>
-        <p className="mt-4 max-w-xl text-[16px] leading-[24px] text-mutedink">The economic exposure. Everything below is a representation of it — never the same thing.</p>
+
+      {/* ROW 1 — compact NVIDIA summary */}
+      <div className="tx-material-editorial border-t-2 border-ink pt-4 sm:pt-5">
+        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          NVIDIA · ECONOMIC OBJECT · 1 EXPOSURE · {graph.representations.length} REPRESENTATION
+          {graph.representations.length === 1 ? "" : "S"}
+        </p>
+        <div className="mt-1.5 flex flex-wrap items-end gap-x-8 gap-y-2">
+          <h1 className="text-[44px] font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-[56px]">
+            NVIDIA
+          </h1>
+          <p className="value-live text-[40px] font-extrabold leading-none tracking-[-0.03em] sm:text-[52px]">
+            $500
+          </p>
+          <p className="pb-1">
+            <span className="state-mark bg-signal text-ink">○ SIMULATED</span>
+          </p>
+        </div>
+        <p className="mt-1.5 max-w-xl text-[14px] leading-[20px] text-mutedink">
+          The economic exposure. Wrappers and venues are representations of it — never the same thing.
+        </p>
       </div>
 
-      <section aria-label="NVIDIA exposure relationship" className="relative grid gap-5 sm:grid-cols-[0.8fr_1.2fr] sm:gap-8">
-        <div className="tx-material-editorial border-t-2 border-ink p-5 sm:p-7">
-          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">UNDERLYING EXPOSURE</p>
-          <p className="mt-5 text-[54px] font-extrabold leading-none tracking-[-0.04em]">$500</p>
-          <p className="mt-2 text-[18px] font-bold leading-[24px]">NVIDIA economic exposure</p>
-          <p className="mt-3 max-w-sm text-[13px] leading-[18px] text-mutedink">The agent begins here before it interprets any token symbol.</p>
+      {/* LIVE MARKET SURFACE — the centerpiece, full emphasis */}
+      <LightInstrument className="border-2 border-ink p-5 sm:p-6">
+        <div className="flex items-start justify-between gap-4">
+          <p className="font-syslabel pt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            MARKET · LIVE BITGET DEMO SURFACE
+          </p>
+          <SceneAnchor className="tx-floating-mascot relative z-10 -mb-2 -mt-7 shrink-0 sm:-mr-2">
+            <TenaxAgent state="watching" size={100} caption="ON WATCH" />
+          </SceneAnchor>
         </div>
-        <div className="relative flex flex-col gap-3 border-l border-ink/20 pl-5 sm:pl-8">
-          <span className="absolute -left-[5px] top-8 h-2.5 w-2.5 rounded-full bg-ink" aria-hidden="true" />
-          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">REPRESENTATIONS · INFORMATIONAL RELATIONSHIPS</p>
-          <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">rNVDA · Bitget Reality</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">YOUR REPRESENTATION</p></div><span className="state-mark bg-signal text-ink">YOU ARE HERE</span></div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px] sm:grid-cols-3"><dt className="text-mutedink">Value</dt><dd className="font-semibold">$500 simulated</dd><dt className="text-mutedink">Status</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Reality flag</dt><dd className="font-semibold">{live ? (instrument?.isReality ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Trading periods</dt><dd className="font-semibold">{live ? trading?.tradingPeriods.join(" · ") : "—"}</dd><dt className="text-mutedink">Weekend tradable</dt><dd className="font-semibold">{live ? (trading?.weekendTradable ? "yes" : "—") : "—"}</dd><dt className="text-mutedink">Order constraints</dt><dd className="font-semibold">min {rep.minOrderQty} rNVDA · min ${rep.minOrderAmount}</dd></dl>
-          </LightInstrument>
-          <div className="border-t border-ink/15 pt-4 text-[14px] leading-[20px]"><span className="font-semibold">Ondo NVIDIA</span><span className="text-mutedink"> · Ondo ecosystem · informational only</span></div>
+        <div className="-mt-3">
+          <LiveSurface initial={toSurfaceResponse(surface)} />
         </div>
-      </section>
+        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Candle interval">
+            {CANDLE_INTERVALS.map((tf) => (
+              <Link
+                key={tf}
+                href={`/app/exposure/nvidia?interval=${tf}`}
+                aria-current={tf === interval ? "true" : undefined}
+                className={`font-syslabel rounded-[8px] px-3 py-1.5 text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
+                  tf === interval
+                    ? "bg-ink font-bold text-softwhite"
+                    : "border border-ink/25 text-ink hover:bg-ink hover:text-softwhite"
+                }`}
+              >
+                {tf}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-3">
+            {candleList.length > 0 ? (
+              <CandleChart
+                candles={candleList}
+                interval={interval}
+                action={action ? { qty: action.qty, avgPrice: action.avgPrice } : null}
+                markIndex={markIndex}
+                outsideWindow={outsideWindow}
+                provenanceLabel={`REAL MARKET · BITGET PUBLIC CANDLES · NVDAUSDT ${interval}`}
+              />
+            ) : (
+              <div className="border border-dashed border-ink/30 p-4 sm:p-5">
+                <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+                  MARKET DATA UNAVAILABLE
+                </p>
+                <p className="mt-1.5 max-w-xl text-[13px] leading-[18px] text-mutedink">
+                  Public candles could not be loaded — no chart is drawn rather than a synthetic one.
+                </p>
+              </div>
+            )}
+          </div>
+          <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            TENAX RECEIPT · VERIFIED ENTRY · BITGET_DEMO · VIRTUAL FUNDS ONLY
+          </p>
+      </LightInstrument>
 
-      <div><Link href="/app/protect/nvidia" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">PROTECT THIS EXPOSURE <span className="btn-arrow" aria-hidden="true">→</span></Link></div>
+      {/* ROW 3 — coverage (~40%) + mandate (~60%) */}
+      <div className="grid gap-4 sm:gap-5 xl:grid-cols-5">
+        <LightInstrument className="p-5 sm:p-6 xl:col-span-2">
+          <CoverageBar
+            protectedUsd={formatApproxUsd(graph.protectedNotionalUsd)}
+            remainingUsd={formatApproxUsd(graph.remainingExposureUsd)}
+            coverage={coverage}
+          />
+        </LightInstrument>
+        <LightInstrument className="p-5 sm:p-6 xl:col-span-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            AUTHORITY · MANDATE BOUNDARIES
+          </p>
+          <h2 className="mt-1 text-[22px] font-extrabold leading-[1.05] tracking-[-0.02em] sm:text-[26px]">
+            Bounded before it acts.
+          </h2>
+          <div className="mt-3">
+            <MandateRows rows={mandateRows} />
+          </div>
+          {!evaluation ? (
+            <p className="mt-2 max-w-xl text-[12px] leading-[17px] text-mutedink">
+              No evaluated proposal yet — bounds are the standing mandate, awaiting a fresh flow.
+            </p>
+          ) : null}
+        </LightInstrument>
+      </div>
 
-      <section aria-label="Canonical exposure graph" className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
-        <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EXPOSURE GRAPH · CANONICAL VIEW</p>
-        <h2 className="mt-3 text-[40px] font-extrabold leading-[0.9] tracking-[-0.04em] sm:text-[64px]">NVIDIA</h2>
-        <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
-          1 ECONOMIC EXPOSURE · {graph.representations.length} REPRESENTATION{graph.representations.length === 1 ? "" : "S"}
+      {/* ROW 4 — refusal banner */}
+      {refused ? (
+        <section aria-label="Refusal evidence">
+          <RefusalBanner
+            value={refused.value}
+            pct={refused.pct}
+            maxValue={MANDATE_FIXTURE.maxTradeValueUsdt}
+            maxPct={MANDATE_FIXTURE.maxProtectionPct}
+            failedRules={refused.failedRules}
+          />
+        </section>
+      ) : null}
+
+      {/* Topology explainer — secondary: how Tenax maps the exposure */}
+      <LightInstrument className="p-5 sm:p-6">
+        <div className="flex flex-wrap items-baseline justify-between gap-x-6 gap-y-1">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            HOW TENAX MAPS THE EXPOSURE
+          </p>
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            1 EXPOSURE · {graph.representations.length} REPRESENTATION
+            {graph.representations.length === 1 ? "" : "S"}
+          </p>
+        </div>
+        <div className="mt-3">
+          <TopologyStrip nodes={topologyNodes} />
+        </div>
+        <p className="mt-3 max-w-2xl text-[13px] leading-[18px] text-mutedink">
+          Protection applies to the exposure, never to a wrapper. Available does not mean owned.
         </p>
-        <p className="mt-3 max-w-xl text-[16px] leading-[24px] text-mutedink">Tenax maps different wrappers to the same economic exposure before applying protection.</p>
-        <div className="relative mt-6 grid gap-5 border-l border-ink/20 pl-5 sm:grid-cols-2 sm:gap-8 sm:pl-8 xl:grid-cols-3">
-          <span className="absolute -left-[5px] top-8 h-2.5 w-2.5 rounded-full bg-ink" aria-hidden="true" />
-          <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
-            <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">{exposureLeg?.representationId} · {exposureLeg?.venue}</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EXPOSURE · {exposureLeg?.symbol}</p></div><span className="state-mark bg-signal text-ink">○ SIMULATED</span></div>
-            <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Value</dt><dd className="font-semibold">{formatGraphUsd(graph.grossExposureUsd)} simulated</dd><dt className="text-mutedink">Direction</dt><dd className="font-semibold">LONG</dd><dt className="text-mutedink">Status</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd><dt className="text-mutedink">Ownership</dt><dd className="font-semibold">NOT LIVE — SAMPLE HOLDING</dd></dl>
-          </LightInstrument>
-          {protectionLeg ? (
-            <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">{protectionLeg.representationId} · {protectionLeg.venue}</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PROTECTION · SHORT · {protectionLeg.leverage ?? "—"} · {protectionLeg.marginMode ?? "—"}</p></div><span className="state-mark bg-ink text-softwhite">{graph.hedgeVerification === "VERIFIED" ? "VERIFIED" : "SUBMITTED"}</span></div>
-              <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Quantity</dt><dd className="font-semibold">{protectionLeg.quantity ?? "—"}</dd><dt className="text-mutedink">Executed value</dt><dd className="font-semibold">{protectionLeg.usdValue === null ? "AWAITING VERIFICATION" : `${formatApproxUsd(protectionLeg.usdValue)} verified`}</dd><dt className="text-mutedink">Funds</dt><dd className="font-semibold">VIRTUAL ONLY</dd><dt className="text-mutedink">Source</dt><dd className="font-semibold">{graph.sourceFlowId ?? "—"}</dd></dl>
-            </LightInstrument>
-          ) : (
-            <LightInstrument className="tx-material-light-frost p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">No hedge executed</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PROTECTION · ABSENT</p></div><span className="state-mark border border-ink/30 text-ink">◇ NOT EXECUTED</span></div>
-              <p className="mt-5 text-[13px] leading-[18px] text-mutedink">No Demo hedge exists for the current state — nothing is shown rather than estimated. <Link href="/app/protect/nvidia" className="font-semibold text-ink underline">Protect this exposure</Link> to attach the NVDAUSDT leg.</p>
-            </LightInstrument>
-          )}
-          {availableLeg && nvdax ? (
-            <LightInstrument className="border border-dashed border-ink/40 p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">{availableLeg.representationId} · xStocks · {nvdax.network}</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AVAILABLE · ● REAL REPRESENTATION</p></div><span className="state-mark border border-ink/40 text-ink">◇ AVAILABLE</span></div>
-              <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-3 text-[13px] leading-[18px]"><dt className="text-mutedink">Mint</dt><dd className="font-semibold" title={nvdax.address}>{truncateAddress(nvdax.address)}</dd><dt className="text-mutedink">Provider price</dt><dd className="font-semibold">{nvdax.price === null ? "UNAVAILABLE" : `$${nvdax.price}`}</dd><dt className="text-mutedink">Trading</dt><dd className="font-semibold">{nvdax.tradingHalted === null ? "UNAVAILABLE" : nvdax.tradingHalted ? "HALTED" : "NOT HALTED"}</dd><dt className="text-mutedink">Multiplier</dt><dd className="font-semibold" title="Rebase factor tracking splits and dividends so one token tracks one share of value">{nvdax.currentMultiplier === null ? "UNAVAILABLE" : nvdax.currentMultiplier}</dd><dt className="text-mutedink">Oracles</dt><dd className="font-semibold">{nvdax.oracleManagers.length === 0 ? "UNAVAILABLE" : nvdax.oracleManagers.join(" · ")}</dd><dt className="text-mutedink">Position</dt><dd className="font-semibold">NOT OWNED — NOT A POSITION</dd></dl>
-            </LightInstrument>
-          ) : (
-            <LightInstrument className="border border-dashed border-ink/25 p-5 sm:p-6">
-              <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="text-[18px] font-bold leading-[24px]">NVDAx · xStocks</p><p className="font-syslabel mt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AVAILABLE · UNVERIFIED</p></div><span className="state-mark border border-ink/30 text-ink">◇ UNAVAILABLE</span></div>
-              <p className="mt-5 text-[13px] leading-[18px] text-mutedink">The xStocks representation could not be verified right now — the core graph above is unaffected. Nothing is attached rather than assumed.</p>
-            </LightInstrument>
-          )}
+      </LightInstrument>
+
+      {/* ROW 5 — CTA + collapsed technical evidence */}
+      <div className="flex flex-col gap-4">
+        <div>
+          <Link href="/app/protect/nvidia" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">
+            PROTECT THIS EXPOSURE <span className="btn-arrow" aria-hidden="true">→</span>
+          </Link>
         </div>
-        <dl className="mt-6 grid gap-4 border-t border-ink/15 pt-5 sm:grid-cols-3">
-          <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">ECONOMIC EXPOSURE</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatGraphUsd(graph.grossExposureUsd)}</dd></div>
-          <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">APPROXIMATE PROTECTED NOTIONAL</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatApproxUsd(graph.protectedNotionalUsd)}</dd></div>
-          <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">REMAINING MAPPED EXPOSURE</dt><dd className="mt-1 text-[26px] font-extrabold leading-none">{formatApproxUsd(graph.remainingExposureUsd)}</dd></div>
-        </dl>
-        <p className="mt-4 max-w-xl text-[13px] leading-[18px] text-mutedink">Approximate mapping across representations — not delta-neutral, not a hedge-effectiveness claim. Verified executed value only; anything unverified stays unknown. Available does not mean owned.</p>
-        <p className="font-syslabel mt-4 border-t border-dashed border-ink/20 pt-4 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">◇ MORE REPRESENTATIONS CAN ATTACH HERE</p>
-      </section>
+        <div className="grid gap-4 md:grid-cols-3 md:gap-5">
+          <details className="rounded-[12px] border border-ink/15 p-4">
+            <summary className="font-syslabel cursor-pointer text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              BITGET MARKET DETAIL
+            </summary>
+            <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px] leading-[17px]">
+              <dt className="text-mutedink">Status</dt><dd className="font-semibold">{live ? (instrument?.status ?? "—") : "Unavailable"}</dd>
+              <dt className="text-mutedink">Reality flag</dt><dd className="font-semibold">{live ? (instrument?.isReality ? "yes" : "—") : "—"}</dd>
+              <dt className="text-mutedink">Trading periods</dt><dd className="font-semibold">{live ? trading?.tradingPeriods.join(" · ") : "—"}</dd>
+              <dt className="text-mutedink">Weekend tradable</dt><dd className="font-semibold">{live ? (trading?.weekendTradable ? "yes" : "—") : "—"}</dd>
+              <dt className="text-mutedink">Order constraints</dt><dd className="font-semibold">min {rep.minOrderQty} rNVDA · min ${rep.minOrderAmount}</dd>
+              <dt className="text-mutedink">Snapshot age</dt><dd className="font-semibold break-all">{snapshot.fetchedAt}</dd>
+            </dl>
+          </details>
+          <details className="rounded-[12px] border border-ink/15 p-4">
+            <summary className="font-syslabel cursor-pointer text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              XSTOCKS REPRESENTATION DETAIL
+            </summary>
+            {nvdax ? (
+              <dl className="mt-2.5 grid grid-cols-2 gap-x-4 gap-y-1.5 text-[12px] leading-[17px]">
+                <dt className="text-mutedink">Mint</dt><dd className="break-all font-semibold" title={nvdax.address}>{nvdax.address}</dd>
+                <dt className="text-mutedink">Multiplier</dt><dd className="font-semibold" title="Rebase factor tracking splits and dividends">{nvdax.currentMultiplier === null ? "UNAVAILABLE" : formatMultiplier(nvdax.currentMultiplier)}</dd>
+                <dt className="text-mutedink">Oracles</dt><dd className="font-semibold">{nvdax.oracleManagers.length === 0 ? "UNAVAILABLE" : nvdax.oracleManagers.join(" · ")}</dd>
+                <dt className="text-mutedink">Atomic halted</dt><dd className="font-semibold">{nvdax.atomicHalted === null ? "UNAVAILABLE" : nvdax.atomicHalted ? "yes" : "no"}</dd>
+              </dl>
+            ) : (
+              <p className="mt-2.5 text-[12px] leading-[17px] text-mutedink">xStocks metadata unavailable right now.</p>
+            )}
+          </details>
+          <details className="rounded-[12px] border border-ink/15 p-4">
+            <summary className="font-syslabel cursor-pointer text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              OTHER KNOWN WRAPPERS
+            </summary>
+            <p className="mt-2.5 text-[12px] leading-[17px] text-mutedink">
+              Ondo NVIDIA · Ondo ecosystem · informational only — not connected, not mapped, not owned.
+            </p>
+          </details>
+        </div>
+      </div>
 
       <ProvenanceStrip items={[live ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO"]} />
     </div>

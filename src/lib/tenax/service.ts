@@ -22,6 +22,7 @@ import { z } from "zod";
 
 import type { RealityPublicBundle } from "../bitget/reality";
 import type { DemoAuthCredentials } from "../bitget/demo-auth";
+import { parseAmount } from "../bitget/demo-assets";
 import { normalizeNvidiaSnapshot, type NvidiaMarketSnapshot } from "../intelligence/snapshot";
 import { type ApprovalActor } from "./approval";
 import { isDemoTradingMode, resolveExecutionMode } from "./execution";
@@ -33,7 +34,7 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
-import type { ExecutionMode } from "./domain";
+import type { ApprovalState, ExecutionMode } from "./domain";
 import {
   buildExposureGraph,
   withRepresentation,
@@ -185,7 +186,8 @@ export interface DemoServiceDeps {
   readonly executionMode?: ExecutionMode;
 }
 
-function readDemoCredentials(env: Record<string, string | undefined>): DemoAuthCredentials | null {
+/** Server-only credential loader. Returns null unless all three Demo secrets are present. Never logged. */
+export function readDemoCredentials(env: Record<string, string | undefined>): DemoAuthCredentials | null {
   const apiKey = (env.BITGET_API_KEY ?? "").trim();
   const secretKey = (env.BITGET_SECRET_KEY ?? "").trim();
   const passphrase = (env.BITGET_PASSPHRASE ?? "").trim();
@@ -296,6 +298,75 @@ export async function executeProtectionProposal(
 export function getDecisionReceipt(store: TenaxDevStore, flowId: string) {
   const flow = getFlow(store, flowId);
   return { flowId, state: flow.getFlowState() as FlowState, receipt: flow.getReceipt() };
+}
+
+/**
+ * Phase 4A — latest evaluated decision in render-ready form (read-only).
+ *
+ * Surfaces the canonical evaluated proposal, mandate checks, approval
+ * state, considered-and-refused alternative, and verified Demo facts from
+ * the latest COMPLETED flow. Null when no flow completed. Visualization
+ * consumes this; authority stays with the Mandate Engine and receipts.
+ */
+export interface LatestMandateEvaluation {
+  readonly flowId: string;
+  readonly proposalPct: number;
+  readonly tradeValueUsdt: number;
+  readonly leverageUsed: number;
+  readonly approval: ApprovalState | null;
+  readonly checks: readonly { readonly id: string; readonly pass: boolean }[];
+  readonly rejected: {
+    readonly value: number;
+    readonly pct: number;
+    readonly failedRules: readonly string[];
+  } | null;
+  readonly demo: {
+    readonly qty: string;
+    readonly avgPrice: number | null;
+    readonly submittedAt: string | null;
+    readonly filled: boolean;
+  } | null;
+}
+
+export function getLatestMandateEvaluation(
+  store: TenaxDevStore,
+): LatestMandateEvaluation | null {
+  let latest: { flowId: string; flow: ProtectionFlow } | null = null;
+  for (const [flowId, flow] of store.flows) {
+    if (flow.getFlowState() !== "COMPLETED") continue;
+    latest = { flowId, flow };
+  }
+  if (!latest) return null;
+  const { analysis, approval, demoExecution } = latest.flow.getContext();
+  if (!analysis) return null;
+  const alternative = analysis.consideredAlternative;
+  return {
+    flowId: latest.flowId,
+    proposalPct: analysis.proposal.protectionPct,
+    tradeValueUsdt: analysis.proposal.proposedTradeValueUsdt,
+    leverageUsed: analysis.proposal.leverageUsed,
+    approval: approval?.state ?? null,
+    checks: analysis.authority.mandateDecision.checks.map((c) => ({
+      id: c.id,
+      pass: c.pass,
+    })),
+    rejected:
+      alternative.decision.verdict === "REFUSE"
+        ? {
+            value: alternative.proposal.proposedTradeValueUsdt,
+            pct: alternative.proposal.protectionPct,
+            failedRules: alternative.decision.failedRules,
+          }
+        : null,
+    demo: demoExecution
+      ? {
+          qty: demoExecution.qty,
+          avgPrice: parseAmount(demoExecution.avgPrice),
+          submittedAt: demoExecution.submittedAt,
+          filled: demoExecution.filled,
+        }
+      : null,
+  };
 }
 
 /**
