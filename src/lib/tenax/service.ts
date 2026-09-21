@@ -34,6 +34,7 @@ import {
   type WriteFetchImpl,
 } from "./demo-executor";
 import type { ExecutionMode } from "./domain";
+import { buildExposureGraph, type ExposureGraph } from "./exposure-graph";
 import { type FlowState, FlowTransitionError, ProtectionFlow } from "./orchestrator";
 import { type TenaxDevStore, nextFlowId } from "./dev-store";
 
@@ -282,4 +283,35 @@ export async function executeProtectionProposal(
 export function getDecisionReceipt(store: TenaxDevStore, flowId: string) {
   const flow = getFlow(store, flowId);
   return { flowId, state: flow.getFlowState() as FlowState, receipt: flow.getReceipt() };
+}
+
+/**
+ * Phase 3A — canonical NVIDIA Exposure Graph for the current process.
+ *
+ * Derives from canonical state only: the simulated exposure fixture plus
+ * the latest COMPLETED flow's receipt when one exists. No new source of
+ * truth — the protection leg appears if and only if that receipt carries
+ * a BITGET_DEMO execution record.
+ *
+ * In-memory limitation (minimal, documented): the dev store is
+ * process-local and non-durable, so after a server restart no completed
+ * flow exists and the graph honestly shows the protection leg as ABSENT
+ * until a fresh flow completes. Latest COMPLETED wins; newer incomplete
+ * flows never displace it.
+ */
+export function getExposureGraph(store: TenaxDevStore): ExposureGraph {
+  let latest: { flowId: string; flow: ProtectionFlow } | null = null;
+  for (const [flowId, flow] of store.flows) {
+    if (flow.getFlowState() !== "COMPLETED") continue;
+    latest = { flowId, flow };
+  }
+  if (latest === null) {
+    return buildExposureGraph({ exposure: NVDA_EXPOSURE_FIXTURE });
+  }
+  const { exposure } = latest.flow.getContext();
+  return buildExposureGraph({
+    exposure: exposure ?? NVDA_EXPOSURE_FIXTURE,
+    receipt: latest.flow.getReceipt(),
+    flowId: latest.flowId,
+  });
 }
