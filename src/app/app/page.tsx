@@ -4,6 +4,7 @@
 import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
+import { resolveExecutionMode } from "@/lib/tenax/execution";
 import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "./_copy";
 import { AuthorityInstrument, ClearInstrument, ControlDock, EvidenceStack, LightInstrument, SceneAnchor } from "./_components/materials";
 import { DecisionRail, formatCompact, formatMarketTime, ProvenanceStrip } from "./_components/ui";
@@ -13,6 +14,9 @@ export const dynamic = "force-dynamic";
 
 export default async function CapitalPage() {
   const snapshot = await getDemoSnapshot();
+  // Server-resolved execution capability for display only: which adapter
+  // the server would use, not whether anything has executed.
+  const executionMode = resolveExecutionMode(process.env);
   const live = snapshot.availability !== "UNAVAILABLE";
   const ticker = snapshot.ticker.data;
   const instrument = snapshot.instrument.data;
@@ -91,7 +95,7 @@ export default async function CapitalPage() {
         </div>
       </AuthorityInstrument>
 
-      <ProvenanceStrip items={[live ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", "DRY_RUN EXECUTION"]} />
+      <ProvenanceStrip items={[live ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", `${executionMode} EXECUTION`]} />
     </div>
   );
 }

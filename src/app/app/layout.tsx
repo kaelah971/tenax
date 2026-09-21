@@ -1,14 +1,21 @@
 // Tenax Phase 1E-C — app shell: ink authority bar, signal-yellow active
-// route, compact mono DRY RUN indicator, living environment backdrop.
+// route, compact mono execution-mode indicator, living environment backdrop.
 // Ivory field persists; depth comes from the fixed environment layer.
+// The mode badge is server-resolved per request via the canonical resolver
+// (TENAX_EXECUTION_MODE, default DRY_RUN): capability display only, never
+// an execution claim, never client-decided, never a secret.
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import { resolveExecutionMode } from "@/lib/tenax/execution";
 import { TenaxEnvironment } from "./_components/living";
 import ShellNav from "./_components/ShellNav";
 import "./observatory.css";
 
+export const dynamic = "force-dynamic";
+
 export default function AppLayout({ children }: { children: ReactNode }) {
+  const executionMode = resolveExecutionMode(process.env);
   return (
     <div className="tx-observatory-app min-h-screen bg-ivory/60 text-ink">
       <TenaxEnvironment />
@@ -28,7 +35,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
             <ShellNav mobile />
           </details>
           <span className="font-syslabel ml-auto rounded-[7px] border border-signal/70 bg-signal/[0.08] px-2.5 py-1.5 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_0_18px_-6px_rgba(245,255,59,0.7)]">
-            □ DRY_RUN
+            □ {executionMode}
           </span>
         </div>
       </header>
