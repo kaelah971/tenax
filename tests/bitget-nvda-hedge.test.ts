@@ -348,6 +348,25 @@ describe("NVDAUSDT position normalization", () => {
     expect(normalizeNvdaPosition(null)).toBeNull();
     expect(normalizeNvdaPosition({})).toBeNull();
     expect(normalizeNvdaPosition({ data: null })).toBeNull();
+    expect(normalizeNvdaPosition({ code: "00000", data: {} })).toBeNull();
+    expect(normalizeNvdaPosition({ code: "00000", data: { list: "nope" } })).toBeNull();
+  });
+
+  it("maps the observed after-close null container to a valid no-position result", () => {
+    // Live shape after a full close: 200 + 00000 + data.list === null.
+    const afterClose = { code: "00000", msg: "success", requestTime: 1759999999999, data: { list: null } };
+    expect(normalizeNvdaPosition(afterClose)).toEqual({
+      hasPosition: false,
+      side: null,
+      size: null,
+      leverage: null,
+      marginMode: null,
+      markPrice: null,
+      avgPrice: null,
+    });
+    expect(
+      normalizeNvdaPosition({ code: "00000", data: { positions: null } })?.hasPosition,
+    ).toBe(false);
   });
 });
 
@@ -390,6 +409,17 @@ describe("position probe evaluation (no false negatives)", () => {
     const result = evaluatePositionProbe({
       httpStatus: 200,
       body: { code: "00000", msg: "success", data: null },
+      transportError: null,
+    });
+    expect(result.probe).toBe("PASS");
+    expect(result.failureKind).toBe("NONE");
+    expect(result.position.hasPosition).toBe(false);
+  });
+
+  it("passes with NONE on the observed after-close null-container shape", () => {
+    const result = evaluatePositionProbe({
+      httpStatus: 200,
+      body: { code: "00000", msg: "success", requestTime: 1759999999999, data: { list: null } },
       transportError: null,
     });
     expect(result.probe).toBe("PASS");

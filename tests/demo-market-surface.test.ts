@@ -125,10 +125,28 @@ describe("Demo position parsing", () => {
     ).toBe("NO_POSITION");
   });
 
+  it("maps the observed after-close null container to NO_POSITION", () => {
+    // Live shape after a full close: 200 + 00000 + data.list === null.
+    const afterClose = {
+      code: "00000",
+      msg: "success",
+      requestTime: 1759999999999,
+      data: { list: null },
+    };
+    expect(normalizeDemoPositionView(afterClose)?.state).toBe("NO_POSITION");
+    expect(
+      normalizeDemoPositionView({ code: "00000", data: { positions: null } })?.state,
+    ).toBe("NO_POSITION");
+  });
+
   it("returns null on malformed shapes (UNAVAILABLE upstream)", () => {
     for (const bad of [null, {}, { code: "00000" }, { code: "00000", data: "nope" }]) {
       expect(normalizeDemoPositionView(bad)).toBeNull();
     }
+    // No recognized container key stays unrecognized — never guessed empty.
+    expect(normalizeDemoPositionView({ code: "00000", data: {} })).toBeNull();
+    expect(normalizeDemoPositionView({ code: "00000", data: { list: "nope" } })).toBeNull();
+    expect(normalizeDemoPositionView({ code: "00000", data: null })).toBeNull();
   });
 
   it("isolates transport, HTTP, and provider failures as UNAVAILABLE", async () => {
@@ -154,13 +172,28 @@ describe("Demo position parsing", () => {
           fetchImpl: async () => ({ status: 200, text: async () => '{"code":"40001"}' }),
         })
       ).state,
-    ).toBe("UNAVAILABLE");
-    const ok = await fetchDemoPositionView({
+    ).toBe("UNAVAILABLE");    const ok = await fetchDemoPositionView({
       ...base,
       fetchImpl: async () => ({ status: 200, text: async () => JSON.stringify(POSITION_OK) }),
     });
     expect(ok.state).toBe("POSITION");
     expect(ok.size).toBe("0.44");
+  });
+
+  it("resolves the after-close empty container to NO_POSITION end to end", async () => {
+    const base = { credentials: CREDS, baseUrl: "https://api.bitget.com" } as const;
+    const afterClose = JSON.stringify({
+      code: "00000",
+      msg: "success",
+      requestTime: 1759999999999,
+      data: { list: null },
+    });
+    const view = await fetchDemoPositionView({
+      ...base,
+      fetchImpl: async () => ({ status: 200, text: async () => afterClose }),
+    });
+    expect(view.state).toBe("NO_POSITION");
+    expect(view.size).toBeNull();
   });
 });
 

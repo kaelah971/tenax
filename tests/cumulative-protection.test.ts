@@ -8,7 +8,7 @@
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 
 import { fetchRealityBundle } from "../src/lib/bitget/reality";
-import { EMPTY_NVIDIA_POSITION } from "../src/lib/bitget/nvda-hedge";
+import { EMPTY_NVIDIA_POSITION, normalizeNvdaPosition } from "../src/lib/bitget/nvda-hedge";
 import type { NvdaInstrument, NvdaPosition, NvdaTicker } from "../src/lib/bitget/nvda-hedge";
 import { normalizeNvidiaSnapshot } from "../src/lib/intelligence/snapshot";
 import type { DemoHedgeMarketState } from "../src/lib/tenax/demo-executor";
@@ -199,6 +199,28 @@ describe("cumulative projection math", () => {
     expect(result.passes).toBe(true);
     expect(result.projectedUsd).toBe(150);
     expect(result.projectedPct).toBe(30);
+  });
+
+  it("values the observed after-close empty response as $0 existing protection", () => {
+    // Live shape after a full close: 200 + 00000 + data.list === null.
+    const position = normalizeNvdaPosition({
+      code: "00000",
+      msg: "success",
+      requestTime: 1759999999999,
+      data: { list: null },
+    });
+    expect(position?.hasPosition).toBe(false);
+    const result = evaluateCumulativeProtection({
+      grossExposureUsd: 500,
+      existingPosition: position,
+      proposedAdditionalUsd: 100,
+      maxProtectionPct: 30,
+    });
+    expect(result.passes).toBe(true);
+    expect(result.existingUsd).toBe(0);
+    expect(result.projectedUsd).toBe(100);
+    expect(result.projectedPct).toBe(20);
+    expect(result.reasonCode).toBe("within_projected_mandate");
   });
 
   it("fails closed on unreadable, unvalued, opposite, and invalid inputs", () => {

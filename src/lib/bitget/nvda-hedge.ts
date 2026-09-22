@@ -224,6 +224,12 @@ function positionRows(body: unknown): Array<Record<string, unknown>> | null {
         .map(asRecord)
         .filter((r): r is Record<string, unknown> => r !== null);
     }
+    // Provider-confirmed empty container (observed live after a full
+    // close: data.list === null with code 00000) is a valid empty row
+    // list — never an unrecognized shape. Absent keys stay unrecognized.
+    if (key in dataRecord && (dataRecord[key] === null || dataRecord[key] === undefined)) {
+      return [];
+    }
   }
   return null;
 }
