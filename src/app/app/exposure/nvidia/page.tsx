@@ -22,6 +22,7 @@ import {
   coveragePercent,
   locateExecutionCandle,
   mandateVisualRows,
+  protectionLegDisplay,
 } from "@/lib/tenax/visuals";
 import { LightInstrument, SceneAnchor } from "../../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
@@ -68,6 +69,10 @@ export default async function ExposurePage({
 
   const protectionLeg = graph.representations.find((r) => r.role === "protection") ?? null;
   const availableLeg = graph.representations.find((r) => r.role === "available") ?? null;
+  // A live Demo short with no stored receipt is real but unmapped: show it
+  // as detected-but-unlinked, never as NOT EXECUTED, never linked to a receipt.
+  const liveShortPresent = surface.position.state === "POSITION";
+  const protectionPresence = protectionLegDisplay(protectionLeg !== null, liveShortPresent);
 
   const coverage = coveragePercent(graph.protectedNotionalUsd, graph.grossExposureUsd);
 
@@ -92,14 +97,23 @@ export default async function ExposurePage({
               : `${protectionLeg.quantity ?? "—"} SUBMITTED`,
           tone: "protection",
         }
-      : {
-          id: "NVDAUSDT",
-          symbol: "NVDAUSDT",
-          venue: "Bitget Demo",
-          role: "PROTECTION",
-          metric: "NOT EXECUTED",
-          tone: "absent",
-        },
+      : protectionPresence === "UNLINKED"
+        ? {
+            id: "NVDAUSDT",
+            symbol: "NVDAUSDT",
+            venue: "Bitget Demo",
+            role: "PROTECTION",
+            metric: "DETECTED · UNLINKED",
+            tone: "available",
+          }
+        : {
+            id: "NVDAUSDT",
+            symbol: "NVDAUSDT",
+            venue: "Bitget Demo",
+            role: "PROTECTION",
+            metric: "NOT EXECUTED",
+            tone: "absent",
+          },
     availableLeg && nvdax
       ? {
           id: "NVDAx",

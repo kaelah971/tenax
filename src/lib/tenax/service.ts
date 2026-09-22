@@ -29,11 +29,13 @@ import { isDemoTradingMode, resolveExecutionMode } from "./execution";
 import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "./fixtures";
 import { evaluateMandate } from "./mandate";
 import {
+  fetchLiveDemoHedgeMarket,
   type DemoHedgeMarketState,
   type DemoMarketReaderDeps,
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
+import { evaluateCumulativeProtection } from "./cumulative";
 import type {
   ApprovalState,
   DecisionReceipt,
@@ -1011,6 +1013,15 @@ export type AgentCycleResult =
       readonly flowId: string;
       readonly state: FlowState;
       readonly evaluation: StandingAuthorityEvaluation;
+      /** Present when the cumulative protection gate caused the refusal. */
+      readonly cumulative?: {
+        readonly existingUsd: number | null;
+        readonly proposedUsd: number;
+        readonly projectedUsd: number | null;
+        readonly projectedPct: number | null;
+        readonly maxPct: number;
+        readonly reasonCode: string;
+      } | null;
     }
   | {
       readonly outcome: "STANDING_ESCALATE";
@@ -1105,9 +1116,11 @@ function describeCompletedAuthority(
  * 3. Requires an ACTIVE standing mandate (else NO_STANDING_MANDATE).
  * 4. Evaluates standing authority fresh; REFUSED/ESCALATE stop with no
  *    consumption (escalation routes to the manual human-approval path).
- * 5. Binds execution authority to the exact proposal and atomically
- *    reserves budget (idempotent for the identical triple).
- * 6. Runs ALL existing executor gates via the shared flow tails.
+  * 5. Binds execution authority to the exact proposal and atomically
+  *    reserves budget (idempotent for the identical triple). In BITGET_DEMO
+  *    mode a cumulative protection gate runs first: live existing short +
+  *    proposal must fit inside maxProtectionPct together, else STANDING_REFUSED.
+  * 6. Runs ALL existing executor gates via the shared flow tails.
  * 7. DRY_RUN returns a preview only: reservation released, budget untouched.
  * 8. BITGET_DEMO submits only here; the provider-accepted order consumes
  *    the budget exactly once at the irreversible point. Verification and
@@ -1258,6 +1271,45 @@ export async function runProtectionAgentCycle(
   }
 
   // 6–7. Bind authority to the exact proposal; reserve budget atomically.
+  // 6b. Cumulative protection gate (BITGET_DEMO writes only): the live
+  // existing Demo short plus this proposal must fit inside
+  // maxProtectionPct together. DRY_RUN previews move nothing and carry
+  // no budget, so they skip this live-state check. This runs BEFORE any
+  // provider write and before irreversible budget consumption — a refusal
+  // here reserves nothing and consumes nothing.
+  if (mode === "BITGET_DEMO") {
+    const cycleMarket =
+      credentials !== null && baseUrl !== ""
+        ? await readAgentCycleMarket(deps, credentials, baseUrl)
+        : null;
+    const cumulative = evaluateCumulativeProtection({
+      grossExposureUsd: (flow.getContext().exposure ?? NVDA_EXPOSURE_FIXTURE).exposureValueUsdt,
+      existingPosition: cycleMarket?.position ?? null,
+      proposedAdditionalUsd: analysis.authority.calculatedTradeValueUsdt,
+      maxProtectionPct: MANDATE_FIXTURE.maxProtectionPct,
+    });
+    if (!cumulative.passes) {
+      emitActivityEvent(store, {
+        type: "STANDING_AUTHORITY_REFUSED",
+        flowId,
+        summary: `Standing ${evaluation.mandateId} refused (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
+      }, nowMs);
+      return {
+        outcome: "STANDING_REFUSED",
+        flowId,
+        state: flow.getFlowState(),
+        evaluation,
+        cumulative: {
+          existingUsd: cumulative.existingUsd,
+          proposedUsd: cumulative.proposedUsd,
+          projectedUsd: cumulative.projectedUsd,
+          projectedPct: cumulative.projectedPct,
+          maxPct: cumulative.maxPct,
+          reasonCode: cumulative.reasonCode,
+        },
+      };
+    }
+  }
   const authority = bindStandingAuthority(
     {
       mandateId: mandate.id,
@@ -1321,6 +1373,20 @@ export async function runProtectionAgentCycle(
       summary: `Autonomous attempt failed (${reason.slice(0, 160)})`,
     }, nowMs);
     return { outcome: "FAILED", flowId, state, reason };
+  }
+}
+
+/** Best-effort fresh market read for the cumulative gate. Null on any failure. */
+async function readAgentCycleMarket(
+  deps: DemoServiceDeps,
+  credentials: DemoAuthCredentials,
+  baseUrl: string,
+): Promise<DemoHedgeMarketState | null> {
+  try {
+    const reader = deps.marketReader ?? fetchLiveDemoHedgeMarket;
+    return await reader({ credentials, baseUrl });
+  } catch {
+    return null;
   }
 }
 

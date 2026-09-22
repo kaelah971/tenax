@@ -13,7 +13,20 @@ interface CycleReply {
   readonly ok: boolean;
   readonly outcome?: string;
   readonly receipt?: { receiptId?: string };
+  readonly cumulative?: {
+    readonly existingUsd: number | null;
+    readonly proposedUsd: number;
+    readonly projectedUsd: number | null;
+    readonly projectedPct: number | null;
+    readonly maxPct: number;
+    readonly reasonCode: string;
+  } | null;
   readonly error?: { message?: string };
+}
+
+function formatUsd(value: number | null): string {
+  if (value === null) return "—";
+  return `$${value.toFixed(2)}`;
 }
 
 async function postCycle(flowId: string): Promise<CycleReply> {
@@ -32,16 +45,19 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
   const [phase, setPhase] = useState<Phase>("ready");
   const [message, setMessage] = useState("");
   const [receiptId, setReceiptId] = useState<string | null>(null);
+  const [cumulative, setCumulative] = useState<CycleReply["cumulative"]>(null);
 
   async function onRun() {
     setPhase("running");
     setMessage("");
     setReceiptId(null);
+    setCumulative(null);
     try {
       const reply = await postCycle(flowId);
       setPhase("done");
       setMessage(`Agent cycle ${String(reply.outcome ?? "finished").toUpperCase()}`);
       if (reply.receipt?.receiptId) setReceiptId(reply.receipt.receiptId);
+      if (reply.cumulative) setCumulative(reply.cumulative);
     } catch (err) {
       setPhase("error");
       setMessage(err instanceof Error ? err.message : "Agent cycle failed");
@@ -70,6 +86,15 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
       {phase === "done" ? (
         <div className="flex flex-col gap-3">
           <p className="text-[16px] font-bold leading-[24px]">{message}</p>
+          {cumulative ? (
+            <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-ink/15 pt-3 text-[13px] leading-[18px] sm:grid-cols-3">
+              <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">EXISTING</dt><dd className="font-semibold">{formatUsd(cumulative.existingUsd)}</dd></div>
+              <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">PROPOSED</dt><dd className="font-semibold">{formatUsd(cumulative.proposedUsd)}</dd></div>
+              <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">PROJECTED</dt><dd className="font-semibold">{cumulative.projectedPct === null ? "—" : `~${cumulative.projectedPct.toFixed(1)}%`}</dd></div>
+              <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">MAXIMUM</dt><dd className="font-semibold">{cumulative.maxPct}%</dd></div>
+              <div className="col-span-2 sm:col-span-1"><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">ORDERS</dt><dd className="font-semibold">NO ORDER SENT</dd></div>
+            </dl>
+          ) : null}
           {receiptId ? (
             <button
               type="button"

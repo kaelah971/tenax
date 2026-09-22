@@ -1,4 +1,5 @@
 // Tenax Phase 4A — pure view helpers for the unified exposure narrative.
+// Phase 4B-B2.2 — protection-leg presence helper for the unlinked case.
 //
 // These helpers shape canonical domain values for visualization only.
 // They never recompute business truth: coverage divides the graph's own
@@ -21,6 +22,22 @@ export function coveragePercent(
   if (!Number.isFinite(protectedNotionalUsd) || !Number.isFinite(grossExposureUsd)) return null;
   if (grossExposureUsd <= 0) return null;
   return Math.round((protectedNotionalUsd / grossExposureUsd) * 100 * 100) / 100;
+}
+
+// ---- Protection-leg presence ------------------------------------------------
+
+/** How the NVDAUSDT protection leg should read: receipt-linked, live-but-
+ * unlinked, or absent. A live Demo short with no stored receipt is real
+ * but unmapped — never "NOT EXECUTED", never linked to a receipt. */
+export type ProtectionLegDisplay = "LINKED" | "UNLINKED" | "ABSENT";
+
+export function protectionLegDisplay(
+  hasReceiptLeg: boolean,
+  liveShortPresent: boolean,
+): ProtectionLegDisplay {
+  if (hasReceiptLeg) return "LINKED";
+  if (liveShortPresent) return "UNLINKED";
+  return "ABSENT";
 }
 
 // ---- Mandate comparison rows ----------------------------------------------
