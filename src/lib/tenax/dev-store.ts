@@ -23,6 +23,7 @@ import { ProtectionFlow } from "./orchestrator";
 import type { ActivityEvent } from "./activity";
 import type { Notification } from "./notifications";
 import type { StandingMandate } from "./standing-mandate";
+import type { TelegramDelivery } from "../telegram/delivery";
 
 export interface TenaxDevStore {
   readonly flows: Map<string, ProtectionFlow>;
@@ -33,6 +34,8 @@ export interface TenaxDevStore {
   readonly activities: ActivityEvent[];
   /** User-facing notifications (B5.1). Same non-durable caveats. */
   readonly notifications: Notification[];
+  /** Telegram delivery records (B5.2). Same non-durable caveats. */
+  readonly telegramDeliveries: TelegramDelivery[];
 }
 
 export function createDevStore(): TenaxDevStore {
@@ -42,6 +45,7 @@ export function createDevStore(): TenaxDevStore {
     mandates: new Map<string, StandingMandate>(),
     activities: [],
     notifications: [],
+    telegramDeliveries: [],
   };
 }
 

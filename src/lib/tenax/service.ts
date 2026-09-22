@@ -101,6 +101,7 @@ import {
 } from "./authority";import { emitActivityEvent } from "./activity";
 import type { ActivityEventDetails, ActivityEventType } from "./activity";
 import { notifyForActivityEvent } from "./notifications";
+import { dispatchTelegramForNotification } from "../telegram/delivery";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -186,6 +187,12 @@ function getFlow(store: TenaxDevStore, flowId: string): ProtectionFlow {
  * notification policy in notifications.ts sees each event exactly once.
  * Retries that skip emission (reconcile paths) therefore cannot duplicate
  * notifications; product code never constructs notifications directly.
+ *
+ * Phase 4B-B5.2 — Telegram fan-out runs best-effort from the canonical
+ * notification created above. Missing Telegram config resolves to a
+ * DISABLED delivery with zero network; any failure is isolated to the
+ * delivery record and can never break the activity, the in-app
+ * notification, or the authority/execution result.
  */
 function emitActivity(
   store: TenaxDevStore,
@@ -199,7 +206,14 @@ function emitActivity(
   nowMs: number = Date.now(),
 ) {
   const event = emitActivityEvent(store, input, nowMs);
-  notifyForActivityEvent(store, event);
+  const notification = notifyForActivityEvent(store, event);
+  if (notification) {
+    try {
+      void dispatchTelegramForNotification(store, notification).catch(() => {});
+    } catch {
+      // Telegram is best-effort; the canonical records already exist.
+    }
+  }
   return event;
 }
 
