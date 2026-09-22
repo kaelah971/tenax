@@ -110,13 +110,30 @@ export interface CurrentAuthorityCopy {
 export function currentAuthorityCopy(input: {
   readonly hasActiveMandate: boolean;
   readonly hasExhaustedMandate: boolean;
+  /** Active policy mode; required for truthful wording when a mandate is active. */
+  readonly authorityMode?: StandingAuthorityMode | null;
 }): CurrentAuthorityCopy {
   if (input.hasActiveMandate) {
-    return {
-      term: "Per-action approval",
-      value: "NOT REQUIRED WITHIN BOUNDS",
-      note: null,
-    };
+    switch (input.authorityMode ?? "AUTO_WITHIN_MANDATE") {
+      case "REVIEW_EVERY_ACTION":
+        return {
+          term: "Per-action approval",
+          value: "REQUIRED FOR EVERY ACTION",
+          note: "Every action still requires human approval.",
+        };
+      case "AUTO_WITH_ESCALATION":
+        return {
+          term: "Per-action approval",
+          value: "AUTOMATIC WITHIN BOUNDS",
+          note: "Human review outside bounds.",
+        };
+      default:
+        return {
+          term: "Per-action approval",
+          value: "NOT REQUIRED WITHIN BOUNDS",
+          note: null,
+        };
+    }
   }
   if (input.hasExhaustedMandate) {
     return {
@@ -126,6 +143,71 @@ export function currentAuthorityCopy(input: {
     };
   }
   return { term: "Human approval", value: "REQUIRED", note: null };
+}
+
+// ---- Mandate class card -------------------------------------------------------
+//
+// The standing-mandate class card shows the ACTIVE policy's numeric bounds
+// plus the permanently locked execution-class facts. With no ACTIVE
+// mandate it shows honest placeholders — never fixture defaults, never an
+// exhausted/draft mandate presented as current authority.
+
+export interface ClassCardPolicy {
+  readonly maxProtectionPct: number;
+  readonly maxNotionalUsdt: number;
+}
+
+/** Term/value rows: numeric bounds from the active policy (or gaps). */
+export function mandateClassCardValues(
+  policy: ClassCardPolicy | null,
+): Array<[string, string]> {
+  return [
+    ["MAX PROTECTION", policy === null ? "—" : `${policy.maxProtectionPct}%`],
+    ["MAX ACTION", policy === null ? "—" : `$${policy.maxNotionalUsdt}`],
+    ["MAX LEVERAGE", "1X"],
+    ["ALLOWED", "NVDAUSDT"],
+    ["SELL UNDERLYING", "NEVER"],
+    ["TRANSFERS", "NEVER"],
+    ["LEVERAGE CHANGES", "NEVER"],
+  ];
+}
+
+// ---- Mandate builder summary --------------------------------------------------
+//
+// Live plain-English preview of the draft being built. Pure formatting of
+// user-chosen values — the AI never chooses limits; enforcement stays in
+// the deterministic evaluator.
+
+export interface MandateSummaryPreviewInput {
+  readonly maxProtectionPct: number;
+  readonly maxNotionalUsdt: number;
+  readonly maxExecutions: number;
+  readonly expiresAt: string | null;
+  readonly authorityMode: StandingAuthorityMode;
+}
+
+/** Human-readable expiry: readable form plus the raw authoritative timestamp. */
+export function formatExpiryPreview(expiresAt: string | null): string {
+  if (expiresAt === null) return "No expiry.";
+  const ms = Date.parse(expiresAt);
+  if (!Number.isFinite(ms)) return "Invalid expiry.";
+  return `Expires ${new Date(ms).toUTCString()} (${expiresAt}).`;
+}
+
+/** Plain-English lines describing exactly what the draft would permit. */
+export function mandateSummaryPreview(input: MandateSummaryPreviewInput): readonly string[] {
+  const executions = input.maxExecutions === 1 ? "1 execution" : `${input.maxExecutions} executions`;
+  const lines = [
+    `Tenax may protect up to ${input.maxProtectionPct}% of your NVIDIA exposure, ` +
+      `use at most $${input.maxNotionalUsdt} per action, at 1x leverage, for up to ${executions}.`,
+    formatExpiryPreview(input.expiresAt),
+  ];
+  if (input.authorityMode === "REVIEW_EVERY_ACTION") {
+    lines.push("Every action still requires human approval.");
+  } else {
+    lines.push("Actions inside these bounds do not require per-trade approval.");
+  }
+  return lines;
 }
 
 // ---- Cumulative-gate refusal ------------------------------------------------

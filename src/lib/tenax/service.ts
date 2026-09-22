@@ -87,6 +87,7 @@ import {
   createStandingMandate,
   evaluateStandingAuthority,
   revokeStandingMandate,
+  updateStandingDraft,
   type StandingAuthorityAction,
   type StandingAuthorityEvaluation,
   type StandingMandate,
@@ -113,15 +114,38 @@ export const executeInputSchema = z.object({
   flowId: z.string().min(1).max(64),
 });
 
-export const standingMandateCreateSchema = z.object({
-  authorityMode: z.enum(AUTHORITY_MODES),
-  maxExecutions: z.number().int().min(1).max(100).default(1),
-  expiresAt: z.string().datetime({ offset: true }).nullish(),
-});
+export const standingMandateCreateSchema = z
+  .object({
+    authorityMode: z.enum(AUTHORITY_MODES),
+    maxExecutions: z.number().int().min(1).max(100).default(1),
+    expiresAt: z.string().datetime({ offset: true }).nullish(),
+    // B3 user-configurable bounds (fixture defaults when omitted).
+    // maxLeverage is intentionally NOT accepted: execution stays 1x.
+    maxProtectionPct: z.number().finite().gt(0).lte(100).default(MANDATE_FIXTURE.maxProtectionPct),
+    maxNotionalUsdt: z.number().finite().gt(0).default(MANDATE_FIXTURE.maxTradeValueUsdt),
+  })
+  .strict();
 
 export const standingMandateIdSchema = z.object({
   id: z.string().min(1).max(64),
 });
+
+/**
+ * B3 draft-edit patch. Every field optional; unknown keys (subject,
+ * symbols, actions, forbidden capabilities, leverage, anything else)
+ * are rejected, never stripped. Shape validated here; DRAFT status and
+ * future-expiry checked against nowMs in updateStandingDraft.
+ */
+export const standingMandateUpdateSchema = z
+  .object({
+    id: z.string().min(1).max(64),
+    maxProtectionPct: z.number().finite().gt(0).lte(100).optional(),
+    maxNotionalUsdt: z.number().finite().gt(0).optional(),
+    maxExecutions: z.number().int().min(1).max(100).optional(),
+    expiresAt: z.string().datetime({ offset: true }).nullable().optional(),
+    authorityMode: z.enum(AUTHORITY_MODES).optional(),
+  })
+  .strict();
 
 export interface Provenance {
   readonly marketData: "REAL" | "PARTIAL" | "UNAVAILABLE";
@@ -710,11 +734,12 @@ export async function getExposureGraph(
 // ---- Standing mandates (Phase 4B-B1, dev-store backed) ----------------------
 //
 // A standing mandate pre-authorizes a NARROW CLASS of protection actions.
-// Policy bounds (except mode/executions/expiry) come from the canonical
-// mandate fixture — B1 offers no custom limits. Creating is not
-// authorizing: only activateStandingMandate binds the hash. At most one
-// ACTIVE mandate exists at a time; activating revokes nothing
-// automatically — revoke the current one first.
+// Policy bounds default to the canonical mandate fixture; B3 callers may
+// pass user-chosen protection %, notional, executions, expiry, and mode.
+// Max leverage is always pinned to 1x here — never client-settable.
+// Creating is not authorizing: only activateStandingMandate binds the
+// hash. At most one ACTIVE mandate exists at a time; activating revokes
+// nothing automatically — revoke the current one first.
 
 function getMandateRecord(store: TenaxDevStore, id: string): StandingMandate {
   const mandate = store.mandates.get(id);
@@ -724,13 +749,13 @@ function getMandateRecord(store: TenaxDevStore, id: string): StandingMandate {
 
 export function createStandingMandateRecord(
   store: TenaxDevStore,
-  input: z.infer<typeof standingMandateCreateSchema>,
+  input: z.input<typeof standingMandateCreateSchema>,
   nowMs: number = Date.now(),
 ): StandingMandate {
   const parsed = standingMandateCreateSchema.parse(input);
   const mandate = createStandingMandate({
-    maxProtectionPct: MANDATE_FIXTURE.maxProtectionPct,
-    maxNotionalUsdt: MANDATE_FIXTURE.maxTradeValueUsdt,
+    maxProtectionPct: parsed.maxProtectionPct,
+    maxNotionalUsdt: parsed.maxNotionalUsdt,
     maxLeverage: MANDATE_FIXTURE.maxLeverage,
     allowedSymbols: [STANDING_SYMBOL_NVDAUSDT],
     allowedActionTypes: [STANDING_ACTION_SHORT_HEDGE],
@@ -771,6 +796,35 @@ export function revokeStandingMandateRecord(
   const revoked = revokeStandingMandate(getMandateRecord(store, parsed.id), nowMs);
   store.mandates.set(revoked.id, revoked);
   return revoked;
+}
+
+/**
+ * Phase 4B-B3 — edit a DRAFT mandate's user-configurable fields.
+ * Server-authoritative: shape validated by standingMandateUpdateSchema
+ * (unknown keys rejected), DRAFT status and future-expiry enforced in
+ * updateStandingDraft. ACTIVE / EXHAUSTED / REVOKED reject
+ * deterministically; unknown ids throw. Never mutates in place — the
+ * updated record replaces the stored one.
+ */
+export function updateStandingMandateDraftRecord(
+  store: TenaxDevStore,
+  input: z.infer<typeof standingMandateUpdateSchema>,
+  nowMs: number = Date.now(),
+): StandingMandate {
+  const parsed = standingMandateUpdateSchema.parse(input);
+  const updated = updateStandingDraft(
+    getMandateRecord(store, parsed.id),
+    {
+      maxProtectionPct: parsed.maxProtectionPct,
+      maxNotionalUsdt: parsed.maxNotionalUsdt,
+      authorityMode: parsed.authorityMode,
+      maxExecutions: parsed.maxExecutions,
+      expiresAt: parsed.expiresAt,
+    },
+    nowMs,
+  );
+  store.mandates.set(updated.id, updated);
+  return updated;
 }
 
 /** Most recently activated ACTIVE mandate, or null. Never a human approval. */

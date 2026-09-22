@@ -184,7 +184,77 @@ export function createStandingMandate(
 }
 
 /**
- * Activate a draft: binds id + activatedAt + exact policy into
+ * Editable draft fields (Phase 4B-B3). Scope and capability fields are
+ * deliberately absent: subject, symbols, actions, forbidden permissions,
+ * and leverage can never be changed by an update — they are not
+ * parameters here, so no caller can smuggle them through.
+ */
+export interface UpdateStandingDraftPatch {
+  readonly maxProtectionPct?: number;
+  readonly maxNotionalUsdt?: number;
+  readonly authorityMode?: StandingAuthorityMode;
+  readonly maxExecutions?: number;
+  /** ISO timestamp or null (clear to no expiry). Must be future-dated. */
+  readonly expiresAt?: string | null;
+}
+
+/**
+ * Edit a DRAFT mandate's editable policy fields. All-or-nothing: any
+ * invalid value rejects the whole patch and the draft is unchanged.
+ * Only DRAFT mandates update — ACTIVE / EXHAUSTED / REVOKED reject
+ * deterministically. Never touches id, createdAt, execution counts, or
+ * hashes (DRAFT hashes stay null until activation binds them).
+ */
+export function updateStandingDraft(
+  mandate: StandingMandate,
+  patch: UpdateStandingDraftPatch,
+  nowMs: number = Date.now(),
+): StandingMandate {
+  if (mandate.status !== "DRAFT") {
+    throw new Error(
+      `STANDING_MANDATE_INVALID: only a DRAFT mandate can update (got ${mandate.status})`,
+    );
+  }
+  if (patch.authorityMode !== undefined && !AUTHORITY_MODES.includes(patch.authorityMode)) {
+    throw new Error(
+      `STANDING_MANDATE_INVALID: unknown authorityMode ${String(patch.authorityMode)}`,
+    );
+  }
+  const maxProtectionPct = patch.maxProtectionPct ?? mandate.policy.maxProtectionPct;
+  const maxNotionalUsdt = patch.maxNotionalUsdt ?? mandate.policy.maxNotionalUsdt;
+  const maxExecutions = patch.maxExecutions ?? mandate.policy.maxExecutions;
+  if (
+    !isFinitePositive(maxProtectionPct) ||
+    maxProtectionPct > 100 ||
+    !isFinitePositive(maxNotionalUsdt)
+  ) {
+    throw new Error("STANDING_MANDATE_INVALID: bounds must be finite positive (pct within 0–100)");
+  }
+  if (!Number.isInteger(maxExecutions) || maxExecutions < 1) {
+    throw new Error("STANDING_MANDATE_INVALID: maxExecutions must be an integer >= 1");
+  }
+  const expiresAt = patch.expiresAt !== undefined ? patch.expiresAt : mandate.expiresAt;
+  if (expiresAt !== null) {
+    const expiryMs = typeof expiresAt === "string" ? Date.parse(expiresAt) : NaN;
+    if (!Number.isFinite(expiryMs) || expiryMs <= nowMs) {
+      throw new Error("STANDING_MANDATE_INVALID: expiresAt must be a future timestamp");
+    }
+  }
+  return {
+    ...mandate,
+    policy: {
+      ...mandate.policy,
+      maxProtectionPct,
+      maxNotionalUsdt,
+      authorityMode: patch.authorityMode ?? mandate.policy.authorityMode,
+      maxExecutions,
+    },
+    expiresAt,
+  };
+}
+
+/**
+ * Activate a draft: binds id + activatedAt + expiry + exact policy into
  * mandateHash. Only DRAFT mandates activate; the hash makes any later
  * policy change detectable (a changed policy needs a new mandate).
  */
@@ -201,6 +271,7 @@ export function activateStandingMandate(
   const mandateHash = hashStandingPolicy({
     id: mandate.id,
     activatedAt,
+    expiresAt: mandate.expiresAt,
     policy: mandate.policy,
   });
   return { ...mandate, status: "ACTIVE", activatedAt, mandateHash };
