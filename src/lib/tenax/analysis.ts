@@ -113,7 +113,10 @@ export function analyzeProtectionFixture(
     ],
     proposedProtectionPct,
     rationale:
-      "20% sits inside the 30% / 150 USDT mandate with margin for spread and drift. " +
+      `20% protection notional sized directly from the $${exposure.exposureValueUsdt} ` +
+      "simulated NVIDIA exposure for earnings-event coverage. Whether these bounds " +
+      "are permitted is decided separately by the deterministic mandate check " +
+      "against the active authority — this fixture recommends size only. " +
       "This is fixture reasoning, not live AI output.",
     evidenceRefs: snapshot.sourceRefs.map((s) => `${s.endpoint} [${s.status}]`),
   };

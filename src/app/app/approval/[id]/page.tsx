@@ -41,6 +41,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
   );
   const alternative = analysis.consideredAlternative;
   const hasReceipt = flow.getFlowState() === "COMPLETED";
+  const escalation = context?.standingEscalation ?? null;
 
   return (
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
@@ -53,6 +54,27 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           RECEIPT: hasReceipt ? `/app/receipts/${id}` : null,
         }}
       />
+
+      {escalation ? (
+        <section
+          aria-label="Standing escalation"
+          className="tx-material-editorial border-t-4 border-t-signal p-5 sm:p-8"
+        >
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            ESCALATED FROM STANDING MANDATE · {escalation.mandateId.toUpperCase()}
+          </p>
+          <p className="mt-3 max-w-2xl text-[20px] font-bold leading-[28px]">
+            Outside your standing mandate. Sent for human review.
+          </p>
+          <p className="font-syslabel mt-2 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+            PROPOSED {escalation.proposedProtectionPct}% · ${escalation.proposedTradeValueUsdt} —{" "}
+            {escalation.reasonCodes.join(" · ").toUpperCase()}
+          </p>
+          <p className="font-syslabel mt-1 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+            THE STANDING MANDATE DID NOT AUTHORIZE THIS ACTION · YOUR APPROVAL BELOW IS ONE-TIME
+          </p>
+        </section>
+      ) : null}
 
       <section aria-label="Permission boundary" className="tx-material-authority relative rounded-[18px] p-4 text-softwhite sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-4">

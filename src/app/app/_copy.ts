@@ -5,6 +5,7 @@
 // below: dry-run language never claims execution; dates never fabricated.
 
 import type { StandingAuthorityMode } from "@/lib/tenax/standing-mandate";
+import type { FinalActionState } from "@/lib/tenax/visuals";
 
 export const INTENT_LINE = "Protect my NVIDIA through earnings";
 
@@ -65,6 +66,10 @@ export function refusalSentence(failedRules: readonly string[], limitUsdt = 150)
 export interface AuthorityCopy {
   readonly title: string;
   readonly lines: readonly string[];
+  /** Short approval cell for authority consoles. */
+  readonly approval: string;
+  /** One-line narrative of what the mode permits. */
+  readonly narrative: string;
 }
 
 /** Pure mapping from the active standing mandate mode (null = none). */
@@ -74,21 +79,29 @@ export function standingAuthorityCopy(mode: StandingAuthorityMode | null): Autho
       return {
         title: "AUTHORITY",
         lines: ["Standing mandate active", "Per-action approval: NOT REQUIRED WITHIN BOUNDS"],
+        approval: "NOT REQUIRED WITHIN BOUNDS",
+        narrative: "Actions inside these bounds may execute automatically.",
       };
     case "AUTO_WITH_ESCALATION":
       return {
         title: "AUTHORITY",
         lines: ["Automatic within bounds", "Human review outside bounds"],
+        approval: "AUTOMATIC WITHIN BOUNDS",
+        narrative: "Actions inside bounds may execute automatically; outside bounds go to human review.",
       };
     case "REVIEW_EVERY_ACTION":
       return {
         title: "AUTHORITY",
         lines: ["Human review required for every action"],
+        approval: "REQUIRED",
+        narrative: "Every action requires human approval.",
       };
     default:
       return {
         title: "PER-ACTION AUTHORITY",
         lines: ["Human approval required"],
+        approval: "REQUIRED",
+        narrative: "Human approval required.",
       };
   }
 }
@@ -208,6 +221,38 @@ export function mandateSummaryPreview(input: MandateSummaryPreviewInput): readon
     lines.push("Actions inside these bounds do not require per-trade approval.");
   }
   return lines;
+}
+
+// ---- Projection status copy -----------------------------------------------------
+//
+// Mode-aware projection line for the decision cockpit. Driven by the real
+// derived route (finalState) plus the active mode — never inferred from
+// percentages in JSX. Hard safety outcomes keep REFUSE wording in every
+// mode; only a genuine boundary escalation under AUTO_WITH_ESCALATION
+// promises human review.
+
+/** Pure mapping from projection state + route to one status line. */
+export function projectionStatusCopy(input: {
+  readonly overLimit: boolean | null;
+  readonly authorityMode: StandingAuthorityMode | null;
+  readonly finalState: FinalActionState;
+}): string {
+  if (input.overLimit === true) {
+    if (input.finalState === "REFUSED") {
+      return "PROJECTED OVER MANDATE — CYCLE WILL REFUSE · NO ORDER SENT";
+    }
+    if (input.authorityMode === "AUTO_WITH_ESCALATION") {
+      return "PROJECTED OVER MANDATE — CYCLE WILL ESCALATE FOR HUMAN REVIEW · NO AUTONOMOUS ORDER SENT";
+    }
+    if (input.authorityMode === "REVIEW_EVERY_ACTION") {
+      return "PROJECTED OVER MANDATE — HUMAN REVIEW REQUIRED BEFORE EXECUTION · NO ORDER SENT";
+    }
+    return "PROJECTED OVER MANDATE — CYCLE WILL REFUSE · NO ORDER SENT";
+  }
+  if (input.overLimit === false) {
+    return "WITHIN MANDATE ON THIS CHECK — AUTHORITATIVE CHECK RUNS AT CYCLE TIME";
+  }
+  return "POSITION UNKNOWN — CYCLE FAILS CLOSED · NO ORDER SENT";
 }
 
 // ---- Cumulative-gate refusal ------------------------------------------------

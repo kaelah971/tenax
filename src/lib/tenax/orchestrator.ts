@@ -17,6 +17,7 @@ import {
   type Mandate,
   type MandateDecision,
   type ProtectionIntent,
+  type StandingEscalationRecord,
 } from "./domain";
 import { type ProtectionAnalysis, analyzeProtectionFixture } from "./analysis";
 import {
@@ -173,6 +174,12 @@ export class ProtectionFlow {
   private analyzedAt: string | null = null;
   /** Bound execution authority (human or standing); set on execution. */
   private executionAuthority: ExecutionAuthority | null = null;
+  /**
+   * Informational escalation record (Phase 4B-B4): set when an autonomous
+   * cycle routes this proposal to human review. Overwritten idempotently
+   * on retry. Grants nothing, consumes nothing, mutates no mandate.
+   */
+  private standingEscalation: StandingEscalationRecord | null = null;
 
   constructor(readonly flowId: string) {}
 
@@ -264,6 +271,23 @@ export class ProtectionFlow {
     this.approval = approveProtection(this.approval as ProtectionApproval, actor);
     this.state = "APPROVED";
     return this.approval;
+  }
+
+  /**
+   * Record an autonomous-cycle escalation (Phase 4B-B4): the standing
+   * mandate declined this proposal and a human must review it through the
+   * normal one-time approval flow. Informational only — callable in any
+   * analyzed state, overwrites idempotently, changes no budget and no
+   * mandate. The receipt carries it so a later human approval can never
+   * be mistaken for standing authorization.
+   */
+  recordStandingEscalation(record: Omit<StandingEscalationRecord, "escalatedAt">): StandingEscalationRecord {
+    this.standingEscalation = {
+      ...record,
+      reasonCodes: [...record.reasonCodes],
+      escalatedAt: new Date().toISOString(),
+    };
+    return this.standingEscalation;
   }
 
   /**
@@ -679,7 +703,9 @@ export class ProtectionFlow {
     });
     // Standing-authority provenance (B1-prepared fields): populated only
     // for autonomous execution; the human path records HUMAN_APPROVAL
-    // with null standing references — never the reverse.
+    // with null standing references — never the reverse. A prior
+    // escalation record rides along so a human-approved escalation can
+    // never read as standing authorization.
     this.receipt = {
       ...this.receipt,
       authoritySource: authority?.authoritySource ?? "HUMAN_APPROVAL",
@@ -687,6 +713,7 @@ export class ProtectionFlow {
       standingMandateHash: authority?.standingMandateHash ?? null,
       authorityDecision: authority?.authorityDecision ?? null,
       authorityEvaluatedAt: authority?.authorityEvaluatedAt ?? null,
+      standingEscalation: this.standingEscalation,
     };
     return this.receipt;
   }
@@ -705,6 +732,7 @@ export class ProtectionFlow {
     readonly aiAudit: AiAnalysisAudit | null;
     readonly analyzedAt: string | null;
     readonly executionAuthority: ExecutionAuthority | null;
+    readonly standingEscalation: StandingEscalationRecord | null;
   } {
     return {
       state: this.state,
@@ -719,6 +747,7 @@ export class ProtectionFlow {
       aiAudit: this.aiAudit,
       analyzedAt: this.analyzedAt,
       executionAuthority: this.executionAuthority,
+      standingEscalation: this.standingEscalation,
     };
   }
 }

@@ -12,6 +12,7 @@ export const ACTIVITY_TYPES = [
   "STANDING_AUTHORITY_AUTHORIZED",
   "STANDING_AUTHORITY_ESCALATED",
   "STANDING_AUTHORITY_REFUSED",
+  "STANDING_REVIEW_REQUIRED",
   "AUTONOMOUS_EXECUTION_SUBMITTED",
   "AUTONOMOUS_EXECUTION_FILLED",
   "AUTONOMOUS_EXECUTION_FAILED",
@@ -26,6 +27,28 @@ export interface ActivityEvent {
   readonly createdAt: string;
   readonly summary: string;
   readonly receiptId: string | null;
+  /**
+   * Phase 4B-B4 structured audit facts (optional, JSON-safe). Display
+   * surfaces must render numbers/codes from here — never by parsing the
+   * human-readable summary. Absent values render as omitted, never
+   * invented.
+   */
+  readonly details: ActivityEventDetails | null;
+}
+
+/**
+ * Structured facts carried by authority/action events. Every field
+ * optional: only the emitting call site knows which facts it proved.
+ */
+export interface ActivityEventDetails {
+  readonly proposedPct?: number | null;
+  readonly proposedUsd?: number | null;
+  readonly maxPct?: number | null;
+  readonly maxNotional?: number | null;
+  readonly existingUsd?: number | null;
+  readonly projectedPct?: number | null;
+  readonly reasonCodes?: readonly string[];
+  readonly outcome?: string | null;
 }
 
 let activityCounter = 0;
@@ -42,6 +65,7 @@ export function emitActivityEvent(
     readonly flowId: string;
     readonly summary: string;
     readonly receiptId?: string | null;
+    readonly details?: ActivityEventDetails | null;
   },
   nowMs: number = Date.now(),
 ): ActivityEvent {
@@ -53,6 +77,7 @@ export function emitActivityEvent(
     createdAt: new Date(nowMs).toISOString(),
     summary: input.summary,
     receiptId: input.receiptId ?? null,
+    details: input.details ?? null,
   };
   store.activities.push(event);
   return event;

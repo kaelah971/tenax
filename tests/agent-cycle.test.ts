@@ -322,20 +322,33 @@ describe("standing refusal and escalation", () => {
     expect(result.outcome).toBe("STANDING_ESCALATE");
     if (result.outcome !== "STANDING_ESCALATE") throw new Error("expected STANDING_ESCALATE");
     expect(result.note).toBe("HUMAN REVIEW REQUIRED");
+    expect(result.conflict).toMatchObject({ proposedPct: 20, proposedUsd: 100, maxPct: 10, maxNotional: 50 });
     expect(calls).toEqual([]);
+    // Escalation is recorded for audit; budget and policy stay untouched.
+    expect(flow?.getContext().standingEscalation).toMatchObject({
+      reasonCodes: expect.arrayContaining(["exceeds_max_protection_pct"]),
+    });
+    expect(store.mandates.get(stored.id)?.executionCount).toBe(0);
+    expect(store.mandates.get(stored.id)?.policy.maxProtectionPct).toBe(10);
     // The manual human-approval path remains available afterwards.
     approveProtectionProposal(store, { flowId, actor: "human" });
     const executed = await executeProtectionProposal(store, { flowId });
     expect(executed.executionMode).toBe("DRY_RUN");
   });
 
-  it("REVIEW mode escalates even in-bounds without POSTing", async () => {
+  it("REVIEW mode returns HUMAN_APPROVAL_REQUIRED without POSTing", async () => {
     const { store, flowId } = await setupPassFlow();
     setupActiveMandate(store, { authorityMode: "REVIEW_EVERY_ACTION" });
     const calls: string[] = [];
     const result = await runProtectionAgentCycle(store, { flowId }, agentDemoDeps(calls));
-    expect(result.outcome).toBe("STANDING_ESCALATE");
+    expect(result.outcome).toBe("STANDING_REVIEW");
+    if (result.outcome !== "STANDING_REVIEW") throw new Error("expected STANDING_REVIEW");
+    expect(result.note).toBe("HUMAN APPROVAL REQUIRED");
     expect(calls).toEqual([]);
+    // The ordinary one-time human approval path remains available afterwards.
+    approveProtectionProposal(store, { flowId, actor: "human" });
+    const executed = await executeProtectionProposal(store, { flowId });
+    expect(executed.executionMode).toBe("DRY_RUN");
   });
 });
 

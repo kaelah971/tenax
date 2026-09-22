@@ -7,6 +7,8 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 
+import type { ActivityEvent } from "@/lib/tenax/activity";
+
 import type {
   MandateCheck,
   MandateCheckId,
@@ -271,6 +273,143 @@ export function JourneyNav({ links, label }: { links: readonly JourneyLink[]; la
     </nav>
   );
 }
+// ---- Activity audit trail -------------------------------------------------------
+//
+// The session flow list shows lifecycle state; the authority audit truth
+// comes from activity events. These pure helpers pick the latest
+// meaningful event per flow and shape it into a compact audit card.
+// Numbers and codes render ONLY from structured event details — never by
+// parsing summaries; absent values are omitted, never invented. A
+// COMPLETED flow always renders its receipt truth, never an earlier event.
+
+/** Event types that carry authority/action audit truth for a flow. */
+export const AUDIT_EVENT_TYPES = [
+  "STANDING_AUTHORITY_ESCALATED",
+  "STANDING_REVIEW_REQUIRED",
+  "STANDING_AUTHORITY_REFUSED",
+  "AUTONOMOUS_EXECUTION_SUBMITTED",
+  "AUTONOMOUS_EXECUTION_FILLED",
+  "AUTONOMOUS_EXECUTION_FAILED",
+] as const;
+
+/** Latest meaningful audit event for a flow, or null when none exists. */
+export function latestMeaningfulEvent(
+  events: readonly ActivityEvent[],
+  flowId: string,
+): ActivityEvent | null {
+  let latest: ActivityEvent | null = null;
+  for (const event of events) {
+    if (event.flowId !== flowId) continue;
+    if (!(AUDIT_EVENT_TYPES as readonly string[]).includes(event.type)) continue;
+    latest = event;
+  }
+  return latest;
+}
+
+export interface AuditCardCta {
+  readonly label: string;
+  readonly href: string;
+}
+
+export interface AuditCard {
+  readonly badge: string;
+  readonly tone: "escalated" | "review" | "refused" | "done" | "failed";
+  readonly title: string;
+  readonly facts: ReadonlyArray<readonly [string, string]>;
+  readonly result: string;
+  readonly cta: AuditCardCta | null;
+}
+
+function pair(term: string, value: string | null): ReadonlyArray<readonly [string, string]> {
+  return value === null ? [] : [[term, value]];
+}
+
+function pctUsd(pct: number | null | undefined, usd: number | null | undefined): string | null {
+  if (pct === null || pct === undefined || usd === null || usd === undefined) return null;
+  return `${pct}% · $${usd}`;
+}
+
+/** Shape one audit event into its compact card. Pure display mapping. */
+export function auditCardFor(event: ActivityEvent, flowId: string): AuditCard {
+  const details = event.details;
+  const reasons = (details?.reasonCodes ?? []).filter((c) => c !== "human_review_required");
+  switch (event.type) {
+    case "STANDING_AUTHORITY_ESCALATED":
+      return {
+        badge: "STANDING AUTHORITY ESCALATED",
+        tone: "escalated",
+        title: "Human review required",
+        facts: [
+          ...pair("PROPOSED", pctUsd(details?.proposedPct, details?.proposedUsd)),
+          ...pair("MANDATE MAX", pctUsd(details?.maxPct, details?.maxNotional)),
+          ...(reasons.length > 0
+            ? [["REASONS", reasons.join(" · ").toUpperCase()] as const]
+            : []),
+        ],
+        result: "NO AUTONOMOUS ORDER SENT",
+        cta: { label: "REVIEW ACTION", href: `/app/approval/${flowId}` },
+      };
+    case "STANDING_REVIEW_REQUIRED":
+      return {
+        badge: "HUMAN REVIEW REQUIRED",
+        tone: "review",
+        title: "Human approval required for this action.",
+        facts:
+          reasons.length > 0
+            ? [["REASONS", reasons.join(" · ").toUpperCase()] as const]
+            : [],
+        result: "NO AUTONOMOUS ORDER SENT",
+        cta: { label: "REVIEW AND APPROVE", href: `/app/approval/${flowId}` },
+      };
+    case "STANDING_AUTHORITY_REFUSED":
+      return {
+        badge: "TENAX REFUSED",
+        tone: "refused",
+        title: "No order sent.",
+        facts:
+          reasons.length > 0
+            ? [["REASONS", reasons.join(" · ").toUpperCase()] as const]
+            : [],
+        result: "NO ORDER SENT",
+        cta: { label: "VIEW ANALYSIS", href: `/app/analysis/${flowId}` },
+      };
+    case "AUTONOMOUS_EXECUTION_FAILED":
+      return {
+        badge: "EXECUTION ATTEMPT FAILED",
+        tone: "failed",
+        title: event.summary,
+        facts: [],
+        result: "SEE ANALYSIS FOR NEXT STEPS",
+        cta: { label: "VIEW ANALYSIS", href: `/app/analysis/${flowId}` },
+      };
+    default:
+      return {
+        badge: "DEMO EXECUTION RECORDED",
+        tone: "done",
+        title: event.summary,
+        facts: [],
+        result: "VIRTUAL FUNDS ONLY",
+        cta: null,
+      };
+  }
+}
+
+export type FlowAuditView =
+  | { readonly kind: "receipt" }
+  | { readonly kind: "event"; readonly card: AuditCard }
+  | { readonly kind: "fallback" };
+
+/**
+ * Decide how a flow renders: COMPLETED flows always show receipt truth;
+ * otherwise the latest meaningful event wins; with neither, the caller
+ * falls back to the lifecycle chip exactly as before.
+ */
+export function flowAuditView(flowState: string, event: ActivityEvent | null): FlowAuditView {
+  if (flowState === "COMPLETED") return { kind: "receipt" };
+  if (event !== null) return { kind: "event", card: auditCardFor(event, event.flowId) };
+  return { kind: "fallback" };
+}
+
 // ---- Compact provenance strip ------------------------------------------------
 // Markers: ● LIVE (Bitget Reality) · ○ DEMO (simulated) · ◇ DEV (fixture) ·
 // □ DRY (no funds moved). Full required truth always rendered as words.

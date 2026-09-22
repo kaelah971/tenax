@@ -35,7 +35,7 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
-import { evaluateCumulativeProtection } from "./cumulative";
+import { classifyCumulativeRoute, evaluateCumulativeProtection } from "./cumulative";
 import type {
   ApprovalState,
   DecisionReceipt,
@@ -83,6 +83,7 @@ import {
   STANDING_INTENT_TYPE,
   STANDING_SYMBOL_NVDAUSDT,
   activateStandingMandate,
+  classifyStandingRoute,
   consumeStandingExecution,
   createStandingMandate,
   evaluateStandingAuthority,
@@ -1106,6 +1107,33 @@ export type AgentCycleResult =
       readonly state: FlowState;
       readonly evaluation: StandingAuthorityEvaluation;
       readonly note: "HUMAN REVIEW REQUIRED";
+      /**
+       * The bounds conflict that routed here (proposed vs standing max).
+       * Present for standing-level escalation; cumulative escalation
+       * carries the richer cumulative payload alongside.
+       */
+      readonly conflict: {
+        readonly proposedPct: number;
+        readonly proposedUsd: number;
+        readonly maxPct: number;
+        readonly maxNotional: number;
+      } | null;
+      /** Present when the cumulative protection gate caused the escalation. */
+      readonly cumulative?: {
+        readonly existingUsd: number | null;
+        readonly proposedUsd: number;
+        readonly projectedUsd: number | null;
+        readonly projectedPct: number | null;
+        readonly maxPct: number;
+        readonly reasonCode: string;
+      } | null;
+    }
+  | {
+      readonly outcome: "STANDING_REVIEW";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly evaluation: StandingAuthorityEvaluation;
+      readonly note: "HUMAN APPROVAL REQUIRED";
     }
   | {
       readonly outcome: "IN_PROGRESS";
@@ -1191,12 +1219,18 @@ function describeCompletedAuthority(
  *    stops with NO_ACTION — no reservation, no budget, no Bitget request.
  * 2. Re-evaluates deterministic policy from the STORED proposal; REFUSE stops.
  * 3. Requires an ACTIVE standing mandate (else NO_STANDING_MANDATE).
- * 4. Evaluates standing authority fresh; REFUSED/ESCALATE stop with no
- *    consumption (escalation routes to the manual human-approval path).
-  * 5. Binds execution authority to the exact proposal and atomically
+  * 4. Evaluates standing authority fresh. REFUSED stops with no
+  *    consumption. ESCALATE routes by classified reason: safety/validity
+  *    reasons (stale evidence and the like) hard-refuse in every mode;
+  *    REVIEW_EVERY_ACTION returns STANDING_REVIEW (ordinary per-action
+  *    approval, no escalation record); AUTO_WITH_ESCALATION records the
+  *    boundary escalation and returns STANDING_ESCALATE (manual
+  *    human-approval path, budget untouched).
+   * 5. Binds execution authority to the exact proposal and atomically
   *    reserves budget (idempotent for the identical triple). In BITGET_DEMO
-  *    mode a cumulative protection gate runs first: live existing short +
-  *    proposal must fit inside maxProtectionPct together, else STANDING_REFUSED.
+  *    mode a cumulative protection gate runs first against the STANDING
+  *    policy ceiling: over-limit escalates under AUTO_WITH_ESCALATION
+  *    and refuses otherwise; unknown projections always refuse.
   * 6. Runs ALL existing executor gates via the shared flow tails.
  * 7. DRY_RUN returns a preview only: reservation released, budget untouched.
  * 8. BITGET_DEMO submits only here; the provider-accepted order consumes
@@ -1329,14 +1363,63 @@ export async function runProtectionAgentCycle(
       type: "STANDING_AUTHORITY_REFUSED",
       flowId,
       summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
+      details: { reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
     }, nowMs);
     return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
   }
   if (evaluation.decision === "ESCALATE") {
+    // B4 correction: only user-authority boundary conflicts may escalate.
+    // Safety/validity reasons (stale evidence, leverage bounds, anything
+    // unrecognized) are hard refusals in every mode — human approval must
+    // never substitute for fresh, valid execution evidence.
+    const route = classifyStandingRoute(evaluation.reasonCodes);
+    if (route === "SAFETY_REFUSAL") {
+      emitActivityEvent(store, {
+        type: "STANDING_AUTHORITY_REFUSED",
+        flowId,
+        summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
+      }, nowMs);
+      return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
+    }
+    if (mandate.policy.authorityMode === "REVIEW_EVERY_ACTION") {
+      // Ordinary per-action approval path: the mandate proves the action
+      // class, but this mode never auto-authorizes. Distinct from an
+      // out-of-bounds escalation — no escalation record, no budget touch.
+      emitActivityEvent(store, {
+        type: "STANDING_REVIEW_REQUIRED",
+        flowId,
+        summary: `Standing ${evaluation.mandateId} requires human approval (review every action)`,
+        details: { reasonCodes: [...evaluation.reasonCodes], outcome: "STANDING_REVIEW" },
+      }, nowMs);
+      return {
+        outcome: "STANDING_REVIEW",
+        flowId,
+        state: flow.getFlowState(),
+        evaluation,
+        note: "HUMAN APPROVAL REQUIRED",
+      };
+    }
+    // Out-of-bounds under AUTO_WITH_ESCALATION: route to the normal
+    // one-time human approval flow. Record the escalation for audit and
+    // receipt truth; budget and mandate stay untouched.
+    flow.recordStandingEscalation({
+      mandateId: evaluation.mandateId,
+      reasonCodes: [...evaluation.reasonCodes],
+      proposedProtectionPct: proposal.protectionPct,
+      proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+    });
     emitActivityEvent(store, {
       type: "STANDING_AUTHORITY_ESCALATED",
       flowId,
       summary: `Standing ${evaluation.mandateId} escalated — human review required`,
+      details: {
+        proposedPct: proposal.protectionPct,
+        proposedUsd: analysis.authority.calculatedTradeValueUsdt,
+        maxPct: mandate.policy.maxProtectionPct,
+        maxNotional: mandate.policy.maxNotionalUsdt,
+        reasonCodes: [...evaluation.reasonCodes],
+        outcome: "STANDING_ESCALATE",
+      },
     }, nowMs);
     return {
       outcome: "STANDING_ESCALATE",
@@ -1344,16 +1427,28 @@ export async function runProtectionAgentCycle(
       state: flow.getFlowState(),
       evaluation,
       note: "HUMAN REVIEW REQUIRED",
+      conflict: {
+        proposedPct: proposal.protectionPct,
+        proposedUsd: analysis.authority.calculatedTradeValueUsdt,
+        maxPct: mandate.policy.maxProtectionPct,
+        maxNotional: mandate.policy.maxNotionalUsdt,
+      },
     };
   }
 
   // 6–7. Bind authority to the exact proposal; reserve budget atomically.
   // 6b. Cumulative protection gate (BITGET_DEMO writes only): the live
-  // existing Demo short plus this proposal must fit inside
-  // maxProtectionPct together. DRY_RUN previews move nothing and carry
-  // no budget, so they skip this live-state check. This runs BEFORE any
-  // provider write and before irreversible budget consumption — a refusal
-  // here reserves nothing and consumes nothing.
+  // existing Demo short plus this proposal must fit inside the STANDING
+  // mandate's maxProtectionPct together (B3 policies may differ from the
+  // fixture). DRY_RUN previews move nothing and carry no budget, so they
+  // skip this live-state check. This runs BEFORE any provider write and
+  // before irreversible budget consumption.
+  //
+  // Mode routing: an over-limit projection escalates under
+  // AUTO_WITH_ESCALATION (same human-review path as standing-level
+  // escalation); unknown/unvalued/opposite/invalid projections fail
+  // closed as hard refusals in every mode, as does over-limit under
+  // AUTO_WITHIN_MANDATE. Never resize the proposal.
   if (mode === "BITGET_DEMO") {
     const cycleMarket =
       credentials !== null && baseUrl !== ""
@@ -1363,13 +1458,69 @@ export async function runProtectionAgentCycle(
       grossExposureUsd: (flow.getContext().exposure ?? NVDA_EXPOSURE_FIXTURE).exposureValueUsdt,
       existingPosition: cycleMarket?.position ?? null,
       proposedAdditionalUsd: analysis.authority.calculatedTradeValueUsdt,
-      maxProtectionPct: MANDATE_FIXTURE.maxProtectionPct,
+      maxProtectionPct: mandate.policy.maxProtectionPct,
     });
     if (!cumulative.passes) {
+      if (
+        classifyCumulativeRoute(cumulative.reasonCode) === "ESCALATABLE" &&
+        mandate.policy.authorityMode === "AUTO_WITH_ESCALATION"
+      ) {
+        flow.recordStandingEscalation({
+          mandateId: evaluation.mandateId,
+          reasonCodes: [cumulative.reasonCode, ...evaluation.reasonCodes],
+          proposedProtectionPct: proposal.protectionPct,
+          proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+        });
+        emitActivityEvent(store, {
+          type: "STANDING_AUTHORITY_ESCALATED",
+          flowId,
+          summary: `Standing ${evaluation.mandateId} escalated (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
+          details: {
+            proposedPct: proposal.protectionPct,
+            proposedUsd: cumulative.proposedUsd,
+            maxPct: cumulative.maxPct,
+            maxNotional: mandate.policy.maxNotionalUsdt,
+            existingUsd: cumulative.existingUsd,
+            projectedPct: cumulative.projectedPct,
+            reasonCodes: [cumulative.reasonCode, ...evaluation.reasonCodes],
+            outcome: "STANDING_ESCALATE",
+          },
+        }, nowMs);
+        return {
+          outcome: "STANDING_ESCALATE",
+          flowId,
+          state: flow.getFlowState(),
+          evaluation,
+          note: "HUMAN REVIEW REQUIRED",
+          conflict: {
+            proposedPct: proposal.protectionPct,
+            proposedUsd: analysis.authority.calculatedTradeValueUsdt,
+            maxPct: mandate.policy.maxProtectionPct,
+            maxNotional: mandate.policy.maxNotionalUsdt,
+          },
+          cumulative: {
+            existingUsd: cumulative.existingUsd,
+            proposedUsd: cumulative.proposedUsd,
+            projectedUsd: cumulative.projectedUsd,
+            projectedPct: cumulative.projectedPct,
+            maxPct: cumulative.maxPct,
+            reasonCode: cumulative.reasonCode,
+          },
+        };
+      }
       emitActivityEvent(store, {
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
+        details: {
+          proposedPct: proposal.protectionPct,
+          proposedUsd: cumulative.proposedUsd,
+          maxPct: cumulative.maxPct,
+          existingUsd: cumulative.existingUsd,
+          projectedPct: cumulative.projectedPct,
+          reasonCodes: [cumulative.reasonCode],
+          outcome: "STANDING_REFUSED",
+        },
       }, nowMs);
       return {
         outcome: "STANDING_REFUSED",

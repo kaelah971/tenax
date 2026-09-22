@@ -10,6 +10,7 @@
 // labels provenance it is given. Unknown stays unknown throughout.
 
 import type { ApprovalState } from "./domain";
+import type { StandingAuthorityMode } from "./standing-mandate";
 
 /**
  * Protection coverage in percent (protected / gross * 100), rounded to two
@@ -220,13 +221,16 @@ export interface FinalActionInput {
   readonly standingDecision: StandingDecision | null;
   /** Live cumulative projection vs mandate max (null = unknown). */
   readonly cumulativeOverLimit: boolean | null;
+  /** Active standing mode (null = none). Tells over-limit apart. */
+  readonly authorityMode?: StandingAuthorityMode | null;
 }
 
 /**
  * Derive the single final state. Precedence: WAIT → NO_ACTION →
  * mandate REFUSE → NO_MANDATE → standing REFUSE → ESCALATE (manual path
  * preserved; cumulative governs autonomous execution only) → cumulative
- * over-limit REFUSE → unknown UNKNOWN (fail closed, never AUTHORIZED).
+ * over-limit (REFUSE, or ESCALATE under AUTO_WITH_ESCALATION) → unknown
+ * UNKNOWN (fail closed, never AUTHORIZED).
  */
 export function finalActionState(input: FinalActionInput): FinalActionState {
   if (input.wait) return "WAIT";
@@ -235,7 +239,9 @@ export function finalActionState(input: FinalActionInput): FinalActionState {
   if (input.standingDecision === null) return "NO_MANDATE";
   if (input.standingDecision === "REFUSED") return "REFUSED";
   if (input.standingDecision === "ESCALATE") return "ESCALATE";
-  if (input.cumulativeOverLimit === true) return "REFUSED";
+  if (input.cumulativeOverLimit === true) {
+    return input.authorityMode === "AUTO_WITH_ESCALATION" ? "ESCALATE" : "REFUSED";
+  }
   if (input.cumulativeOverLimit === null) return "UNKNOWN";
   return "AUTHORIZED";
 }

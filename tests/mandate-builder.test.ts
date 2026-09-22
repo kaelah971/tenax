@@ -28,6 +28,7 @@ import {
   formatExpiryPreview,
   mandateClassCardValues,
   mandateSummaryPreview,
+  standingAuthorityCopy,
 } from "../src/app/app/_copy";
 
 const NOW = Date.parse("2026-09-21T12:00:00.000Z");
@@ -466,5 +467,54 @@ describe("builder surface truth", () => {
     expect(routeSource).not.toContain("place-order");
     expect(panelSource).not.toMatch(/bitget/i);
     expect(panelSource).not.toContain("place-order");
+  });
+});
+
+describe("protect console authority truth", () => {
+  it("words approval and narrative per active mode", () => {
+    const review = standingAuthorityCopy("REVIEW_EVERY_ACTION");
+    expect(review.approval).toBe("REQUIRED");
+    expect(review.narrative).toMatch(/every action requires human approval/i);
+
+    const within = standingAuthorityCopy("AUTO_WITHIN_MANDATE");
+    expect(within.approval).toBe("NOT REQUIRED WITHIN BOUNDS");
+    expect(within.narrative).toMatch(/may execute automatically/i);
+
+    const escalation = standingAuthorityCopy("AUTO_WITH_ESCALATION");
+    expect(escalation.approval).toBe("AUTOMATIC WITHIN BOUNDS");
+    expect(escalation.narrative).toMatch(/outside bounds go to human review/i);
+
+    const none = standingAuthorityCopy(null);
+    expect(none.approval).toBe("REQUIRED");
+  });
+
+  it("derives the protect console from the stored ACTIVE mandate", () => {
+    const pageSource = readFileSync(
+      new URL("../src/app/app/protect/nvidia/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(pageSource).toContain("getActiveStandingMandate");
+    expect(pageSource).toContain("standingAuthorityCopy(");
+    expect(pageSource).toContain("mandateSummaryPreview({");
+    expect(pageSource).toContain("activeMandate.policy.maxProtectionPct");
+    expect(pageSource).toContain("activeMandate.policy.maxNotionalUsdt");
+    expect(pageSource).toContain("activeMandate.policy.subjectId");
+    expect(pageSource).toContain("NO ACTIVE AUTHORITY");
+    expect(pageSource).toContain("CREATE STANDING MANDATE");
+    // The unconditional always-on ACTIVE claim is gone: the ACTIVE pill
+    // renders only inside the stored-mandate branch, with its mode.
+    expect(pageSource).not.toContain(`<LiveDot label="AUTHORITY ACTIVE" />`);
+    expect(pageSource).toContain("activeMandate ? (");
+  });
+
+  it("introduces no POST or provider paths on the protect page", () => {
+    const pageSource = readFileSync(
+      new URL("../src/app/app/protect/nvidia/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(pageSource).not.toContain("fetch(");
+    expect(pageSource).not.toContain("/api/");
+    expect(pageSource).not.toContain("place-order");
+    expect(pageSource).not.toContain("placeOrder");
   });
 });

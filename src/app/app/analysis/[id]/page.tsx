@@ -29,6 +29,7 @@ import {
 } from "@/lib/tenax/visuals";
 import {
   cumulativeRefusalSentence,
+  projectionStatusCopy,
   refusalSentence,
   standingAuthorityCopy,
 } from "../../_copy";
@@ -93,11 +94,15 @@ export default async function AnalysisPage({
   ]);
   const grossUsd = (context?.exposure ?? NVDA_EXPOSURE_FIXTURE).exposureValueUsdt;
   const proposedUsd = analysis.authority.calculatedTradeValueUsdt;
+  // Pre-cycle projection against the STANDING policy ceiling when a
+  // mandate is active (B3 policies may differ from the fixture).
+  const projectionMaxPct =
+    standingMandate?.policy.maxProtectionPct ?? MANDATE_FIXTURE.maxProtectionPct;
   const projection = surfaceProjection(
     surface.position,
     proposedUsd,
     grossUsd,
-    MANDATE_FIXTURE.maxProtectionPct,
+    projectionMaxPct,
   );
   const evidence = evidenceSummary({
     realityAvailable: snapshot.availability !== "UNAVAILABLE",
@@ -115,6 +120,7 @@ export default async function AnalysisPage({
     policyPass,
     standingDecision: runAuthority?.decision ?? null,
     cumulativeOverLimit: projection.overLimit,
+    authorityMode: standingMandate?.policy.authorityMode ?? null,
   });
 
   // Refusal wording for the FINAL block, mirroring the same precedence.
@@ -292,7 +298,7 @@ export default async function AnalysisPage({
               MANDATE MAX
             </dt>
             <dd className="mt-1 truncate text-[20px] font-extrabold leading-none">
-              {MANDATE_FIXTURE.maxProtectionPct}%
+              {projectionMaxPct}%
             </dd>
           </div>
         </dl>
@@ -301,11 +307,11 @@ export default async function AnalysisPage({
             projection.overLimit === true ? "font-bold text-clay" : "text-mutedink"
           }`}
         >
-          {projection.overLimit === true
-            ? "PROJECTED OVER MANDATE — CYCLE WILL REFUSE · NO ORDER SENT"
-            : projection.overLimit === false
-              ? "WITHIN MANDATE ON THIS CHECK — AUTHORITATIVE CHECK RUNS AT CYCLE TIME"
-              : "POSITION UNKNOWN — CYCLE FAILS CLOSED · NO ORDER SENT"}
+          {projectionStatusCopy({
+            overLimit: projection.overLimit,
+            authorityMode: standingMandate?.policy.authorityMode ?? null,
+            finalState,
+          })}
         </p>
         <p className="font-syslabel mt-1 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
           DETERMINISTIC PROJECTION · NOT AN AI DECISION

@@ -312,6 +312,36 @@ export function consumeStandingExecution(mandate: StandingMandate): StandingMand
   };
 }
 
+/**
+ * Phase 4B-B4 routing classification for standing-authority outputs.
+ * Pure interpretation of the evaluator's reason codes — the evaluator
+ * itself is unchanged.
+ *
+ * - AUTHORITY_BOUNDARY: every material reason is a user-authority bound
+ *   (protection % or per-action notional). Only this may escalate, and
+ *   only under AUTO_WITH_ESCALATION.
+ * - SAFETY_REFUSAL: any safety/validity reason is present (stale
+ *   evidence, leverage bounds, forbidden actions, dead mandate, anything
+ *   unrecognized). Always a hard refusal in every mode — human approval
+ *   is never a substitute for fresh, valid execution evidence.
+ * - IN_BOUNDS: no material reason (ordinary review-mode path).
+ */
+export type StandingRoute = "AUTHORITY_BOUNDARY" | "SAFETY_REFUSAL" | "IN_BOUNDS";
+
+const ESCALATABLE_STANDING_REASONS: readonly string[] = [
+  "exceeds_max_protection_pct",
+  "exceeds_max_notional",
+];
+
+export function classifyStandingRoute(reasonCodes: readonly string[]): StandingRoute {
+  const material = reasonCodes.filter((code) => code !== "human_review_required");
+  if (material.some((code) => !ESCALATABLE_STANDING_REASONS.includes(code))) {
+    return "SAFETY_REFUSAL";
+  }
+  if (material.length === 0) return "IN_BOUNDS";
+  return "AUTHORITY_BOUNDARY";
+}
+
 // ---- Deterministic authority evaluation -------------------------------------
 
 /** Canonical derived action presented for standing-authority evaluation. */

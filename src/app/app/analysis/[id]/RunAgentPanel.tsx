@@ -23,6 +23,12 @@ interface CycleReply {
     readonly maxPct: number;
     readonly reasonCode: string;
   } | null;
+  readonly conflict?: {
+    readonly proposedPct: number;
+    readonly proposedUsd: number;
+    readonly maxPct: number;
+    readonly maxNotional: number;
+  } | null;
   readonly error?: { message?: string };
 }
 
@@ -49,6 +55,7 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
   const [outcome, setOutcome] = useState<string | null>(null);
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [cumulative, setCumulative] = useState<CycleReply["cumulative"]>(null);
+  const [conflict, setConflict] = useState<CycleReply["conflict"]>(null);
 
   async function onRun() {
     setPhase("running");
@@ -56,6 +63,7 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
     setOutcome(null);
     setReceiptId(null);
     setCumulative(null);
+    setConflict(null);
     try {
       const reply = await postCycle(flowId);
       setPhase("done");
@@ -63,6 +71,7 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
       setMessage(`Agent cycle ${String(reply.outcome ?? "finished").toUpperCase()}`);
       if (reply.receipt?.receiptId) setReceiptId(reply.receipt.receiptId);
       if (reply.cumulative) setCumulative(reply.cumulative);
+      if (reply.conflict) setConflict(reply.conflict);
     } catch (err) {
       setPhase("error");
       setMessage(err instanceof Error ? err.message : "Agent cycle failed");
@@ -90,6 +99,44 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
       </p>
       {phase === "done" ? (
         <div className="flex flex-col gap-3">
+          {outcome === "STANDING_REVIEW" ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-[16px] font-bold leading-[24px]">Human approval required.</p>
+              <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+                REVIEW MODE · NO ORDER SENT · NOTHING AUTO-SUBMITTED
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push(`/app/approval/${flowId}`)}
+                className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:self-start"
+              >
+                REVIEW AND APPROVE <span className="btn-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+          ) : null}
+          {outcome === "STANDING_ESCALATE" ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-[16px] font-bold leading-[24px]">
+                Outside your standing mandate. Sent for human review.
+              </p>
+              {conflict ? (
+                <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+                  PROPOSED {conflict.proposedPct}% · ${conflict.proposedUsd} — MANDATE MAX{" "}
+                  {conflict.maxPct}% · ${conflict.maxNotional}
+                </p>
+              ) : null}
+              <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+                NO ORDER SENT · STANDING BUDGET UNCHANGED
+              </p>
+              <button
+                type="button"
+                onClick={() => router.push(`/app/approval/${flowId}`)}
+                className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:self-start"
+              >
+                REVIEW ESCALATION <span className="btn-arrow" aria-hidden="true">→</span>
+              </button>
+            </div>
+          ) : null}
           {outcome === "STANDING_REFUSED" && cumulative ? (
             <div className="flex flex-col gap-2">
               <p>
@@ -102,9 +149,12 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
                 DETERMINISTIC GATE · NOT AN AI DECISION
               </p>
             </div>
-          ) : (
+          ) : null}
+          {outcome !== "STANDING_REVIEW" &&
+          outcome !== "STANDING_ESCALATE" &&
+          !(outcome === "STANDING_REFUSED" && cumulative) ? (
             <p className="text-[16px] font-bold leading-[24px]">{message}</p>
-          )}
+          ) : null}
           {cumulative ? (
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-ink/15 pt-3 text-[13px] leading-[18px] sm:grid-cols-3">
               <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">EXISTING</dt><dd className="font-semibold">{formatUsd(cumulative.existingUsd)}</dd></div>

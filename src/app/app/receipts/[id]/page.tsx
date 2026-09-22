@@ -27,6 +27,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const isDemo = receipt.executionMode === "BITGET_DEMO";
   const demo = receipt.demoExecution ?? null;
   const isStanding = receipt.authoritySource === "STANDING_MANDATE";
+  const escalation = receipt.standingEscalation ?? null;
 
   const stages: Array<{ index: string; title: string; lines: string[] }> = [
     { index: "01", title: "EXPOSURE", lines: [`$${receipt.exposureValueUsdt} NVIDIA`, "○ DEMO"] },
@@ -196,6 +197,34 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               ["MANDATE HASH", receipt.standingMandateHash ? `${receipt.standingMandateHash.slice(0, 16)}…` : "—"],
               ["EVALUATED", receipt.authorityEvaluatedAt ?? "—"],
               ["EXECUTION", isDemo ? "BITGET DEMO" : "DRY RUN"],
+            ].map(([term, value]) => (
+              <div
+                key={term}
+                className="flex flex-wrap items-baseline justify-between gap-4 border-t border-softwhite/15 py-2.5"
+              >
+                <dt className="font-syslabel shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+                  {term}
+                </dt>
+                <dd className="break-words text-right text-[13px] font-bold leading-[18px]">{value}</dd>
+              </div>
+            ))}
+          </dl>
+        </section>
+      ) : null}
+
+      {!isStanding && escalation ? (
+        <section aria-label="Escalated authority" className="tx-material-authority rounded-[18px] p-5 text-softwhite sm:p-8">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            AUTHORITY SOURCE · HUMAN APPROVAL
+          </p>
+          <dl className="mt-4 grid grid-cols-1 gap-x-8 sm:grid-cols-2">
+            {[
+              ["HUMAN APPROVAL THIS ACTION", "GRANTED · ONE-TIME"],
+              ["STANDING MANDATE", "DID NOT AUTHORIZE THIS ACTION"],
+              ["MANDATE", escalation.mandateId],
+              ["ESCALATION REASONS", escalation.reasonCodes.join(" · ").toUpperCase() || "—"],
+              ["PROPOSED", `${escalation.proposedProtectionPct}% · $${escalation.proposedTradeValueUsdt}`],
+              ["ESCALATED", escalation.escalatedAt],
             ].map(([term, value]) => (
               <div
                 key={term}

@@ -34,6 +34,7 @@ import {
 import { normalizeNvidiaSnapshot } from "../src/lib/intelligence/snapshot";
 import {
   cumulativeRefusalSentence,
+  projectionStatusCopy,
   standingAuthorityCopy,
 } from "../src/app/app/_copy";
 import {
@@ -381,6 +382,91 @@ describe("interval controls", () => {
     expect(analysisIntervalHref("flow-1", "15m")).toBe("/app/analysis/flow-1?interval=15m");
     expectValidRoute(exposureIntervalHref("5m"));
     expectValidRoute(analysisIntervalHref("flow-1", "5m"));
+  });
+});
+
+describe("fixture reasoning stays out of authority claims", () => {
+  it("never mentions static mandate limits in development reasoning", async () => {
+    const store = createDevStore();
+    const snapshot = normalizeNvidiaSnapshot(
+      await fetchRealityBundle(stubClientFor(FULL_PAYLOADS), { gapMs: 0 }),
+    );
+    const { flowId } = createProtectionIntent(store, { rawText: RAW_TEXT });
+    analyzeProtectionIntent(store, flowId, snapshot);
+    const reasoning = store.flows.get(flowId)?.getContext().analysis?.reasoning;
+    expect(reasoning).toBeDefined();
+    const text = [
+      reasoning?.summary ?? "",
+      reasoning?.rationale ?? "",
+      ...(reasoning?.riskObservations ?? []),
+    ].join(" ");
+    expect(text).not.toContain("30%");
+    expect(text).not.toContain("150");
+    expect(text).not.toContain("sits inside");
+    expect(text).toContain("fixture reasoning, not live AI output");
+  });
+});
+
+describe("projection status copy", () => {
+  it("promises human review for escalation-mode overflow, never refusal", () => {
+    const line = projectionStatusCopy({
+      overLimit: true,
+      authorityMode: "AUTO_WITH_ESCALATION",
+      finalState: "ESCALATE",
+    });
+    expect(line).toMatch(/ESCALATE FOR HUMAN REVIEW/);
+    expect(line).toMatch(/NO AUTONOMOUS ORDER SENT/);
+    expect(line).not.toMatch(/WILL REFUSE/);
+  });
+
+  it("keeps REFUSE wording for within-mode overflow", () => {
+    const line = projectionStatusCopy({
+      overLimit: true,
+      authorityMode: "AUTO_WITHIN_MANDATE",
+      finalState: "REFUSED",
+    });
+    expect(line).toMatch(/WILL REFUSE/);
+  });
+
+  it("requires human review in REVIEW mode without promising execution", () => {
+    const line = projectionStatusCopy({
+      overLimit: true,
+      authorityMode: "REVIEW_EVERY_ACTION",
+      finalState: "ESCALATE",
+    });
+    expect(line).toMatch(/HUMAN REVIEW REQUIRED BEFORE EXECUTION/);
+    expect(line).not.toMatch(/WILL REFUSE/);
+  });
+
+  it("keeps hard safety wording in every mode, including escalation", () => {
+    for (const authorityMode of [
+      "AUTO_WITHIN_MANDATE",
+      "AUTO_WITH_ESCALATION",
+      "REVIEW_EVERY_ACTION",
+      null,
+    ] as const) {
+      const unknown = projectionStatusCopy({
+        overLimit: null,
+        authorityMode,
+        finalState: "UNKNOWN",
+      });
+      expect(unknown).toMatch(/FAILS CLOSED/);
+      const refused = projectionStatusCopy({
+        overLimit: true,
+        authorityMode,
+        finalState: "REFUSED",
+      });
+      expect(refused).toMatch(/WILL REFUSE/);
+    }
+  });
+
+  it("renders the cockpit line from the helper, not inline percentages", () => {
+    const pageSource = readFileSync(
+      new URL("../src/app/app/analysis/[id]/page.tsx", import.meta.url),
+      "utf8",
+    );
+    expect(pageSource).toContain("projectionStatusCopy({");
+    expect(pageSource).not.toContain("PROJECTED OVER MANDATE — CYCLE WILL REFUSE");
   });
 });
 

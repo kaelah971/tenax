@@ -39,6 +39,20 @@ export type CumulativeReasonCode =
   | "opposite_position"
   | "invalid_inputs";
 
+/**
+ * Phase 4B-B4 routing classification for a failed cumulative projection.
+ * Only an over-limit projection on otherwise readable state may escalate
+ * to human review (and only under AUTO_WITH_ESCALATION). Unknown,
+ * unvalued, opposite-side, and invalid projections are hard refusals in
+ * every mode — the cycle fails closed and never asks a human to bless an
+ * unreadable state.
+ */
+export type CumulativeRoute = "ESCALATABLE" | "HARD_REFUSAL";
+
+export function classifyCumulativeRoute(reasonCode: CumulativeReasonCode): CumulativeRoute {
+  return reasonCode === "projected_protection_exceeds_mandate" ? "ESCALATABLE" : "HARD_REFUSAL";
+}
+
 export interface CumulativeProtectionResult {
   readonly existingUsd: number | null;
   readonly proposedUsd: number;

@@ -191,6 +191,19 @@ export interface DemoExecutionRecord {
 }
 
 /** Immutable-ish decision snapshot (receipts are not live recomputations). */
+/**
+ * Informational record of an autonomous-cycle escalation: which standing
+ * mandate declined to authorize the proposal and why. Display and audit
+ * only — carrying this record grants nothing and changes no budget.
+ */
+export interface StandingEscalationRecord {
+  readonly mandateId: string;
+  readonly reasonCodes: readonly string[];
+  readonly proposedProtectionPct: number;
+  readonly proposedTradeValueUsdt: number;
+  readonly escalatedAt: string;
+}
+
 export interface DecisionReceipt {
   readonly receiptId: string;
   readonly timestamp: string;
@@ -220,6 +233,15 @@ export interface DecisionReceipt {
   readonly standingMandateHash?: string | null;
   readonly authorityDecision?: "AUTHORIZED" | "ESCALATE" | "REFUSED" | null;
   readonly authorityEvaluatedAt?: string | null;
+  /**
+   * Phase 4B-B4 escalation record (optional, informational only): when an
+   * autonomous cycle routed this proposal to human review because it fell
+   * outside the standing mandate, and a human later approved it through
+   * the normal one-time approval flow, the receipt carries this note so
+   * readers never mistake HUMAN_APPROVAL execution for standing
+   * authorization. Never mutates the mandate; never authorizes anything.
+   */
+  readonly standingEscalation?: StandingEscalationRecord | null;
   readonly rejectedAlternatives: ReadonlyArray<{
     readonly proposedTradeValueUsdt: number;
     readonly protectionPct: number;
