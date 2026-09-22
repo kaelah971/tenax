@@ -518,6 +518,29 @@ export function getDecisionReceipt(store: TenaxDevStore, flowId: string) {
 }
 
 /**
+ * Phase 4B-B2.5 — resolve the receipt flow consumed under a standing
+ * mandate (read-only). Scans flows for a stored receipt bound to the
+ * mandate id; latest flow wins. Returns null when no receipt references
+ * the mandate — never throws, never fabricates linkage.
+ */
+export function findReceiptFlowIdByMandate(
+  store: TenaxDevStore,
+  mandateId: string,
+): string | null {
+  let latest: string | null = null;
+  for (const [flowId, flow] of store.flows) {
+    let receipt: { readonly standingMandateId?: string | null } | null = null;
+    try {
+      receipt = flow.getReceipt();
+    } catch {
+      continue;
+    }
+    if (receipt?.standingMandateId === mandateId) latest = flowId;
+  }
+  return latest;
+}
+
+/**
  * Phase 4A — latest evaluated decision in render-ready form (read-only).
  *
  * Surfaces the canonical evaluated proposal, mandate checks, approval

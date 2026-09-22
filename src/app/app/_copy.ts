@@ -93,6 +93,41 @@ export function standingAuthorityCopy(mode: StandingAuthorityMode | null): Autho
   }
 }
 
+// ---- Current-authority display (mandate page) ---------------------------------
+//
+// The top authority card must reflect the actual configuration — never the
+// stale static "human approval required" while a standing mandate is or
+// was the relevant authority. Display only; lifecycle lives in
+// standing-mandate.ts.
+
+export interface CurrentAuthorityCopy {
+  readonly term: string;
+  readonly value: string;
+  readonly note: string | null;
+}
+
+/** Pure mapping from mandate-store state to the authority card row. */
+export function currentAuthorityCopy(input: {
+  readonly hasActiveMandate: boolean;
+  readonly hasExhaustedMandate: boolean;
+}): CurrentAuthorityCopy {
+  if (input.hasActiveMandate) {
+    return {
+      term: "Per-action approval",
+      value: "NOT REQUIRED WITHIN BOUNDS",
+      note: null,
+    };
+  }
+  if (input.hasExhaustedMandate) {
+    return {
+      term: "Standing authority",
+      value: "EXHAUSTED",
+      note: "New autonomous actions require a new mandate.",
+    };
+  }
+  return { term: "Human approval", value: "REQUIRED", note: null };
+}
+
 // ---- Cumulative-gate refusal ------------------------------------------------
 //
 // Deterministic gate sentences for the post-cycle cumulative refusal. The

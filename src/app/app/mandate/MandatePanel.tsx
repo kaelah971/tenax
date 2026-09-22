@@ -3,6 +3,7 @@
 // Client actions POST to server routes; this page asserts no authority itself.
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
@@ -23,7 +24,14 @@ async function post(path: string, body: unknown): Promise<{ ok: boolean; mandate
 
 const MODES = ["REVIEW_EVERY_ACTION", "AUTO_WITHIN_MANDATE", "AUTO_WITH_ESCALATION"] as const;
 
-export default function MandatePanel({ mandates }: { mandates: StandingMandate[] }) {
+export default function MandatePanel({
+  mandates,
+  exhaustedReceiptHref = null,
+}: {
+  mandates: StandingMandate[];
+  /** Receipt flow consumed under the latest exhausted mandate, if resolvable. */
+  exhaustedReceiptHref?: string | null;
+}) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("idle");
   const [message, setMessage] = useState("");
@@ -31,6 +39,10 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
   const [maxExecutions, setMaxExecutions] = useState("1");
 
   const active = mandates.find((m) => m.status === "ACTIVE") ?? null;
+  // Most recent exhausted mandate stays visible as history: policy is
+  // immutable and it can never reactivate — a new id/version is required.
+  const exhausted =
+    [...mandates].reverse().find((m) => m.status === "EXHAUSTED") ?? null;
   const draft = [...mandates].reverse().find((m) => m.status === "DRAFT") ?? null;
 
   async function run(path: string, body: unknown) {
@@ -84,7 +96,44 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
   }
 
   return (
-    <div className="flex flex-col gap-4">
+    <div className="flex flex-col gap-6">
+      {exhausted ? (
+        <div className="flex flex-col gap-3" aria-label="Exhausted mandate history">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+            PREVIOUS MANDATE · BUDGET CONSUMED
+          </p>
+          <dl className="grid grid-cols-1 gap-x-8 gap-y-3 min-[480px]:grid-cols-2 sm:grid-cols-3">
+            {[
+              ["MANDATE ID", exhausted.id],
+              ["STATUS", exhausted.status],
+              ["MODE", exhausted.policy.authorityMode.replaceAll("_", " ")],
+              ["ACTIVATED", exhausted.activatedAt ?? "—"],
+              ["EXECUTIONS", `${exhausted.executionCount} / ${exhausted.policy.maxExecutions}`],
+              ["REMAINING", `${exhausted.policy.maxExecutions - exhausted.executionCount} / ${exhausted.policy.maxExecutions}`],
+              ["HASH", exhausted.mandateHash ? `${exhausted.mandateHash.slice(0, 16)}…` : "—"],
+            ].map(([term, value]) => (
+              <div key={term} className="min-w-0 border-t border-softwhite/15 pt-2">
+                <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
+                  {term}
+                </dt>
+                <dd className="mt-1 break-words text-[15px] font-bold leading-[20px]">{value}</dd>
+              </div>
+            ))}
+          </dl>
+          <p className="text-[14px] leading-[20px] text-softwhite/80">
+            Execution budget consumed. This mandate can no longer authorize new actions.
+          </p>
+          {exhaustedReceiptHref ? (
+            <Link
+              href={exhaustedReceiptHref}
+              className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-softwhite/40 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] text-softwhite hover:bg-softwhite hover:text-ink sm:self-start"
+            >
+              VIEW RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+        </div>
+      ) : null}
+      <div className="flex flex-col gap-4">
       <div className="flex flex-col gap-2">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
           AUTHORITY MODE
@@ -142,7 +191,7 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
           disabled={phase === "working"}
           className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 disabled:cursor-not-allowed disabled:opacity-50 sm:self-start"
         >
-          {phase === "working" ? "DRAFTING…" : "CREATE DRAFT"}
+          {phase === "working" ? "DRAFTING…" : exhausted ? "CREATE NEW MANDATE" : "CREATE DRAFT"}
         </button>
       )}
       {phase === "error" ? (
@@ -152,6 +201,7 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
           DRAFT AUTHORIZES NOTHING · ACTIVATION BINDS POLICY HASH
         </p>
       )}
+      </div>
     </div>
   );
 }

@@ -4,7 +4,8 @@
 // Creating drafts nothing — only ACTIVATE binds the mandate hash.
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
-import { MANDATE_SUMMARY } from "../_copy";
+import { findReceiptFlowIdByMandate } from "@/lib/tenax/service";
+import { MANDATE_SUMMARY, currentAuthorityCopy } from "../_copy";
 import { AuthorityInstrument } from "../_components/materials";
 import { DecisionRail, JourneyNav, ProvenanceStrip, mandateJourney } from "../_components/ui";
 import MandatePanel from "./MandatePanel";
@@ -21,15 +22,27 @@ function latestAnalysisFlowId(): string | null {
 }
 
 export default function MandatePage() {
+  const store = getTenaxDevStore();
+  const mandates = [...store.mandates.values()];
+  const hasActiveMandate = mandates.some((m) => m.status === "ACTIVE");
+  const latestExhausted =
+    [...mandates].reverse().find((m) => m.status === "EXHAUSTED") ?? null;
+  const authority = currentAuthorityCopy({
+    hasActiveMandate,
+    hasExhaustedMandate: latestExhausted !== null,
+  });
   const rows: Array<[string, string]> = [
     ["Allowed exposure", MANDATE_FIXTURE.allowedUnderlying],
     ["Maximum hedge", `${MANDATE_FIXTURE.maxProtectionPct}% of position`],
     ["Maximum trade", `$${MANDATE_FIXTURE.maxTradeValueUsdt}`],
     ["Leverage", `max ${MANDATE_FIXTURE.maxLeverage}x`],
-    ["Human approval", MANDATE_FIXTURE.approvalRequired ? "Required" : "Not required"],
+    [authority.term, authority.value],
   ];
-  const mandates = [...getTenaxDevStore().mandates.values()];
-  const journey = mandateJourney(latestAnalysisFlowId());
+  const exhaustedReceiptFlowId =
+    !hasActiveMandate && latestExhausted
+      ? findReceiptFlowIdByMandate(store, latestExhausted.id)
+      : null;
+  const journey = mandateJourney(latestAnalysisFlowId(), exhaustedReceiptFlowId);
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -41,6 +54,9 @@ export default function MandatePage() {
       <AuthorityInstrument as="section" className="rounded-[18px] p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">CURRENT AUTHORITY</p><p className="mt-2 text-[22px] font-extrabold leading-none">The only permission the agent holds.</p></div><span className="state-mark text-signal">◇ DEV · FIXTURE</span></div>
         <dl className="mt-7 grid grid-cols-1 gap-0 sm:grid-cols-2">{rows.map(([term, value]) => <div key={term} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-softwhite/15 py-4"><dt className="text-[14px] leading-[20px] text-softwhite/60">{term}</dt><dd className="break-words text-right text-[20px] font-bold leading-[24px]">{value}</dd></div>)}</dl>
+        {authority.note ? (
+          <p className="mt-2 max-w-2xl text-[14px] leading-[20px] text-softwhite/70">{authority.note}</p>
+        ) : null}
         <p className="mt-5 max-w-2xl text-[16px] leading-[24px] text-softwhite/90">{MANDATE_SUMMARY}</p>
       </AuthorityInstrument>
 
@@ -65,7 +81,12 @@ export default function MandatePage() {
           ))}
         </dl>
         <div className="mt-6 border-t border-softwhite/15 pt-6">
-          <MandatePanel mandates={mandates} />
+          <MandatePanel
+            mandates={mandates}
+            exhaustedReceiptHref={
+              exhaustedReceiptFlowId ? `/app/receipts/${exhaustedReceiptFlowId}` : null
+            }
+          />
         </div>
       </AuthorityInstrument>
       <JourneyNav label="Continue" links={journey} />

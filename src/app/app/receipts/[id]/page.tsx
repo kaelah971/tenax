@@ -115,7 +115,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
               ${receipt.proposedTradeValueUsdt}
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-              PROTECTION · NVIDIA · RNVDAUSDT
+              PROTECTION · NVIDIA · NVDAUSDT · USDT-FUTURES · BITGET DEMO
             </p>
           </div>
           <SceneAnchor className="tx-floating-mascot flex flex-col items-center gap-4">

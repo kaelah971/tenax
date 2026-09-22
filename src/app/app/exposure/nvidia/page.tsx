@@ -144,6 +144,10 @@ export default async function ExposurePage({
   });
 
   const refused = evaluation?.rejected ?? null;
+  let latestReceiptFlowId: string | null = null;
+  for (const [flowId, flow] of store.flows) {
+    if (flow.getFlowState() === "COMPLETED") latestReceiptFlowId = flowId;
+  }
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-6 pt-6 sm:gap-8 sm:pt-8">
@@ -251,9 +255,17 @@ export default async function ExposurePage({
 
       {/* ROW 5 — CTA + collapsed technical evidence */}
       <div className="flex flex-col gap-4">
-        <div>
+        <div className="flex flex-wrap items-center gap-2">
           <Link href="/app/protect/nvidia" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">
             PROTECT THIS EXPOSURE <span className="btn-arrow" aria-hidden="true">→</span>
+          </Link>
+          {latestReceiptFlowId ? (
+            <Link href={`/app/receipts/${latestReceiptFlowId}`} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+              VIEW LATEST RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+          <Link href="/app/mandate" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+            VIEW MANDATE <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
         </div>
         <div className="grid gap-4 md:grid-cols-3 md:gap-5">

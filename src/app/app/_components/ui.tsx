@@ -211,9 +211,16 @@ export function analysisJourney(input: {
   return links;
 }
 
-/** Continuation links for the mandate page. */
-export function mandateJourney(latestFlowId: string | null): readonly JourneyLink[] {
+/** Continuation links for the mandate page. When the consumed execution of
+ * an exhausted mandate resolves to a receipt flow, it links first. */
+export function mandateJourney(
+  latestFlowId: string | null,
+  receiptFlowId: string | null = null,
+): readonly JourneyLink[] {
   const links: JourneyLink[] = [];
+  if (receiptFlowId) {
+    links.push({ label: "VIEW RECEIPT", href: `/app/receipts/${receiptFlowId}`, kind: "nav" });
+  }
   if (latestFlowId) {
     links.push({
       label: "RETURN TO CURRENT ANALYSIS",
