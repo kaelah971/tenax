@@ -4,6 +4,7 @@
 // Server-safe. Pure display mappings (railStages, provenanceMarker,
 // checkDisplay) stay unit-tested; rendering behavior is covered by
 // typecheck + production build.
+import Link from "next/link";
 import type { ReactNode } from "react";
 
 import type {
@@ -95,6 +96,21 @@ export function Card({
 
 // ---- Tenax Decision Rail ----------------------------------------------------
 
+// Valid GET-only journey destinations. Rail steps and journey CTAs may only
+// target these — never an /api mutation route. Clicking a step navigates;
+// it never executes, approves, or authorizes.
+export const APP_ROUTES = [
+  "/app",
+  "/app/events",
+  "/app/exposure/nvidia",
+  "/app/protect/nvidia",
+  "/app/analysis/[id]",
+  "/app/approval/[id]",
+  "/app/mandate",
+  "/app/activity",
+  "/app/receipts/[id]",
+] as const;
+
 export const RAIL_STAGES = [
   "EXPOSURE",
   "INTENT",
@@ -123,32 +139,131 @@ export function railStages(current: string): RailStageView[] {
   }));
 }
 
-export function DecisionRail({ current }: { current: string }) {
+/**
+ * Navigable rail destinations per stage. A present href renders a GET-only
+ * navigation link; null (or the active stage) renders a static label.
+ * Callers pass only hrefs backed by canonical state — never invented ids.
+ */
+export type RailLinkMap = Partial<Record<RailStage, string | null>>;
+
+export function DecisionRail({ current, links }: { current: string; links?: RailLinkMap }) {
   const stages = railStages(current);
   return (
     <div className="tx-rail-shell">
       <span className="tx-rail-line" aria-hidden="true" />
       <ol className="tx-rail relative flex min-w-max items-center gap-1" aria-label="Decision rail">
-        {stages.map((stage) => (
-          <li key={stage.label}>
-            <span
-              className={`font-syslabel tx-rail-stage text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
-                stage.state === "active"
-                  ? "tx-rail-stage-active font-bold text-ink"
-                  : stage.state === "done"
-                    ? "tx-rail-stage-done font-bold text-ink"
-                    : "text-mutedink/60"
-              }`}
-            >
-              {stage.index} {stage.label}
-            </span>
-          </li>
-        ))}
+        {stages.map((stage) => {
+          const href = stage.label === current ? null : (links?.[stage.label] ?? null);
+          const className = `font-syslabel tx-rail-stage text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
+            stage.state === "active"
+              ? "tx-rail-stage-active font-bold text-ink"
+              : stage.state === "done"
+                ? "tx-rail-stage-done font-bold text-ink"
+                : "text-mutedink/60"
+          }`;
+          return (
+            <li key={stage.label}>
+              {href ? (
+                <Link href={href} className={`${className} underline decoration-signal underline-offset-4`}>
+                  {stage.index} {stage.label}
+                </Link>
+              ) : (
+                <span className={className}>
+                  {stage.index} {stage.label}
+                </span>
+              )}
+            </li>
+          );
+        })}
       </ol>
     </div>
   );
 }
 
+// ---- Journey continuity ------------------------------------------------------
+//
+// One continuous operating flow: Exposure → Intent → Analysis → Mandate →
+// Receipt. These pure helpers build navigation-only continuation links
+// (GET pages, never /api mutations). Execution/authorization actions keep
+// the solid signal treatment; journey links below render as outline
+// navigation so the two can never be confused.
+
+export interface JourneyLink {
+  readonly label: string;
+  readonly href: string;
+  readonly kind: "nav";
+}
+
+/** Continuation links for the analysis cockpit. The FINAL decision block
+ * owns every state-specific action (RUN / CREATE / REVIEW / mandate and
+ * exposure nav); this row carries only cross-cutting navigation. */
+export function analysisJourney(input: {
+  readonly flowId: string;
+  readonly hasReceipt: boolean;
+}): readonly JourneyLink[] {
+  const links: JourneyLink[] = [
+    { label: "VIEW MANDATE DETAILS", href: `/app/approval/${input.flowId}`, kind: "nav" },
+    { label: "VIEW ACTIVITY", href: "/app/activity", kind: "nav" },
+  ];
+  if (input.hasReceipt) {
+    links.push({ label: "VIEW RECEIPT", href: `/app/receipts/${input.flowId}`, kind: "nav" });
+  }
+  return links;
+}
+
+/** Continuation links for the mandate page. */
+export function mandateJourney(latestFlowId: string | null): readonly JourneyLink[] {
+  const links: JourneyLink[] = [];
+  if (latestFlowId) {
+    links.push({
+      label: "RETURN TO CURRENT ANALYSIS",
+      href: `/app/analysis/${latestFlowId}`,
+      kind: "nav",
+    });
+  } else {
+    links.push({ label: "PROTECT NVIDIA", href: "/app/protect/nvidia", kind: "nav" });
+  }
+  links.push({ label: "VIEW NVIDIA EXPOSURE", href: "/app/exposure/nvidia", kind: "nav" });
+  links.push({ label: "VIEW ACTIVITY", href: "/app/activity", kind: "nav" });
+  return links;
+}
+
+/** Continuation links for the decision receipt. */
+export function receiptJourney(): readonly JourneyLink[] {
+  return [
+    { label: "VIEW EXPOSURE", href: "/app/exposure/nvidia", kind: "nav" },
+    { label: "VIEW ACTIVITY", href: "/app/activity", kind: "nav" },
+    { label: "PROTECT AGAIN", href: "/app/protect/nvidia", kind: "nav" },
+  ];
+}
+
+/** Interval navigation for the shared protection-market panel. Pure GET links. */
+export function exposureIntervalHref(tf: string): string {
+  return `/app/exposure/nvidia?interval=${tf}`;
+}
+
+/** Interval navigation scoped to one analysis cockpit. Pure GET links. */
+export function analysisIntervalHref(flowId: string, tf: string): string {
+  return `/app/analysis/${flowId}?interval=${tf}`;
+}
+
+/** Outline navigation row — visually distinct from execution actions. */
+export function JourneyNav({ links, label }: { links: readonly JourneyLink[]; label: string }) {
+  if (links.length === 0) return null;
+  return (
+    <nav aria-label={label} className="flex flex-wrap items-center gap-2">
+      {links.map((link) => (
+        <Link
+          key={link.label}
+          href={link.href}
+          className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite"
+        >
+          {link.label} <span className="btn-arrow" aria-hidden="true">→</span>
+        </Link>
+      ))}
+    </nav>
+  );
+}
 // ---- Compact provenance strip ------------------------------------------------
 // Markers: ● LIVE (Bitget Reality) · ○ DEMO (simulated) · ◇ DEV (fixture) ·
 // □ DRY (no funds moved). Full required truth always rendered as words.

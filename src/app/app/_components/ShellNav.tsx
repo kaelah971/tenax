@@ -5,10 +5,10 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 const NAV = [
-  { href: "/app", label: "Capital" },
-  { href: "/app/events", label: "Events" },
-  { href: "/app/mandate", label: "Mandate" },
-  { href: "/app/activity", label: "Activity" },
+  { href: "/app", label: "CAPITAL" },
+  { href: "/app/events", label: "EVENTS" },
+  { href: "/app/mandate", label: "MANDATE" },
+  { href: "/app/activity", label: "ACTIVITY" },
 ];
 
 function isActive(pathname: string, href: string): boolean {

@@ -50,7 +50,7 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
     const remaining = active.policy.maxExecutions - active.executionCount;
     return (
       <div className="flex flex-col gap-4">
-        <dl className="grid grid-cols-2 gap-x-6 gap-y-3 sm:grid-cols-3">
+        <dl className="grid grid-cols-1 gap-x-8 gap-y-3 min-[480px]:grid-cols-2 sm:grid-cols-3">
           {[
             ["MANDATE ID", active.id],
             ["STATUS", active.status],
@@ -60,7 +60,7 @@ export default function MandatePanel({ mandates }: { mandates: StandingMandate[]
             ["REMAINING", `${remaining} / ${active.policy.maxExecutions}`],
             ["HASH", active.mandateHash ? `${active.mandateHash.slice(0, 16)}…` : "—"],
           ].map(([term, value]) => (
-            <div key={term} className="border-t border-softwhite/15 pt-2">
+            <div key={term} className="min-w-0 border-t border-softwhite/15 pt-2">
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
                 {term}
               </dt>

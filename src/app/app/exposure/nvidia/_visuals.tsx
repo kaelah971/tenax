@@ -130,9 +130,14 @@ export function CoverageBar({
   );
 }
 
-function candleGeometry(candles: readonly OhlcCandle[]) {
-  const W = 680;
-  const H = 300;
+/** Base SVG viewport for the candlestick chart. Height is overridable per
+ * surface (the analysis focus viewport runs taller); width stays fixed so
+ * proportions remain comparable across pages. */
+export const CANDLE_VIEWPORT = { width: 680, height: 300 } as const;
+
+export function candleGeometry(candles: readonly OhlcCandle[], height: number = CANDLE_VIEWPORT.height) {
+  const W = CANDLE_VIEWPORT.width;
+  const H = height;
   const padL = 8;
   const axisW = 58;
   const padT = 14;
@@ -180,6 +185,8 @@ function formatCandleTime(t: number, interval: CandleInterval): string {
  * low→high, up candles read signal, down candles read ink. The action
  * dot anchors to the candle containing the execution time; an execution
  * outside the window renders as a price-level note, never a placed dot.
+ * Height is overridable for focus viewports; width is fixed so proportions
+ * stay comparable across surfaces.
  */
 export function CandleChart({
   candles,
@@ -188,6 +195,7 @@ export function CandleChart({
   markIndex,
   outsideWindow,
   provenanceLabel,
+  height = CANDLE_VIEWPORT.height,
 }: {
   readonly candles: readonly OhlcCandle[];
   readonly interval: CandleInterval;
@@ -195,9 +203,10 @@ export function CandleChart({
   readonly markIndex: number | null;
   readonly outsideWindow: boolean;
   readonly provenanceLabel: string;
+  readonly height?: number;
 }) {
   if (candles.length === 0) return null;
-  const g = candleGeometry(candles);
+  const g = candleGeometry(candles, height);
   const step = niceStep((g.hi - g.lo) / 4);
   const gridLevels: number[] = [];
   for (let v = Math.ceil(g.lo / step) * step; v <= g.hi; v += step) {

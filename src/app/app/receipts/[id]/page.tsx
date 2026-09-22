@@ -7,7 +7,7 @@ import { getDecisionReceipt } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { NOT_ADVICE } from "../../_copy";
 import { SceneAnchor } from "../../_components/materials";
-import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
+import { DecisionRail, JourneyNav, ProvenanceStrip, receiptJourney } from "../../_components/ui";
 import { TenaxAgent, staggerStyle } from "../../_components/living";
 
 export const dynamic = "force-dynamic";
@@ -92,7 +92,15 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
 
   return (
     <div className="anim-rise flex flex-col gap-10 pt-8 sm:pt-12">
-      <DecisionRail current="RECEIPT" />
+      <DecisionRail
+        current="RECEIPT"
+        links={{
+          EXPOSURE: "/app/exposure/nvidia",
+          INTENT: "/app/protect/nvidia",
+          INTELLIGENCE: `/app/analysis/${id}`,
+          MANDATE: `/app/approval/${id}`,
+        }}
+      />
 
        <section aria-label="Decision hero" className="tx-record-stack tx-material-light-frost rounded-[16px] p-6 sm:p-10">
         <div className="flex flex-col-reverse gap-6 sm:flex-row sm:items-start sm:justify-between">
@@ -235,6 +243,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
           isDemo ? "BITGET_DEMO EXECUTION" : "DRY_RUN EXECUTION",
         ]}
       />
+      <JourneyNav label="Continue" links={receiptJourney()} />
       <p className="text-[11px] leading-[14px] text-mutedink">{NOT_ADVICE}</p>
     </div>
   );

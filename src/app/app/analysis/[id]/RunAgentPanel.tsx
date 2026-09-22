@@ -7,6 +7,8 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import { cumulativeRefusalSentence } from "../../_copy";
+
 type Phase = "ready" | "running" | "done" | "error";
 
 interface CycleReply {
@@ -44,17 +46,20 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>("ready");
   const [message, setMessage] = useState("");
+  const [outcome, setOutcome] = useState<string | null>(null);
   const [receiptId, setReceiptId] = useState<string | null>(null);
   const [cumulative, setCumulative] = useState<CycleReply["cumulative"]>(null);
 
   async function onRun() {
     setPhase("running");
     setMessage("");
+    setOutcome(null);
     setReceiptId(null);
     setCumulative(null);
     try {
       const reply = await postCycle(flowId);
       setPhase("done");
+      setOutcome(reply.outcome ?? null);
       setMessage(`Agent cycle ${String(reply.outcome ?? "finished").toUpperCase()}`);
       if (reply.receipt?.receiptId) setReceiptId(reply.receipt.receiptId);
       if (reply.cumulative) setCumulative(reply.cumulative);
@@ -85,7 +90,21 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
       </p>
       {phase === "done" ? (
         <div className="flex flex-col gap-3">
-          <p className="text-[16px] font-bold leading-[24px]">{message}</p>
+          {outcome === "STANDING_REFUSED" && cumulative ? (
+            <div className="flex flex-col gap-2">
+              <p>
+                <span className="state-mark bg-clay text-softwhite">TENAX REFUSED</span>
+              </p>
+              <p className="text-[16px] font-bold leading-[24px]">
+                {cumulativeRefusalSentence(cumulative.reasonCode)}
+              </p>
+              <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+                DETERMINISTIC GATE · NOT AN AI DECISION
+              </p>
+            </div>
+          ) : (
+            <p className="text-[16px] font-bold leading-[24px]">{message}</p>
+          )}
           {cumulative ? (
             <dl className="grid grid-cols-2 gap-x-6 gap-y-2 border-t border-ink/15 pt-3 text-[13px] leading-[18px] sm:grid-cols-3">
               <div><dt className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">EXISTING</dt><dd className="font-semibold">{formatUsd(cumulative.existingUsd)}</dd></div>

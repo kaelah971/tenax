@@ -12,6 +12,7 @@ import { AuthorityInstrument, SceneAnchor } from "../../_components/materials";
 import {
   DecisionRail,
   GateCore,
+  JourneyNav,
   ProvenanceStrip,
   ledgerRows,
   rulesCleared,
@@ -39,10 +40,19 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
     { maxPct: MANDATE_FIXTURE.maxProtectionPct, maxTrade: MANDATE_FIXTURE.maxTradeValueUsdt },
   );
   const alternative = analysis.consideredAlternative;
+  const hasReceipt = flow.getFlowState() === "COMPLETED";
 
   return (
     <div className="anim-rise flex flex-col gap-8 pt-8 sm:pt-12">
-      <DecisionRail current="MANDATE" />
+      <DecisionRail
+        current="MANDATE"
+        links={{
+          EXPOSURE: "/app/exposure/nvidia",
+          INTENT: "/app/protect/nvidia",
+          INTELLIGENCE: `/app/analysis/${id}`,
+          RECEIPT: hasReceipt ? `/app/receipts/${id}` : null,
+        }}
+      />
 
       <section aria-label="Permission boundary" className="tx-material-authority relative rounded-[18px] p-4 text-softwhite sm:p-8">
         <div className="relative flex flex-wrap items-start justify-between gap-4">
@@ -164,6 +174,16 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
 
       <ProvenanceStrip
         items={["LIVE BITGET DATA", "SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS", `${executionMode} EXECUTION`]}
+      />
+      <JourneyNav
+        label="Continue"
+        links={[
+          { label: "VIEW ANALYSIS", href: `/app/analysis/${id}`, kind: "nav" },
+          { label: "VIEW EXPOSURE", href: "/app/exposure/nvidia", kind: "nav" },
+          ...(hasReceipt
+            ? [{ label: "VIEW RECEIPT", href: `/app/receipts/${id}`, kind: "nav" } as const]
+            : []),
+        ]}
       />
     </div>
   );

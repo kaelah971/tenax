@@ -1,4 +1,6 @@
 // Tenax Protect — intent, mandate authority, and one analysis action.
+import Link from "next/link";
+
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { EVENT_UNAVAILABLE_LINE, INTENT_LINE, MANDATE_SUMMARY } from "../../_copy";
@@ -25,7 +27,7 @@ export default async function ProtectPage() {
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
-      <DecisionRail current="INTENT" />
+      <DecisionRail current="INTENT" links={{ EXPOSURE: "/app/exposure/nvidia" }} />
       <section className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">INTENT · PROTECT_EVENT_RISK</p>
         <h1 className="mt-3 max-w-4xl text-[42px] font-extrabold leading-[0.92] tracking-[-0.04em] sm:text-[78px]">{INTENT_LINE}</h1>
@@ -48,6 +50,14 @@ export default async function ProtectPage() {
       {!marketOk ? <p role="alert" className="max-w-xl text-[16px] leading-[24px] text-clay">{EVENT_UNAVAILABLE_LINE}</p> : null}
 
       <AnalyzeButton rawText={RAW_TEXT} disabled={!marketOk} disabledReason={marketOk ? undefined : "Analysis needs live market context first."} />
+      <nav aria-label="Continue" className="flex flex-wrap items-center gap-2">
+        <Link href="/app/exposure/nvidia" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+          VIEW EXPOSURE <span className="btn-arrow" aria-hidden="true">→</span>
+        </Link>
+        <Link href="/app/mandate" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+          VIEW MANDATE <span className="btn-arrow" aria-hidden="true">→</span>
+        </Link>
+      </nav>
       <ProvenanceStrip items={[marketOk ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS"]} />
     </div>
   );

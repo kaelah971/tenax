@@ -6,36 +6,30 @@
 // authority, submits nothing, and invents no market data.
 import Link from "next/link";
 
-import {
-  CANDLE_INTERVAL_MS,
-  CANDLE_INTERVALS,
-  fetchNvdaCandles,
-  resolveCandleInterval,
-} from "@/lib/bitget/market-series";
+import { resolveCandleInterval } from "@/lib/bitget/market-series";
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
-import { getDemoSurfaceView, toSurfaceResponse } from "@/lib/tenax/demo-surface";
+import { getDemoSurfaceView } from "@/lib/tenax/demo-surface";
 import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "@/lib/tenax/fixtures";
 import { getExposureGraph, getLatestMandateEvaluation } from "@/lib/tenax/service";
 import { formatMultiplier } from "@/lib/tenax/format";
 import {
   coveragePercent,
-  locateExecutionCandle,
+  EXPOSURE_VIEWPORT,
   mandateVisualRows,
   protectionLegDisplay,
 } from "@/lib/tenax/visuals";
 import { LightInstrument, SceneAnchor } from "../../_components/materials";
-import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
+import ProtectionMarketPanel from "../../_components/protection-market";
+import { DecisionRail, ProvenanceStrip, exposureIntervalHref } from "../../_components/ui";
 import { TenaxAgent } from "../../_components/living";
 import {
   CoverageBar,
   MandateRows,
-  CandleChart,
   RefusalBanner,
   TopologyStrip,
   type TopologyNode,
 } from "./_visuals";
-import LiveSurface from "./_live-surface";
 
 export const dynamic = "force-dynamic";
 
@@ -53,11 +47,10 @@ export default async function ExposurePage({
   const store = getTenaxDevStore();
   const { interval: rawInterval } = await searchParams;
   const interval = resolveCandleInterval(rawInterval);
-  const [snapshot, view, surface, candles] = await Promise.all([
+  const [snapshot, view, surface] = await Promise.all([
     getDemoSnapshot(),
     getExposureGraph(store),
     getDemoSurfaceView(),
-    fetchNvdaCandles(undefined, interval),
   ]);
   const { graph, nvdax } = view;
   const evaluation = getLatestMandateEvaluation(store);
@@ -138,12 +131,6 @@ export default async function ExposurePage({
     demo && demo.filled && demo.avgPrice !== null
       ? { qty: demo.qty, avgPrice: demo.avgPrice, submittedAt: demo.submittedAt }
       : null;
-  const candleList = candles?.candles ?? [];
-  const markIndex =
-    action && candleList.length > 0
-      ? locateExecutionCandle(candleList, action.submittedAt, CANDLE_INTERVAL_MS[interval])
-      : null;
-  const outsideWindow = action !== null && candleList.length > 0 && markIndex === null;
 
   const mandateRows = mandateVisualRows({
     proposalPct: evaluation?.proposalPct ?? null,
@@ -160,7 +147,7 @@ export default async function ExposurePage({
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-6 pt-6 sm:gap-8 sm:pt-8">
-      <DecisionRail current="EXPOSURE" />
+      <DecisionRail current="EXPOSURE" links={{ INTENT: "/app/protect/nvidia" }} />
 
       {/* ROW 1 — compact NVIDIA summary */}
       <div className="tx-material-editorial border-t-2 border-ink pt-4 sm:pt-5">
@@ -184,60 +171,24 @@ export default async function ExposurePage({
         </p>
       </div>
 
-      {/* LIVE MARKET SURFACE — the centerpiece, full emphasis */}
-      <LightInstrument className="border-2 border-ink p-5 sm:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <p className="font-syslabel pt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-            MARKET · LIVE BITGET DEMO SURFACE
-          </p>
-          <SceneAnchor className="tx-floating-mascot relative z-10 -mb-2 -mt-7 shrink-0 sm:-mr-2">
-            <TenaxAgent state="watching" size={100} caption="ON WATCH" />
-          </SceneAnchor>
-        </div>
-        <div className="-mt-3">
-          <LiveSurface initial={toSurfaceResponse(surface)} />
-        </div>
-        <div className="mt-3 flex flex-wrap items-center gap-2" role="group" aria-label="Candle interval">
-            {CANDLE_INTERVALS.map((tf) => (
-              <Link
-                key={tf}
-                href={`/app/exposure/nvidia?interval=${tf}`}
-                aria-current={tf === interval ? "true" : undefined}
-                className={`font-syslabel rounded-[8px] px-3 py-1.5 text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
-                  tf === interval
-                    ? "bg-ink font-bold text-softwhite"
-                    : "border border-ink/25 text-ink hover:bg-ink hover:text-softwhite"
-                }`}
-              >
-                {tf}
-              </Link>
-            ))}
-          </div>
-          <div className="mt-3">
-            {candleList.length > 0 ? (
-              <CandleChart
-                candles={candleList}
-                interval={interval}
-                action={action ? { qty: action.qty, avgPrice: action.avgPrice } : null}
-                markIndex={markIndex}
-                outsideWindow={outsideWindow}
-                provenanceLabel={`REAL MARKET · BITGET PUBLIC CANDLES · NVDAUSDT ${interval}`}
-              />
-            ) : (
-              <div className="border border-dashed border-ink/30 p-4 sm:p-5">
-                <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-                  MARKET DATA UNAVAILABLE
-                </p>
-                <p className="mt-1.5 max-w-xl text-[13px] leading-[18px] text-mutedink">
-                  Public candles could not be loaded — no chart is drawn rather than a synthetic one.
-                </p>
-              </div>
-            )}
-          </div>
-          <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-            TENAX RECEIPT · VERIFIED ENTRY · BITGET_DEMO · VIRTUAL FUNDS ONLY
-          </p>
-      </LightInstrument>
+      {/* LIVE MARKET SURFACE — centered terminal: observe the exposure and
+          its current protection state. Heading keeps exposure identity;
+          the terminal below is the shared centered module. */}
+      <div className="flex items-start justify-between gap-4">
+        <p className="font-syslabel pt-1 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+          MARKET · LIVE BITGET DEMO SURFACE
+        </p>
+        <SceneAnchor className="tx-floating-mascot relative z-10 -mb-2 -mt-7 shrink-0 sm:-mr-2">
+          <TenaxAgent state="watching" size={100} caption="ON WATCH" />
+        </SceneAnchor>
+      </div>
+      <ProtectionMarketPanel
+        interval={interval}
+        intervalHref={(tf) => exposureIntervalHref(tf)}
+        surface={surface}
+        viewport={EXPOSURE_VIEWPORT}
+        action={action}
+      />
 
       {/* ROW 3 — coverage (~40%) + mandate (~60%) */}
       <div className="grid gap-4 sm:gap-5 xl:grid-cols-5">
