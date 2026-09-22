@@ -128,14 +128,19 @@ export type ExecutionMode = (typeof EXECUTION_MODES)[number];
 
 export const DEFAULT_EXECUTION_MODE: ExecutionMode = "DRY_RUN";
 
-/** Would-be UTA place-order shape (never submitted in DRY_RUN). */
+/**
+ * Would-be protection order (never submitted in DRY_RUN). Always the
+ * canonical NVDAUSDT short hedge — the same intent the Demo executor
+ * submits. RNVDAUSDT belongs to exposure evidence, never to execution.
+ */
 export interface ExecutionRequest {
   readonly mode: ExecutionMode;
   readonly operationId: "placeOrder";
   readonly endpoint: "POST /api/v3/trade/place-order";
-  readonly category: "SPOT";
-  readonly symbol: "RNVDAUSDT";
+  readonly category: "USDT-FUTURES";
+  readonly symbol: "NVDAUSDT";
   readonly side: "sell";
+  readonly posSide: "short";
   readonly orderType: "market";
   readonly qty: string;
   readonly kind: "would-be payload only — NOT submitted";

@@ -57,6 +57,7 @@ import {
 
 export type { ReadFetchImpl, WriteFetchImpl };
 import { hashProposal, isApprovalValidFor, type ProtectionApproval } from "./approval.ts";
+import type { StandingGateAttestation } from "./authority.ts";
 import type {
   ExecutionMode,
   Mandate,
@@ -165,7 +166,14 @@ export interface DemoHedgeGateInput {
   readonly mandate: Mandate;
   readonly proposal: ProtectionProposal;
   readonly decision: MandateDecision;
-  readonly approval: ProtectionApproval;
+  /**
+   * Exactly one authority must be present: a human approval record, or a
+   * standing attestation. A standing attestation is never a fabricated
+   * approval — the binding/mode/freshness gates evaluate whichever source
+   * is bound, with source-labeled details.
+   */
+  readonly approval: ProtectionApproval | null;
+  readonly standingAuthority?: StandingGateAttestation | null;
   readonly market: DemoHedgeMarketState;
   readonly maxApprovalAgeMs: number;
   readonly nowMs: number;
@@ -195,11 +203,11 @@ function parseConfiguredLeverage(raw: string | null): number | null {
   return Number.isFinite(value) ? value : null;
 }
 
-function approvalAgeMs(approval: ProtectionApproval, nowMs: number): number | null {
-  if (approval.approvedAt === null) return null;
-  const approvedAtMs = Date.parse(approval.approvedAt);
-  if (!Number.isFinite(approvedAtMs)) return null;
-  return nowMs - approvedAtMs;
+function ageBoundMs(isoTimestamp: string | null, nowMs: number): number | null {
+  if (isoTimestamp === null) return null;
+  const parsedMs = Date.parse(isoTimestamp);
+  if (!Number.isFinite(parsedMs)) return null;
+  return nowMs - parsedMs;
 }
 
 /**
@@ -230,11 +238,57 @@ export function formatDemoHedgeQty(normalizedQty: number, quantityPrecision: num
 }
 
 /**
+ * Canonical NVIDIA protection action (Phase 4B-B2.1). The ONE derivation
+ * of what Tenax would submit for an NVDA hedge: NVDAUSDT, USDT-FUTURES,
+ * sell/short, market — with quantity derived server-side from the
+ * validated proposal notional and instrument rules. DRY_RUN previews and
+ * BITGET_DEMO submissions both consume this shape; there is no separate
+ * preview instrument. RNVDAUSDT (the Reality exposure representation)
+ * may appear in evidence, never here. Throws when sizing is unevaluable.
+ */
+export interface CanonicalProtectionAction {
+  readonly symbol: "NVDAUSDT";
+  readonly category: "USDT-FUTURES";
+  readonly side: "sell";
+  readonly posSide: "short";
+  readonly orderType: "market";
+  readonly qty: string;
+}
+
+export function deriveCanonicalProtectionAction(
+  proposal: ProtectionProposal,
+  instrument: NvdaInstrument | null,
+  ticker: NvdaTicker | null,
+): CanonicalProtectionAction {
+  // Same sizing both paths submit: DRY_RUN previews and BITGET_DEMO
+  // submissions share deriveDemoHedgeSizing exactly.
+  const sizing = deriveDemoHedgeSizing(proposal, instrument, ticker);
+  const precision = instrument?.quantityPrecision ?? null;
+  if (
+    sizing.normalizedQty === null ||
+    precision === null ||
+    sizing.executableByInstrumentRules !== "YES"
+  ) {
+    throw new Error(
+      "ACTION_UNEVALUABLE: instrument rules or reference price missing — no qty invented",
+    );
+  }
+  return {
+    symbol: "NVDAUSDT",
+    category: "USDT-FUTURES",
+    side: "sell",
+    posSide: "short",
+    orderType: "market",
+    qty: formatDemoHedgeQty(sizing.normalizedQty, precision),
+  };
+}
+
+/**
  * Evaluate all 16 pre-execution hard gates. Pure: no network, no writes.
  * ANY unknown/failed gate refuses the order.
  */
 export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGateReport {
-  const { mandate, proposal, decision, approval, market } = input;
+  const { mandate, proposal, decision, market } = input;
   const gates: DemoHedgeGate[] = [];
 
   gates.push(
@@ -306,11 +360,37 @@ export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGate
     ),
   );
 
+  const standing = input.standingAuthority ?? null;
+  const hasHuman = input.approval !== null;
+  const hasStanding = standing !== null;
+  // Exactly one authority source; zero or two refuses the binding gates.
+  const boundHash =
+    hasHuman && !hasStanding
+      ? (input.approval as ProtectionApproval).proposalHash
+      : !hasHuman && hasStanding
+        ? (standing as StandingGateAttestation).proposalHash
+        : null;
+  const boundMode =
+    hasHuman && !hasStanding
+      ? (input.approval as ProtectionApproval).executionMode
+      : !hasHuman && hasStanding
+        ? (standing as StandingGateAttestation).executionMode
+        : null;
+  const boundAt =
+    hasHuman && !hasStanding
+      ? (input.approval as ProtectionApproval).approvedAt
+      : !hasHuman && hasStanding
+        ? (standing as StandingGateAttestation).authorizedAt
+        : null;
+  const sourceLabel = !hasHuman && hasStanding ? "standing" : "approval";
+
   gates.push(
     gate(
       "proposal_bound",
-      approval.proposalHash === hashProposal(proposal),
-      `approvalHash=${approval.proposalHash} proposalHash=${hashProposal(proposal)}`,
+      boundHash !== null && boundHash === hashProposal(proposal),
+      boundHash === null
+        ? "no single authority bound — refusing"
+        : `${sourceLabel}Hash=${boundHash} proposalHash=${hashProposal(proposal)}`,
     ),
   );
 
@@ -322,19 +402,33 @@ export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGate
     ),
   );
 
-  const approvalBound = isApprovalValidFor(approval, proposal, decision);
-  const ageMs = approvalAgeMs(approval, input.nowMs);
+  const approvalBound =
+    hasHuman && !hasStanding && input.approval
+      ? isApprovalValidFor(input.approval, proposal, decision)
+      : !hasHuman &&
+        hasStanding &&
+        standing !== null &&
+        standing.proposalHash === hashProposal(proposal) &&
+        decision.verdict === "PASS" &&
+        decision.failedRules.length === 0;
+  const ageMs = boundAt === null ? null : ageBoundMs(boundAt, input.nowMs);
   const approvalFresh =
     approvalBound && ageMs !== null && ageMs >= 0 && ageMs <= input.maxApprovalAgeMs;
+  const humanInvalidDetail =
+    hasHuman && !hasStanding && input.approval
+      ? `approval state=${input.approval.state} — binding invalid`
+      : `${sourceLabel} binding invalid or missing`;
   gates.push(
     gate(
       "approval_valid",
       approvalFresh,
       approvalBound
         ? ageMs === null
-          ? "approval timestamp unparseable"
-          : `approved ${ageMs}ms ago (max ${input.maxApprovalAgeMs}ms)`
-        : `approval state=${approval.state} — binding invalid`,
+          ? `${sourceLabel === "approval" ? "approval" : "standing"} timestamp unparseable`
+          : sourceLabel === "approval"
+            ? `approved ${ageMs}ms ago (max ${input.maxApprovalAgeMs}ms)`
+            : `standing authorized ${ageMs}ms ago (max ${input.maxApprovalAgeMs}ms)`
+        : humanInvalidDetail,
     ),
   );
 
@@ -361,8 +455,12 @@ export function evaluateDemoHedgeGates(input: DemoHedgeGateInput): DemoHedgeGate
   gates.push(
     gate(
       "approval_mode",
-      approval.executionMode === "BITGET_DEMO",
-      `approvalExecutionMode=${approval.executionMode} — DRY_RUN approvals can never authorize a Demo submission`,
+      boundMode === "BITGET_DEMO",
+      boundMode === null
+        ? "no authority execution mode bound — refusing"
+        : sourceLabel === "approval"
+          ? `approvalExecutionMode=${boundMode} — DRY_RUN approvals can never authorize a Demo submission`
+          : `standingExecutionMode=${boundMode} — non-DEMO authority can never authorize a Demo submission`,
     ),
   );
 
@@ -467,10 +565,16 @@ export async function submitDemoHedgeOrder(
     return { outcome: "REFUSED", gates, failedGateIds: report.failedGateIds };
   }
 
-  // Gates passed and confirmation present: derive the exact order.
-  const sizing = deriveDemoHedgeSizing(input.proposal, input.market.instrument, input.market.ticker);
-  const precision = input.market.instrument?.quantityPrecision ?? null;
-  if (sizing.normalizedQty === null || precision === null) {
+  // Gates passed and confirmation present: derive the exact order from
+  // the canonical protection action (the same derivation previews use).
+  let action: CanonicalProtectionAction;
+  try {
+    action = deriveCanonicalProtectionAction(
+      input.proposal,
+      input.market.instrument,
+      input.market.ticker,
+    );
+  } catch {
     return {
       outcome: "REFUSED",
       gates: [
@@ -482,7 +586,7 @@ export async function submitDemoHedgeOrder(
   }
   const clientOid = input.clientOid ?? createDemoClientOid(input.nowMs);
   const body = buildDemoShortOrderBody({
-    qty: formatDemoHedgeQty(sizing.normalizedQty, precision),
+    qty: action.qty,
     clientOid,
   });
 

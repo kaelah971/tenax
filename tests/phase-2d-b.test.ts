@@ -245,7 +245,8 @@ describe("approval binding at the service boundary", () => {
     const executed = await executeProtectionProposal(store, { flowId });
     expect(executed.executionMode).toBe("DRY_RUN");
     if (executed.executionMode !== "DRY_RUN") throw new Error("expected DRY_RUN request shape");
-    expect(executed.request.symbol).toBe("RNVDAUSDT");
+    expect(executed.request.symbol).toBe("NVDAUSDT");
+    expect(executed.request.category).toBe("USDT-FUTURES");
     expect(executed.request.side).toBe("sell");
     expect(executed.request.qty).not.toBe("999.99");
   });

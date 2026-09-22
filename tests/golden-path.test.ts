@@ -74,7 +74,9 @@ describe("golden path", () => {
     expect(executed.submitted).toBe(false);
     expect(executed.disclaimer).toBe("DRY_RUN — NO FUNDS MOVED");
     if (executed.executionMode !== "DRY_RUN") throw new Error("expected DRY_RUN shape");
-    expect(executed.request.symbol).toBe("RNVDAUSDT");
+    expect(executed.request.symbol).toBe("NVDAUSDT");
+    expect(executed.request.category).toBe("USDT-FUTURES");
+    expect(executed.request.posSide).toBe("short");
 
     const { receipt } = getDecisionReceipt(store, flowId);
     expect(receipt).toMatchObject({

@@ -20,6 +20,7 @@
 // server pages, and tests may.
 
 import { ProtectionFlow } from "./orchestrator";
+import type { ActivityEvent } from "./activity";
 import type { StandingMandate } from "./standing-mandate";
 
 export interface TenaxDevStore {
@@ -27,10 +28,17 @@ export interface TenaxDevStore {
   counter: number;
   /** Standing mandates (B1). Same non-durable caveats as flows. */
   readonly mandates: Map<string, StandingMandate>;
+  /** Activity events (B2 notification seam). Same non-durable caveats. */
+  readonly activities: ActivityEvent[];
 }
 
 export function createDevStore(): TenaxDevStore {
-  return { flows: new Map<string, ProtectionFlow>(), counter: 0, mandates: new Map<string, StandingMandate>() };
+  return {
+    flows: new Map<string, ProtectionFlow>(),
+    counter: 0,
+    mandates: new Map<string, StandingMandate>(),
+    activities: [],
+  };
 }
 
 export function nextFlowId(store: TenaxDevStore): string {

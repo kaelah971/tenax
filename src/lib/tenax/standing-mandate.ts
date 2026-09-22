@@ -72,12 +72,25 @@ export interface StandingMandate {
   readonly policy: StandingMandatePolicy;
   readonly status: StandingMandateStatus;
   readonly executionCount: number;
+  /**
+   * In-flight execution reservation (B2 atomic budget guard). Excluded
+   * from mandateHash: reservations never alter authorized policy.
+   */
+  readonly reservation: StandingReservation | null;
   readonly createdAt: string;
   readonly activatedAt: string | null;
   readonly expiresAt: string | null;
   readonly revokedAt: string | null;
   /** Bound at activation over id + activatedAt + exact policy. Null until ACTIVE. */
   readonly mandateHash: string | null;
+}
+
+/** Process-local execution reservation binding flow + proposal + mandate. */
+export interface StandingReservation {
+  readonly flowId: string;
+  readonly proposalHash: string;
+  readonly mandateHash: string | null;
+  readonly reservedAt: string;
 }
 
 export interface CreateStandingMandateInput {
@@ -161,6 +174,7 @@ export function createStandingMandate(
     },
     status: "DRAFT",
     executionCount: 0,
+    reservation: null,
     createdAt,
     activatedAt: null,
     expiresAt,

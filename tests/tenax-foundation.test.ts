@@ -132,7 +132,7 @@ describe("execution adapter boundary", () => {
   it("DRY_RUN constructs would-be request and never moves funds", () => {
     const request = dryRunAdapter.previewProtection({ qty: "0.4513" });
     expect(request.mode).toBe("DRY_RUN");
-    expect(request.symbol).toBe("RNVDAUSDT");
+    expect(request.symbol).toBe("NVDAUSDT");
     expect(request.operationId).toBe("placeOrder");
     expect(request.kind).toContain("NOT submitted");
 

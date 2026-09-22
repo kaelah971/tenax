@@ -225,8 +225,15 @@ describe("execution preview honesty", () => {
   it("exposes only the would-be request shape, no fake identifiers", () => {
     const result = dryRunAdapter.executeProtection({ qty: "0.4513" });
     expect(Object.keys(result.request).sort()).toEqual(
-      ["category", "endpoint", "kind", "mode", "operationId", "orderType", "qty", "side", "symbol"],
+      ["category", "endpoint", "kind", "mode", "operationId", "orderType", "posSide", "qty", "side", "symbol"],
     );
+    expect(result.request).toMatchObject({
+      category: "USDT-FUTURES",
+      symbol: "NVDAUSDT",
+      side: "sell",
+      posSide: "short",
+      orderType: "market",
+    });
     expect(JSON.stringify(result)).not.toMatch(/orderId|txHash|transactionHash|success/i);
     expect(result.disclaimer).toMatch(/NO FUNDS MOVED/);
   });

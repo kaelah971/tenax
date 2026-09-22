@@ -34,7 +34,15 @@ import type { NvidiaMarketSnapshot } from "../intelligence/snapshot";
 import type { DemoAuthCredentials } from "../bitget/demo-auth";
 import type { AiAnalysisAudit } from "../ai/schemas.ts";
 import {
+  attestationFromAuthority,
+  isAuthorityValidFor,
+  type ExecutionAuthority,
+  type StandingGateAttestation,
+} from "./authority.ts";
+import type { StandingMandate } from "./standing-mandate.ts";
+import {
   DEFAULT_APPROVAL_MAX_AGE_MS,
+  deriveCanonicalProtectionAction,
   deriveDemoHedgeSizing,
   fetchLiveDemoHedgeMarket,
   submitDemoHedgeOrder,
@@ -44,6 +52,7 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
+import type { NvdaInstrument, NvdaTicker } from "../bitget/nvda-hedge.ts";
 import {
   fetchDemoOrderInfo,
   isFilledOrderStatus,
@@ -110,6 +119,28 @@ export interface ExecuteOptions {
   readonly maxApprovalAgeMs?: number;
 }
 
+/**
+ * Autonomous execution under standing authority (Phase 4B-B2). Same
+ * network/fetch injection as ExecuteOptions, plus the bound authority
+ * record and the freshly-read mandate it must match. The human approval
+ * path (execute) is untouched by this shape.
+ */
+export interface AutonomousExecuteOptions {
+  /** Bound STANDING_MANDATE authority for the exact stored proposal. */
+  readonly authority: ExecutionAuthority;
+  /** Freshly-read mandate record the authority must match. */
+  readonly mandate: StandingMandate;
+  readonly executionMode?: ExecutionMode;
+  readonly tradingMode?: string;
+  readonly credentials?: DemoAuthCredentials;
+  readonly baseUrl?: string;
+  readonly marketReader?: (deps: DemoMarketReaderDeps) => Promise<DemoHedgeMarketState>;
+  readonly writeFetchImpl?: WriteFetchImpl;
+  readonly readFetchImpl?: ReadFetchImpl;
+  readonly nowMs?: number;
+  readonly maxApprovalAgeMs?: number;
+}
+
 function deriveQty(
   tradeValueUsdt: number,
   lastPrice: string | null,
@@ -138,6 +169,10 @@ export class ProtectionFlow {
   private receipt: DecisionReceipt | null = null;
   /** Validated model-analysis audit trail; null for the fixture path. */
   private aiAudit: AiAnalysisAudit | null = null;
+  /** ISO timestamp when analysis seated (freshness anchor for autonomy). */
+  private analyzedAt: string | null = null;
+  /** Bound execution authority (human or standing); set on execution. */
+  private executionAuthority: ExecutionAuthority | null = null;
 
   constructor(readonly flowId: string) {}
 
@@ -174,6 +209,7 @@ export class ProtectionFlow {
     this.mandate = mandate;
     this.analysis = analyzeProtectionFixture(exposure, intent, mandate, snapshot);
     this.aiAudit = null;
+    this.analyzedAt = new Date().toISOString();
     this.state = "ANALYZED";
     return this.analysis;
   }
@@ -197,6 +233,7 @@ export class ProtectionFlow {
     this.mandate = mandate;
     this.analysis = analysis;
     this.aiAudit = audit;
+    this.analyzedAt = new Date().toISOString();
     this.state = "ANALYZED";
     return this.analysis;
   }
@@ -275,32 +312,168 @@ export class ProtectionFlow {
       );
     }
     if (mode === "DRY_RUN") {
-      this.state = "EXECUTING";
-      try {
-        const qty = deriveQty(
+      return this.runDryRun(analysis, exposure, snapshot);
+    }
+    return this.executeDemo(options, analysis, approval, decision, nowMs, maxAgeMs, null);
+  }
+
+  /** Shared DRY_RUN tail: preview only, moves nothing, never writes. */
+  private runDryRun(
+    analysis: ProtectionAnalysis,
+    exposure: Exposure,
+    snapshot: NvidiaMarketSnapshot,
+    market: { instrument: NvdaInstrument | null; ticker: NvdaTicker | null } | null = null,
+  ): ExecutionResult {
+    this.state = "EXECUTING";
+    try {
+      // Canonical action whenever hedge-instrument market is available
+      // (same derivation the Demo submission uses); otherwise a reference
+      // qty from exposure context under the same canonical action fields.
+      // Either way the preview is NVDAUSDT — never the exposure symbol.
+      let qty: string;
+      if (market && (market.instrument || market.ticker)) {
+        qty = deriveCanonicalProtectionAction(
+          analysis.proposal,
+          market.instrument,
+          market.ticker,
+        ).qty;
+      } else {
+        qty = deriveQty(
           analysis.authority.calculatedTradeValueUsdt,
           snapshot.ticker.data?.lastPrice ?? null,
           exposure.representation.quantityPrecision,
         );
-        this.executionResult = dryRunAdapter.executeProtection({ qty });
-      } catch (err) {
-        this.state = "FAILED";
-        throw err;
       }
-      this.executionModeUsed = "DRY_RUN";
-      this.state = "COMPLETED";
-      return this.executionResult;
+      this.executionResult = dryRunAdapter.executeProtection({ qty });
+    } catch (err) {
+      this.state = "FAILED";
+      throw err;
     }
-    return this.executeDemo(options, analysis, approval, decision, nowMs, maxAgeMs);
+    this.executionModeUsed = "DRY_RUN";
+    this.state = "COMPLETED";
+    return this.executionResult;
+  }
+
+  /**
+   * Best-effort hedge-instrument market for previews. Returns null when
+   * unavailable (offline DRY_RUN keeps working with reference sizing).
+   * An explicitly injected reader runs even without credentials (tests
+   * and callers that already hold market data); the live default reader
+   * is only attempted with credentials present. Never throws, never writes.
+   */
+  private async readPreviewMarket(
+    input: AutonomousExecuteOptions,
+  ): Promise<{ instrument: NvdaInstrument | null; ticker: NvdaTicker | null } | null> {
+    if (!input.marketReader) return null;
+    if (input.marketReader === fetchLiveDemoHedgeMarket && !input.credentials) return null;
+    // Injected readers run with whatever credentials the caller holds;
+    // absent credentials arrive empty (injected stubs ignore them).
+    const credentials: DemoAuthCredentials = input.credentials ?? {
+      apiKey: "",
+      secretKey: "",
+      passphrase: "",
+    };
+    try {
+      const market = await input.marketReader({
+        credentials,
+        baseUrl: input.baseUrl ?? "",
+      });
+      return { instrument: market.instrument, ticker: market.ticker };
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Execute under standing authority (Phase 4B-B2). Requires MANDATE_PASS
+   * with NO human approval: the bound ExecutionAuthority replaces the
+   * approval gates (binding, mode, freshness) while every other gate —
+   * mandate PASS, sizing, market, idempotency — runs unchanged through
+   * the shared tails. The mandate record is freshly read by the caller
+   * (service) and must match the authority's id + hash + ACTIVE status.
+   */
+  async executeAutonomous(
+    input: AutonomousExecuteOptions,
+  ): Promise<ExecutionResult | DemoFlowExecution> {
+    if (this.state === "COMPLETED") {
+      return this.reconcile(input);
+    }
+    this.require("MANDATE_PASS", "execute autonomously");
+    const { authority, mandate } = input;
+    const analysis = this.analysis as ProtectionAnalysis;
+    const snapshot = this.snapshot as NvidiaMarketSnapshot;
+    const exposure = this.exposure as Exposure;
+    const decision = analysis.authority.mandateDecision;
+    if (authority.authoritySource !== "STANDING_MANDATE") {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        "autonomous execution requires STANDING_MANDATE authority",
+      );
+    }
+    if (!isAuthorityValidFor(authority, analysis.proposal)) {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        "standing authority is not valid for this exact proposal",
+      );
+    }
+    if (mandate.id !== authority.standingMandateId || mandate.mandateHash !== authority.standingMandateHash) {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        "standing mandate record does not match the bound authority",
+      );
+    }
+    if (mandate.status !== "ACTIVE") {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        `standing mandate is ${mandate.status} — refusing`,
+      );
+    }
+    const mode = input.executionMode ?? "DRY_RUN";
+    const attestation = attestationFromAuthority(authority, mode);
+    if (!attestation) {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        "standing authority attestation unavailable — refusing",
+      );
+    }
+    const nowMs = input.nowMs ?? Date.now();
+    const maxAgeMs = input.maxApprovalAgeMs ?? DEFAULT_APPROVAL_MAX_AGE_MS;
+    const authorizedAtMs = Date.parse(authority.authorizedAt);
+    if (!Number.isFinite(authorizedAtMs) || nowMs - authorizedAtMs < 0 || nowMs - authorizedAtMs > maxAgeMs) {
+      throw new FlowTransitionError(
+        this.state,
+        "execute autonomously",
+        "standing authority is stale — fresh evaluation required",
+      );
+    }
+    this.executionAuthority = authority;
+    if (mode === "DRY_RUN") {
+      return this.runDryRun(analysis, exposure, snapshot, await this.readPreviewMarket(input));
+    }
+    return this.executeDemo(
+      input,
+      analysis,
+      null,
+      decision,
+      nowMs,
+      maxAgeMs,
+      attestation,
+    );
   }
 
   private async executeDemo(
-    options: ExecuteOptions,
+    options: ExecuteOptions | AutonomousExecuteOptions,
     analysis: ProtectionAnalysis,
-    approval: ProtectionApproval,
+    approval: ProtectionApproval | null,
     decision: MandateDecision,
     nowMs: number,
     maxAgeMs: number,
+    standingAuthority?: StandingGateAttestation | null,
   ): Promise<DemoFlowExecution> {
     if ((options.tradingMode ?? "").trim().toLowerCase() !== "demo") {
       throw new FlowTransitionError(
@@ -337,12 +510,14 @@ export class ProtectionFlow {
         proposal: analysis.proposal,
         decision,
         approval,
+        standingAuthority: standingAuthority ?? null,
         market,
         maxApprovalAgeMs: maxAgeMs,
         nowMs,
       };
-      // Server-side confirmation: a valid human approval plus the explicit
-      // execute press reached this point. No CLI flag exists in this path.
+      // Server-side confirmation: a valid human approval (or a bound
+      // standing authority plus the explicit agent-cycle invocation)
+      // reached this point. No CLI flag exists in this path.
       const result = await submitDemoHedgeOrder({
         ...gateInput,
         confirmed: true,
@@ -436,7 +611,11 @@ export class ProtectionFlow {
     const exposure = this.exposure as Exposure;
     const intent = this.intent as ProtectionIntent;
     const analysis = this.analysis as ProtectionAnalysis;
-    const approvalState: ApprovalState = "APPROVED";
+    // Human path always carries a granted approval; the autonomous path
+    // carries standing authority instead — never write HUMAN APPROVED
+    // unless a human actually approved.
+    const approvalState: ApprovalState = this.approval ? "APPROVED" : "NOT_REQUIRED";
+    const authority = this.executionAuthority;
     const alternative = analysis.consideredAlternative;
     const demo = this.demoExecution;
     const executionLabel =
@@ -498,6 +677,17 @@ export class ProtectionFlow {
         `provenance: market=REAL(public Bitget), exposure=SIMULATED(fixture), analysis=DEVELOPMENT_FIXTURE, execution=${executionLabel}`,
       ],
     });
+    // Standing-authority provenance (B1-prepared fields): populated only
+    // for autonomous execution; the human path records HUMAN_APPROVAL
+    // with null standing references — never the reverse.
+    this.receipt = {
+      ...this.receipt,
+      authoritySource: authority?.authoritySource ?? "HUMAN_APPROVAL",
+      standingMandateId: authority?.standingMandateId ?? null,
+      standingMandateHash: authority?.standingMandateHash ?? null,
+      authorityDecision: authority?.authorityDecision ?? null,
+      authorityEvaluatedAt: authority?.authorityEvaluatedAt ?? null,
+    };
     return this.receipt;
   }
 
@@ -513,6 +703,8 @@ export class ProtectionFlow {
     readonly executionModeUsed: ExecutionMode | null;
     readonly proposalHash: string | null;
     readonly aiAudit: AiAnalysisAudit | null;
+    readonly analyzedAt: string | null;
+    readonly executionAuthority: ExecutionAuthority | null;
   } {
     return {
       state: this.state,
@@ -525,6 +717,8 @@ export class ProtectionFlow {
       executionModeUsed: this.executionModeUsed,
       proposalHash: this.analysis ? hashProposal(this.analysis.proposal) : null,
       aiAudit: this.aiAudit,
+      analyzedAt: this.analyzedAt,
+      executionAuthority: this.executionAuthority,
     };
   }
 }

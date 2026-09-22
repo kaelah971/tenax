@@ -8,6 +8,7 @@ import {
   evaluateStandingAuthorityForProposal,
   getActiveStandingMandate,
 } from "@/lib/tenax/service";
+import RunAgentPanel from "./RunAgentPanel";
 import { AuthorityInstrument, LightInstrument, SceneAnchor } from "../../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
 import { LiveDot, TenaxAgent, staggerStyle } from "../../_components/living";
@@ -36,6 +37,21 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           leverageUsed: analysis.proposal.leverageUsed,
         })
       : null;
+  // Agent-cycle eligibility (any actionable proposal, model or fixture):
+  // policy PASS plus a fresh standing AUTHORIZED. Display only.
+  const actionableProposal =
+    analysis.proposal.protectionPct > 0 && analysis.authority.calculatedTradeValueUsdt > 0;
+  const policyPass = analysis.authority.mandateDecision.verdict === "PASS";
+  const runAuthority =
+    actionableProposal && policyPass
+      ? evaluateStandingAuthorityForProposal(getTenaxDevStore(), {
+          underlying: analysis.proposal.underlying,
+          protectionPct: analysis.proposal.protectionPct,
+          tradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+          leverageUsed: analysis.proposal.leverageUsed,
+        })
+      : null;
+  const canRunAgent = runAuthority?.decision === "AUTHORIZED";
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -131,6 +147,45 @@ export default async function AnalysisPage({ params }: { params: Promise<{ id: s
           </div>
           <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
             Display evaluation only — no executions consumed, nothing authorized
+          </p>
+        </section>
+      ) : null}
+
+      {canRunAgent ? (
+        <section aria-label="Autonomous action" className="tx-material-editorial border-t-2 border-ink pt-6 sm:pt-8">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            STANDING AUTHORITY · AUTHORIZED
+          </p>
+          <p className="mt-3 max-w-2xl text-[20px] font-bold leading-[28px]">
+            This action is inside the mandate you already activated.
+          </p>
+          <div className="mt-4">
+            <RunAgentPanel flowId={id} />
+          </div>
+        </section>
+      ) : null}
+      {runAuthority?.decision === "ESCALATE" ? (
+        <section aria-label="Escalation" className="tx-material-editorial border-t-2 border-ink pt-6 sm:pt-8">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+            HUMAN REVIEW REQUIRED
+          </p>
+          <p className="mt-3 max-w-2xl text-[20px] font-bold leading-[28px]">
+            Standing authority escalated — no autonomous action taken.
+          </p>
+          <div className="mt-4">
+            <Link href={`/app/approval/${id}`} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95 sm:self-start">
+              REVIEW MANUALLY <span className="btn-arrow" aria-hidden="true">→</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
+      {runAuthority?.decision === "REFUSED" ? (
+        <section aria-label="Standing refusal" className="tx-material-editorial border-t-2 border-ink pt-6 sm:pt-8">
+          <p className="mt-3 max-w-2xl text-[20px] font-bold leading-[28px]">
+            <span className="state-mark bg-clay text-softwhite">TENAX REFUSED</span>
+          </p>
+          <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+            NO ORDER SENT · {runAuthority.reasonCodes.join(" · ").toUpperCase()}
           </p>
         </section>
       ) : null}

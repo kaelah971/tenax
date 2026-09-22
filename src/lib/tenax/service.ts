@@ -24,7 +24,7 @@ import type { RealityPublicBundle } from "../bitget/reality";
 import type { DemoAuthCredentials } from "../bitget/demo-auth";
 import { parseAmount } from "../bitget/demo-assets";
 import { normalizeNvidiaSnapshot, type NvidiaMarketSnapshot } from "../intelligence/snapshot";
-import { type ApprovalActor } from "./approval";
+import { hashProposal, type ApprovalActor } from "./approval";
 import { isDemoTradingMode, resolveExecutionMode } from "./execution";
 import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "./fixtures";
 import { evaluateMandate } from "./mandate";
@@ -34,7 +34,14 @@ import {
   type ReadFetchImpl,
   type WriteFetchImpl,
 } from "./demo-executor";
-import type { ApprovalState, ExecutionMode, ProtectionProposal } from "./domain";
+import type {
+  ApprovalState,
+  DecisionReceipt,
+  ExecutionMode,
+  ExecutionRequest,
+  ExecutionResult,
+  ProtectionProposal,
+} from "./domain";
 import type { ProtectionAnalysis } from "./analysis";
 import {
   buildExposureGraph,
@@ -42,7 +49,7 @@ import {
   type ExposureGraph,
   type GraphRepresentation,
 } from "./exposure-graph";
-import { type FlowState, FlowTransitionError, ProtectionFlow } from "./orchestrator";
+import { type DemoFlowExecution, type FlowState, FlowTransitionError, ProtectionFlow } from "./orchestrator";
 import { type TenaxDevStore, nextFlowId } from "./dev-store";
 import {
   createDefaultXstocksClient,
@@ -81,7 +88,13 @@ import {
   type StandingAuthorityAction,
   type StandingAuthorityEvaluation,
   type StandingMandate,
+  type StandingReservation,
 } from "./standing-mandate";
+import {
+  bindHumanAuthority,
+  bindStandingAuthority,
+  type ExecutionAuthority,
+} from "./authority";import { emitActivityEvent } from "./activity";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -286,6 +299,11 @@ export async function analyzeProtectionIntentWithAi(
       },
       result.audit,
     );
+    emitActivityEvent(store, {
+      type: "AI_ANALYSIS_COMPLETED",
+      flowId,
+      summary: `AI ${result.analysis.decision} (flow ${flowId}) — no actionable proposal`,
+    });
     throw new FlowTransitionError(
       flow.getFlowState(),
       "analyze with model",
@@ -315,6 +333,11 @@ export async function analyzeProtectionIntentWithAi(
   flow.adoptAnalysis(snapshot, MANDATE_FIXTURE, analysis, result.audit);
   const decision = flow.evaluate();
   const { aiAudit } = flow.getContext();
+  emitActivityEvent(store, {
+    type: "AI_ANALYSIS_COMPLETED",
+    flowId,
+    summary: `AI ${result.analysis.decision} ${analysis.proposal.protectionPct}% → $${analysis.authority.calculatedTradeValueUsdt} (flow ${flowId})`,
+  });
   return {
     flowId,
     state: flow.getFlowState() as FlowState,
@@ -788,6 +811,7 @@ export function evaluateStandingAuthorityForProposal(
     readonly protectionPct: number;
     readonly tradeValueUsdt: number;
     readonly leverageUsed: number;
+    readonly proposalAtMs?: number | null;
   },
   nowMs: number = Date.now(),
 ): StandingAuthorityEvaluation | null {
@@ -798,7 +822,7 @@ export function evaluateStandingAuthorityForProposal(
       protectionPct: proposal.protectionPct,
       tradeValueUsdt: proposal.tradeValueUsdt,
       leverageUsed: proposal.leverageUsed,
-      proposalAtMs: nowMs,
+      proposalAtMs: proposal.proposalAtMs ?? nowMs,
     }),
     nowMs,
   );
@@ -816,4 +840,596 @@ export function consumeStandingMandateExecution(
   const consumed = consumeStandingExecution(getMandateRecord(store, parsed.id));
   store.mandates.set(consumed.id, consumed);
   return consumed;
+}
+
+// ---- Standing execution reservation (Phase 4B-B2, atomic) -------------------
+//
+// The budget guard: maxExecutions=1 must never allow two orders, two
+// retries, or two consumptions. All three functions below are fully
+// synchronous — check-and-set with no awaits — so concurrent requests
+// serialize on the Node event loop and the first reserver wins.
+//
+// Lifecycle: AVAILABLE → RESERVED (before any provider write) → CONSUMED
+// (exactly when the provider accepts the order) or RELEASED (any path
+// where no write occurred). Reconciliation never consumes.
+
+/**
+ * Reserve budget for one exact flow + proposal + mandate triple.
+ * Idempotent for the identical triple (retry returns the record);
+ * refuses when capacity is held by anything else, exhausted, or dead.
+ */
+export function reserveStandingCapacity(
+  store: TenaxDevStore,
+  input: { mandateId: string; flowId: string; proposalHash: string },
+  nowMs: number = Date.now(),
+): StandingReservation {
+  const mandate = getMandateRecord(store, input.mandateId);
+  if (mandate.status !== "ACTIVE") {
+    throw new FlowTransitionError(
+      "IDLE",
+      "reserve standing capacity",
+      `mandate is ${mandate.status} — refusing`,
+    );
+  }
+  if (mandate.expiresAt !== null) {
+    const expiryMs = Date.parse(mandate.expiresAt);
+    if (Number.isFinite(expiryMs) && nowMs >= expiryMs) {
+      throw new FlowTransitionError(
+        "IDLE",
+        "reserve standing capacity",
+        "mandate expired — refusing",
+      );
+    }
+  }
+  if (mandate.executionCount >= mandate.policy.maxExecutions) {
+    throw new FlowTransitionError(
+      "IDLE",
+      "reserve standing capacity",
+      "mandate exhausted — refusing",
+    );
+  }
+  const existing = mandate.reservation;
+  if (existing) {
+    if (
+      existing.flowId === input.flowId &&
+      existing.proposalHash === input.proposalHash &&
+      existing.mandateHash === mandate.mandateHash
+    ) {
+      return existing;
+    }
+    throw new FlowTransitionError(
+      "IDLE",
+      "reserve standing capacity",
+      "standing execution capacity is reserved by another action — refusing",
+    );
+  }
+  const reservation: StandingReservation = {
+    flowId: input.flowId,
+    proposalHash: input.proposalHash,
+    mandateHash: mandate.mandateHash,
+    reservedAt: new Date(nowMs).toISOString(),
+  };
+  store.mandates.set(mandate.id, { ...mandate, reservation });
+  return reservation;
+}
+
+/**
+ * Release a reservation when no provider write occurred. Clears only on
+ * an exact triple match; anything else (including a concurrent attempt's
+ * reservation) is left untouched.
+ */
+export function releaseStandingReservation(
+  store: TenaxDevStore,
+  input: { mandateId: string; flowId: string; proposalHash: string },
+): boolean {
+  const mandate = store.mandates.get(input.mandateId);
+  const existing = mandate?.reservation;
+  if (
+    !mandate ||
+    !existing ||
+    existing.flowId !== input.flowId ||
+    existing.proposalHash !== input.proposalHash ||
+    existing.mandateHash !== mandate.mandateHash
+  ) {
+    return false;
+  }
+  store.mandates.set(mandate.id, { ...mandate, reservation: null });
+  return true;
+}
+
+/**
+ * Consume exactly once for a reserved triple, at the irreversible point
+ * (provider accepted the order). Requires the live reservation — a
+ * completed retry reconciles without consuming again. Revocation after
+ * submission cannot un-send the order, so accounting proceeds (only new
+ * reservations are blocked for dead mandates); an EXHAUSTED transition
+ * applies only while the mandate is still ACTIVE.
+ */
+export function consumeReservedStandingExecution(
+  store: TenaxDevStore,
+  input: { mandateId: string; flowId: string; proposalHash: string },
+): StandingMandate {
+  const mandate = getMandateRecord(store, input.mandateId);
+  const existing = mandate.reservation;
+  if (
+    !existing ||
+    existing.flowId !== input.flowId ||
+    existing.proposalHash !== input.proposalHash ||
+    existing.mandateHash !== mandate.mandateHash
+  ) {
+    throw new FlowTransitionError(
+      "IDLE",
+      "consume reserved execution",
+      "no matching reservation — refusing double consumption",
+    );
+  }
+  if (mandate.executionCount >= mandate.policy.maxExecutions) {
+    throw new FlowTransitionError(
+      "IDLE",
+      "consume reserved execution",
+      "mandate already exhausted — refusing double consumption",
+    );
+  }
+  const executionCount = mandate.executionCount + 1;
+  const consumed: StandingMandate = {
+    ...mandate,
+    executionCount,
+    status:
+      mandate.status === "ACTIVE" && executionCount >= mandate.policy.maxExecutions
+        ? "EXHAUSTED"
+        : mandate.status,
+    reservation: null,
+  };
+  store.mandates.set(consumed.id, consumed);
+  return consumed;
+}
+
+export const agentCycleInputSchema = z.object({
+  flowId: z.string().min(1).max(64),
+});
+
+export type AgentCycleResult =
+  | {
+      readonly outcome: "NO_ACTION";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly aiDecision: "WAIT" | "NO_ACTION" | "PROTECT" | null;
+    }
+  | {
+      readonly outcome: "POLICY_REFUSED";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly failedRules: readonly string[];
+    }
+  | {
+      readonly outcome: "NO_STANDING_MANDATE";
+      readonly flowId: string;
+      readonly state: FlowState;
+    }
+  | {
+      readonly outcome: "STANDING_REFUSED";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly evaluation: StandingAuthorityEvaluation;
+    }
+  | {
+      readonly outcome: "STANDING_ESCALATE";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly evaluation: StandingAuthorityEvaluation;
+      readonly note: "HUMAN REVIEW REQUIRED";
+    }
+  | {
+      readonly outcome: "IN_PROGRESS";
+      readonly flowId: string;
+      readonly state: FlowState;
+    }
+  | {
+      readonly outcome: "FAILED";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly reason: string;
+    }
+  | {
+      readonly outcome: "EXECUTED";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly reconciled: boolean;
+      readonly authority: ExecutionAuthority;
+      readonly receipt: DecisionReceipt;
+      readonly executionMode: "DRY_RUN";
+      readonly submitted: false;
+      readonly fundsMoved: false;
+      readonly disclaimer: "DRY_RUN — NO FUNDS MOVED";
+      readonly request: ExecutionRequest;
+    }
+  | {
+      readonly outcome: "EXECUTED";
+      readonly flowId: string;
+      readonly state: FlowState;
+      readonly reconciled: boolean;
+      readonly authority: ExecutionAuthority;
+      readonly receipt: DecisionReceipt;
+      readonly executionMode: "BITGET_DEMO";
+      readonly submitted: true;
+      readonly filled: boolean;
+      readonly orderId: string | null;
+      readonly clientOid: string;
+      readonly orderStatus: string | null;
+      readonly qty: string;
+      readonly approxNotional: number | null;
+      readonly avgPrice: string | null;
+      readonly cumExecQty: string | null;
+      readonly cumExecValue: string | null;
+      readonly submittedAt: string;
+      readonly verifiedAt: string | null;
+      readonly disclaimer: "DEMO ORDER — VIRTUAL FUNDS ONLY";
+      readonly gates: ReadonlyArray<{ readonly id: string; readonly pass: boolean; readonly detail: string }>;
+    };
+
+/**
+ * Describe the authority behind an already-COMPLETED flow for reconcile
+ * reporting. Prefers the bound execution authority; falls back to the
+ * stored human approval record; never invents standing authority.
+ */
+function describeCompletedAuthority(
+  flow: ProtectionFlow,
+  proposal: ProtectionProposal,
+  nowMs: number,
+): ExecutionAuthority {
+  const ctx = flow.getContext();
+  if (ctx.executionAuthority) return ctx.executionAuthority;
+  if (ctx.approval) return bindHumanAuthority(ctx.approval, proposal, nowMs);
+  return {
+    authoritySource: "HUMAN_APPROVAL",
+    proposalHash: hashProposal(proposal),
+    authorizedAt: new Date(nowMs).toISOString(),
+    approvalId: null,
+    standingMandateId: null,
+    standingMandateHash: null,
+    authorityDecision: null,
+    authorityEvaluatedAt: null,
+    reservationKey: null,
+  };
+}
+
+/**
+ * Phase 4B-B2 — one explicit autonomous agent-cycle invocation.
+ *
+ * Server-side orchestration only; called by POST /api/protection/agent-cycle
+ * (RUN TENAX AGENT). Never runs on page load, GET, effects, or polling.
+ *
+ * 1. Reads the validated analysis; WAIT/NO_ACTION (or a zero proposal)
+ *    stops with NO_ACTION — no reservation, no budget, no Bitget request.
+ * 2. Re-evaluates deterministic policy from the STORED proposal; REFUSE stops.
+ * 3. Requires an ACTIVE standing mandate (else NO_STANDING_MANDATE).
+ * 4. Evaluates standing authority fresh; REFUSED/ESCALATE stop with no
+ *    consumption (escalation routes to the manual human-approval path).
+ * 5. Binds execution authority to the exact proposal and atomically
+ *    reserves budget (idempotent for the identical triple).
+ * 6. Runs ALL existing executor gates via the shared flow tails.
+ * 7. DRY_RUN returns a preview only: reservation released, budget untouched.
+ * 8. BITGET_DEMO submits only here; the provider-accepted order consumes
+ *    the budget exactly once at the irreversible point. Verification and
+ *    reconciliation never consume again.
+ */
+export async function runProtectionAgentCycle(
+  store: TenaxDevStore,
+  input: z.infer<typeof agentCycleInputSchema>,
+  deps: DemoServiceDeps = {},
+): Promise<AgentCycleResult> {
+  const parsed = agentCycleInputSchema.parse(input);
+  const flowId = parsed.flowId;
+  const flow = getFlow(store, flowId);
+  const nowMs = deps.nowMs ?? Date.now();
+  const ctx = flow.getContext();
+  const analysis = ctx.analysis;
+  if (!analysis) {
+    throw new FlowTransitionError(flow.getFlowState(), "run agent cycle", "no analysis yet");
+  }
+
+  // 1–2. Actionability: model WAIT/NO_ACTION or a zero proposal stops cold.
+  const proposal = analysis.proposal;
+  const modelDecision = analysis.reasoning.kind === "model" ? (ctx.aiAudit?.decision ?? null) : null;
+  if (modelDecision !== null && modelDecision !== "PROTECT") {
+    return { outcome: "NO_ACTION", flowId, state: flow.getFlowState(), aiDecision: modelDecision };
+  }
+  if (!(proposal.protectionPct > 0) || !(analysis.authority.calculatedTradeValueUsdt > 0)) {
+    return { outcome: "NO_ACTION", flowId, state: flow.getFlowState(), aiDecision: modelDecision };
+  }
+
+  // 3. Deterministic policy re-evaluation from the STORED proposal.
+  const fresh = evaluateMandate(proposal, MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE);
+  if (fresh.verdict !== "PASS") {
+    return {
+      outcome: "POLICY_REFUSED",
+      flowId,
+      state: flow.getFlowState(),
+      failedRules: fresh.failedRules,
+    };
+  }
+
+  // Execution-mode safety (identical rules to the manual path).
+  // Unknown modes resolve to DRY_RUN: LIVE is unrepresentable and can
+  // never select a live adapter — there is no live adapter.
+  const requestedMode = deps.executionMode ?? resolveExecutionMode(process.env);
+  const mode: ExecutionMode = requestedMode === "BITGET_DEMO" ? "BITGET_DEMO" : "DRY_RUN";
+
+  // COMPLETED flows reconcile read-only: no mandate lookup, no
+  // reservation, no consumption beyond crash-recovery. The stored
+  // receipt already carries the original authority.
+  if (flow.getFlowState() === "COMPLETED") {
+    const bestEffortCreds =
+      mode === "BITGET_DEMO"
+        ? (deps.credentials ?? readDemoCredentials(process.env) ?? undefined)
+        : undefined;
+    const reconciled = await flow.execute({
+      executionMode: mode,
+      tradingMode: deps.tradingMode,
+      credentials: bestEffortCreds,
+      baseUrl: deps.baseUrl,
+      marketReader: deps.marketReader,
+      writeFetchImpl: deps.writeFetchImpl,
+      readFetchImpl: deps.readFetchImpl,
+      nowMs: deps.nowMs,
+    });
+    const { receipt } = getDecisionReceipt(store, flowId);
+    if (receipt.authoritySource === "STANDING_MANDATE" && receipt.standingMandateId) {
+      ensureConsumedIfSubmitted(store, {
+        mandateId: receipt.standingMandateId,
+        flowId,
+        proposalHash: hashProposal(proposal),
+      });
+    }
+    return settleAutonomous(
+      flowId,
+      flow,
+      describeCompletedAuthority(flow, proposal, nowMs),
+      receipt,
+      reconciled,
+      true,
+      store,
+      undefined,
+      nowMs,
+      false,
+    );
+  }
+
+  let tradingMode = "";
+  let credentials = null;
+  let baseUrl = "";
+  if (mode === "BITGET_DEMO") {
+    tradingMode = deps.tradingMode ?? process.env.BITGET_TRADING_MODE ?? "";
+    if (!isDemoTradingMode({ BITGET_TRADING_MODE: tradingMode })) {
+      throw new FlowTransitionError(
+        flow.getFlowState(),
+        "run agent cycle",
+        "BITGET_DEMO requires BITGET_TRADING_MODE=demo — inconsistent config refuses",
+      );
+    }
+    const found = deps.credentials ?? readDemoCredentials(process.env);
+    if (!found) {
+      throw new FlowTransitionError(
+        flow.getFlowState(),
+        "run agent cycle",
+        "BITGET_DEMO requires server-side credentials — refusing without them",
+      );
+    }
+    credentials = found;
+    baseUrl = deps.baseUrl ?? ((process.env.BITGET_API_BASE_URL ?? "").trim() ||
+      "https://api.bitget.com");
+  }
+
+  // 4–5. Standing authority: fresh mandate, fresh evaluation.
+  const mandate = getActiveStandingMandate(store);
+  if (!mandate) {
+    return { outcome: "NO_STANDING_MANDATE", flowId, state: flow.getFlowState() };
+  }
+  const analyzedAt = flow.getContext().analyzedAt;
+  const action = standingActionFromProposal({
+    underlying: proposal.underlying,
+    protectionPct: proposal.protectionPct,
+    tradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
+    leverageUsed: proposal.leverageUsed,
+    proposalAtMs: analyzedAt === null ? null : Date.parse(analyzedAt),
+  });
+  const evaluation = evaluateStandingAuthority(mandate, action, nowMs);
+  if (evaluation.decision === "REFUSED") {
+    emitActivityEvent(store, {
+      type: "STANDING_AUTHORITY_REFUSED",
+      flowId,
+      summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
+    }, nowMs);
+    return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
+  }
+  if (evaluation.decision === "ESCALATE") {
+    emitActivityEvent(store, {
+      type: "STANDING_AUTHORITY_ESCALATED",
+      flowId,
+      summary: `Standing ${evaluation.mandateId} escalated — human review required`,
+    }, nowMs);
+    return {
+      outcome: "STANDING_ESCALATE",
+      flowId,
+      state: flow.getFlowState(),
+      evaluation,
+      note: "HUMAN REVIEW REQUIRED",
+    };
+  }
+
+  // 6–7. Bind authority to the exact proposal; reserve budget atomically.
+  const authority = bindStandingAuthority(
+    {
+      mandateId: mandate.id,
+      mandateHash: mandate.mandateHash,
+      evaluatedAt: evaluation.evaluatedAt,
+    },
+    proposal,
+    flowId,
+    nowMs,
+  );
+  const reservationKey = {
+    mandateId: mandate.id,
+    flowId,
+    proposalHash: authority.proposalHash,
+  };
+  // COMPLETED here is unreachable (handled above), but the flow may
+  // still complete underneath us — see the catch branch below.
+  reserveStandingCapacity(store, reservationKey, nowMs);
+  emitActivityEvent(store, {
+    type: "STANDING_AUTHORITY_AUTHORIZED",
+    flowId,
+    summary: `Standing ${mandate.id} authorized ${proposal.protectionPct}% / $${analysis.authority.calculatedTradeValueUsdt}`,
+  }, nowMs);
+
+  const autonomousOpts = {
+    authority,
+    mandate: getMandateRecord(store, mandate.id),
+    executionMode: mode,
+    tradingMode,
+    credentials: credentials ?? undefined,
+    baseUrl: baseUrl === "" ? undefined : baseUrl,
+    marketReader: deps.marketReader,
+    writeFetchImpl: deps.writeFetchImpl,
+    readFetchImpl: deps.readFetchImpl,
+    nowMs: deps.nowMs,
+  };
+  try {
+    const result = await flow.executeAutonomous(autonomousOpts);
+    return settleAutonomous(flowId, flow, authority, null, result, false, store, reservationKey, nowMs);
+  } catch (err) {
+    const state = flow.getFlowState();
+    if (state === "COMPLETED") {
+      // Lost a race with a completing attempt: release our unspent
+      // reservation, then reconcile read-only.
+      releaseStandingReservation(store, reservationKey);
+      const reconciled = await flow.executeAutonomous(autonomousOpts);
+      ensureConsumedIfSubmitted(store, reservationKey);
+      const { receipt } = getDecisionReceipt(store, flowId);
+      return settleAutonomous(flowId, flow, authority, receipt, reconciled, true, store, undefined, nowMs, false);
+    }
+    if (state === "EXECUTING") {
+      // A concurrent attempt owns this action; leave its reservation intact.
+      return { outcome: "IN_PROGRESS", flowId, state };
+    }
+    // Pre-submit or submit failure: nothing was accepted — release.
+    releaseStandingReservation(store, reservationKey);
+    const reason = err instanceof Error ? err.message : "Autonomous execution failed";
+    emitActivityEvent(store, {
+      type: "AUTONOMOUS_EXECUTION_FAILED",
+      flowId,
+      summary: `Autonomous attempt failed (${reason.slice(0, 160)})`,
+    }, nowMs);
+    return { outcome: "FAILED", flowId, state, reason };
+  }
+}
+
+/** Consume only when a live reservation still exists (never twice). */
+function ensureConsumedIfSubmitted(
+  store: TenaxDevStore,
+  reservationKey: { mandateId: string; flowId: string; proposalHash: string },
+): void {
+  const mandate = store.mandates.get(reservationKey.mandateId);
+  const existing = mandate?.reservation;
+  if (
+    mandate &&
+    existing &&
+    existing.flowId === reservationKey.flowId &&
+    existing.proposalHash === reservationKey.proposalHash &&
+    existing.mandateHash === mandate.mandateHash
+  ) {
+    consumeReservedStandingExecution(store, reservationKey);
+  }
+}
+
+/** Settle a successful autonomous execution into the cycle result shape. */
+function settleAutonomous(
+  flowId: string,
+  flow: ProtectionFlow,
+  authority: ExecutionAuthority,
+  receipt: DecisionReceipt | null,
+  result: ExecutionResult | DemoFlowExecution,
+  reconciled: boolean,
+  store?: TenaxDevStore,
+  reservationKey?: { mandateId: string; flowId: string; proposalHash: string },
+  nowMs?: number,
+  emitEvents: boolean = true,
+): Extract<AgentCycleResult, { outcome: "EXECUTED" }> {
+  const state = flow.getFlowState() as FlowState;
+  if ("request" in result) {
+    // DRY_RUN: preview only — release the reservation, budget untouched.
+    if (store && reservationKey) releaseStandingReservation(store, reservationKey);
+    const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
+    if (store && emitEvents) {
+      emitActivityEvent(store, {
+        type: "DECISION_RECEIPT_READY",
+        flowId,
+        summary: `Receipt ${finalReceipt.receiptId} ready (DRY_RUN preview, no funds moved)`,
+        receiptId: finalReceipt.receiptId,
+      }, nowMs ?? Date.now());
+    }
+    return {
+      outcome: "EXECUTED",
+      flowId,
+      state,
+      reconciled,
+      authority,
+      receipt: finalReceipt,
+      executionMode: "DRY_RUN",
+      submitted: false,
+      fundsMoved: result.fundsMoved,
+      disclaimer: result.disclaimer,
+      request: result.request,
+    };
+  }
+  // BITGET_DEMO: the irreversible point was reached inside the flow —
+  // consume exactly once, then receipt + events.
+  if (store && reservationKey) ensureConsumedIfSubmitted(store, reservationKey);
+  const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
+  if (store && emitEvents) {
+    const at = nowMs ?? Date.now();
+    emitActivityEvent(store, {
+      type: "AUTONOMOUS_EXECUTION_SUBMITTED",
+      flowId,
+      summary: `Demo order ${result.orderId ?? "unresolved"} submitted (${result.qty} NVDAUSDT short)`,
+      receiptId: finalReceipt.receiptId,
+    }, at);
+    emitActivityEvent(store, {
+      type: result.filled ? "AUTONOMOUS_EXECUTION_FILLED" : "AUTONOMOUS_EXECUTION_FAILED",
+      flowId,
+      summary: result.filled
+        ? `Demo order filled (${result.orderStatus})`
+        : `Demo order not filled (${result.orderStatus ?? "unknown"})`,
+      receiptId: finalReceipt.receiptId,
+    }, at);
+    emitActivityEvent(store, {
+      type: "DECISION_RECEIPT_READY",
+      flowId,
+      summary: `Receipt ${finalReceipt.receiptId} ready (BITGET_DEMO, virtual funds)`,
+      receiptId: finalReceipt.receiptId,
+    }, at);
+  }
+  return {
+    outcome: "EXECUTED",
+    flowId,
+    state,
+    reconciled,
+    authority,
+    receipt: finalReceipt,
+    executionMode: "BITGET_DEMO",
+    submitted: true,
+    filled: result.filled,
+    orderId: result.orderId,
+    clientOid: result.clientOid,
+    orderStatus: result.orderStatus,
+    qty: result.qty,
+    approxNotional: result.approxNotional,
+    avgPrice: result.avgPrice,
+    cumExecQty: result.cumExecQty,
+    cumExecValue: result.cumExecValue,
+    submittedAt: result.submittedAt,
+    verifiedAt: result.verifiedAt,
+    disclaimer: "DEMO ORDER — VIRTUAL FUNDS ONLY",
+    gates: result.gates.map((g) => ({ id: g.id, pass: g.pass, detail: g.detail })),
+  };
 }
