@@ -8,12 +8,19 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 import { cumulativeRefusalSentence } from "../../_copy";
+import {
+  browserAlertForCycleOutcome,
+  isBrowserAlertsEnabled,
+  sendBrowserAlert,
+} from "../../_components/BrowserAlerts";
 
 type Phase = "ready" | "running" | "done" | "error";
 
 interface CycleReply {
   readonly ok: boolean;
   readonly outcome?: string;
+  readonly filled?: boolean;
+  readonly executionMode?: string;
   readonly receipt?: { receiptId?: string };
   readonly cumulative?: {
     readonly existingUsd: number | null;
@@ -72,6 +79,20 @@ export default function RunAgentPanel({ flowId }: { flowId: string }) {
       if (reply.receipt?.receiptId) setReceiptId(reply.receipt.receiptId);
       if (reply.cumulative) setCumulative(reply.cumulative);
       if (reply.conflict) setConflict(reply.conflict);
+      // Foreground browser alert, explicit opt-in only: the in-app
+      // notification already exists server-side; this mirrors it when the
+      // user enabled browser alerts. Never prompts, never claims.
+      if (isBrowserAlertsEnabled()) {
+        const alert = browserAlertForCycleOutcome({
+          outcome: reply.outcome ?? null,
+          filled: reply.filled,
+          executionMode: reply.executionMode ?? null,
+          flowId,
+          proposedPct: reply.conflict?.proposedPct ?? null,
+          proposedUsd: reply.conflict?.proposedUsd ?? null,
+        });
+        if (alert) sendBrowserAlert(alert);
+      }
     } catch (err) {
       setPhase("error");
       setMessage(err instanceof Error ? err.message : "Agent cycle failed");

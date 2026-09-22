@@ -8,7 +8,10 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 import { resolveExecutionMode } from "@/lib/tenax/execution";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
+import { getUnreadNotificationCount } from "@/lib/tenax/notifications";
 import { TenaxEnvironment } from "./_components/living";
+import NotificationBell from "./_components/NotificationBell";
 import ShellNav from "./_components/ShellNav";
 import "./observatory.css";
 
@@ -16,6 +19,7 @@ export const dynamic = "force-dynamic";
 
 export default function AppLayout({ children }: { children: ReactNode }) {
   const executionMode = resolveExecutionMode(process.env);
+  const initialUnread = getUnreadNotificationCount(getTenaxDevStore());
   return (
     <div className="tx-observatory-app min-h-screen bg-ivory/60 text-ink">
       <TenaxEnvironment />
@@ -37,6 +41,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
           <span className="font-syslabel ml-auto rounded-[7px] border border-signal/70 bg-signal/[0.08] px-2.5 py-1.5 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal shadow-[inset_0_1px_0_rgba(255,255,255,0.16),0_0_18px_-6px_rgba(245,255,59,0.7)]">
             □ {executionMode}
           </span>
+          <NotificationBell initialUnread={initialUnread} />
         </div>
       </header>
       <main className="mx-auto w-full max-w-[1408px] px-4 pb-24 sm:px-6">{children}</main>

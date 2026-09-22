@@ -99,6 +99,8 @@ import {
   bindStandingAuthority,
   type ExecutionAuthority,
 } from "./authority";import { emitActivityEvent } from "./activity";
+import type { ActivityEventDetails, ActivityEventType } from "./activity";
+import { notifyForActivityEvent } from "./notifications";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -176,6 +178,29 @@ function getFlow(store: TenaxDevStore, flowId: string): ProtectionFlow {
   const flow = store.flows.get(flowId);
   if (!flow) throw new FlowTransitionError("IDLE", "locate flow", `unknown flowId ${flowId}`);
   return flow;
+}
+
+/**
+ * Phase 4B-B5.1 — the single activity→notification seam. Every activity
+ * event in this service is emitted through here so the centralized
+ * notification policy in notifications.ts sees each event exactly once.
+ * Retries that skip emission (reconcile paths) therefore cannot duplicate
+ * notifications; product code never constructs notifications directly.
+ */
+function emitActivity(
+  store: TenaxDevStore,
+  input: {
+    readonly type: ActivityEventType;
+    readonly flowId: string;
+    readonly summary: string;
+    readonly receiptId?: string | null;
+    readonly details?: ActivityEventDetails | null;
+  },
+  nowMs: number = Date.now(),
+) {
+  const event = emitActivityEvent(store, input, nowMs);
+  notifyForActivityEvent(store, event);
+  return event;
 }
 
 /**
@@ -326,7 +351,7 @@ export async function analyzeProtectionIntentWithAi(
       },
       result.audit,
     );
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "AI_ANALYSIS_COMPLETED",
       flowId,
       summary: `AI ${result.analysis.decision} (flow ${flowId}) — no actionable proposal`,
@@ -1359,7 +1384,7 @@ export async function runProtectionAgentCycle(
   });
   const evaluation = evaluateStandingAuthority(mandate, action, nowMs);
   if (evaluation.decision === "REFUSED") {
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "STANDING_AUTHORITY_REFUSED",
       flowId,
       summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
@@ -1374,7 +1399,7 @@ export async function runProtectionAgentCycle(
     // never substitute for fresh, valid execution evidence.
     const route = classifyStandingRoute(evaluation.reasonCodes);
     if (route === "SAFETY_REFUSAL") {
-      emitActivityEvent(store, {
+      emitActivity(store, {
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
@@ -1385,7 +1410,7 @@ export async function runProtectionAgentCycle(
       // Ordinary per-action approval path: the mandate proves the action
       // class, but this mode never auto-authorizes. Distinct from an
       // out-of-bounds escalation — no escalation record, no budget touch.
-      emitActivityEvent(store, {
+      emitActivity(store, {
         type: "STANDING_REVIEW_REQUIRED",
         flowId,
         summary: `Standing ${evaluation.mandateId} requires human approval (review every action)`,
@@ -1408,7 +1433,7 @@ export async function runProtectionAgentCycle(
       proposedProtectionPct: proposal.protectionPct,
       proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
     });
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "STANDING_AUTHORITY_ESCALATED",
       flowId,
       summary: `Standing ${evaluation.mandateId} escalated — human review required`,
@@ -1471,7 +1496,7 @@ export async function runProtectionAgentCycle(
           proposedProtectionPct: proposal.protectionPct,
           proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
         });
-        emitActivityEvent(store, {
+        emitActivity(store, {
           type: "STANDING_AUTHORITY_ESCALATED",
           flowId,
           summary: `Standing ${evaluation.mandateId} escalated (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
@@ -1508,7 +1533,7 @@ export async function runProtectionAgentCycle(
           },
         };
       }
-      emitActivityEvent(store, {
+      emitActivity(store, {
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
@@ -1595,7 +1620,7 @@ export async function runProtectionAgentCycle(
     // Pre-submit or submit failure: nothing was accepted — release.
     releaseStandingReservation(store, reservationKey);
     const reason = err instanceof Error ? err.message : "Autonomous execution failed";
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
       summary: `Autonomous attempt failed (${reason.slice(0, 160)})`,
@@ -1655,7 +1680,7 @@ function settleAutonomous(
     if (store && reservationKey) releaseStandingReservation(store, reservationKey);
     const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
     if (store && emitEvents) {
-      emitActivityEvent(store, {
+      emitActivity(store, {
         type: "DECISION_RECEIPT_READY",
         flowId,
         summary: `Receipt ${finalReceipt.receiptId} ready (DRY_RUN preview, no funds moved)`,
@@ -1682,13 +1707,13 @@ function settleAutonomous(
   const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
   if (store && emitEvents) {
     const at = nowMs ?? Date.now();
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "AUTONOMOUS_EXECUTION_SUBMITTED",
       flowId,
       summary: `Demo order ${result.orderId ?? "unresolved"} submitted (${result.qty} NVDAUSDT short)`,
       receiptId: finalReceipt.receiptId,
     }, at);
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: result.filled ? "AUTONOMOUS_EXECUTION_FILLED" : "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
       summary: result.filled
@@ -1696,7 +1721,7 @@ function settleAutonomous(
         : `Demo order not filled (${result.orderStatus ?? "unknown"})`,
       receiptId: finalReceipt.receiptId,
     }, at);
-    emitActivityEvent(store, {
+    emitActivity(store, {
       type: "DECISION_RECEIPT_READY",
       flowId,
       summary: `Receipt ${finalReceipt.receiptId} ready (BITGET_DEMO, virtual funds)`,

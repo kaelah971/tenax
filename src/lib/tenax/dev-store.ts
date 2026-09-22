@@ -21,6 +21,7 @@
 
 import { ProtectionFlow } from "./orchestrator";
 import type { ActivityEvent } from "./activity";
+import type { Notification } from "./notifications";
 import type { StandingMandate } from "./standing-mandate";
 
 export interface TenaxDevStore {
@@ -30,6 +31,8 @@ export interface TenaxDevStore {
   readonly mandates: Map<string, StandingMandate>;
   /** Activity events (B2 notification seam). Same non-durable caveats. */
   readonly activities: ActivityEvent[];
+  /** User-facing notifications (B5.1). Same non-durable caveats. */
+  readonly notifications: Notification[];
 }
 
 export function createDevStore(): TenaxDevStore {
@@ -38,6 +41,7 @@ export function createDevStore(): TenaxDevStore {
     counter: 0,
     mandates: new Map<string, StandingMandate>(),
     activities: [],
+    notifications: [],
   };
 }
 

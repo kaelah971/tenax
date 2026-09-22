@@ -8,6 +8,7 @@ export * from "./mandate";
 export * from "./standing-mandate";
 export * from "./authority";
 export * from "./activity";
+export * from "./notifications";
 export * from "./cumulative";
 export * from "./execution";
 export * from "./receipt";
