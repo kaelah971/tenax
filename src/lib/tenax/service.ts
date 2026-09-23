@@ -102,6 +102,7 @@ import {
 import type { ActivityEventDetails, ActivityEventType } from "./activity";
 import { notifyForActivityEvent } from "./notifications";
 import { dispatchTelegramForNotification } from "../telegram/delivery";
+import { recordJudgeProof } from "../proof/seam";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -213,6 +214,13 @@ function emitActivity(
     } catch {
       // Telegram is best-effort; the canonical records already exist.
     }
+  }
+  // Phase 4B-B6.1 — durable judge evidence, same isolation contract:
+  // failure (or absence) of proof storage never affects the result.
+  try {
+    void recordJudgeProof(store, event).catch(() => {});
+  } catch {
+    // Proof storage is downstream evidence only.
   }
   return event;
 }
@@ -1402,7 +1410,7 @@ export async function runProtectionAgentCycle(
       type: "STANDING_AUTHORITY_REFUSED",
       flowId,
       summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
-      details: { reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
+      details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
     }, nowMs);
     return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
   }
@@ -1417,6 +1425,7 @@ export async function runProtectionAgentCycle(
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
+        details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
       }, nowMs);
       return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
     }
@@ -1428,7 +1437,7 @@ export async function runProtectionAgentCycle(
         type: "STANDING_REVIEW_REQUIRED",
         flowId,
         summary: `Standing ${evaluation.mandateId} requires human approval (review every action)`,
-        details: { reasonCodes: [...evaluation.reasonCodes], outcome: "STANDING_REVIEW" },
+        details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.reasonCodes], outcome: "STANDING_REVIEW" },
       }, nowMs);
       return {
         outcome: "STANDING_REVIEW",
@@ -1452,6 +1461,7 @@ export async function runProtectionAgentCycle(
       flowId,
       summary: `Standing ${evaluation.mandateId} escalated — human review required`,
       details: {
+        mandateId: evaluation.mandateId,
         proposedPct: proposal.protectionPct,
         proposedUsd: analysis.authority.calculatedTradeValueUsdt,
         maxPct: mandate.policy.maxProtectionPct,
@@ -1515,6 +1525,7 @@ export async function runProtectionAgentCycle(
           flowId,
           summary: `Standing ${evaluation.mandateId} escalated (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
           details: {
+            mandateId: evaluation.mandateId,
             proposedPct: proposal.protectionPct,
             proposedUsd: cumulative.proposedUsd,
             maxPct: cumulative.maxPct,
@@ -1552,6 +1563,7 @@ export async function runProtectionAgentCycle(
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
         details: {
+          mandateId: evaluation.mandateId,
           proposedPct: proposal.protectionPct,
           proposedUsd: cumulative.proposedUsd,
           maxPct: cumulative.maxPct,

@@ -2,9 +2,11 @@
 // Editorial hero, six evidenced chain stages, technical request as readable
 // key/value rows, refused alternative. No orderId, no hash, no success claim.
 import { notFound } from "next/navigation";
+import Link from "next/link";
 
 import { getDecisionReceipt } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
+import { getProofRepository } from "@/lib/proof/repository";
 import { NOT_ADVICE } from "../../_copy";
 import { SceneAnchor } from "../../_components/materials";
 import { DecisionRail, JourneyNav, ProvenanceStrip, receiptJourney } from "../../_components/ui";
@@ -28,6 +30,16 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   const demo = receipt.demoExecution ?? null;
   const isStanding = receipt.authoritySource === "STANDING_MANDATE";
   const escalation = receipt.standingEscalation ?? null;
+
+  // Durable proof for this receipt when one was recorded. Storage
+  // failure (or absence) hides the link — it never breaks the receipt.
+  let proofHref: string | null = null;
+  try {
+    const proof = await getProofRepository().repo.findProofByReceiptId(receipt.receiptId);
+    if (proof) proofHref = `/app/proof/${proof.id}`;
+  } catch {
+    proofHref = null;
+  }
 
   const stages: Array<{ index: string; title: string; lines: string[] }> = [
     { index: "01", title: "EXPOSURE", lines: [`$${receipt.exposureValueUsdt} NVIDIA`, "○ DEMO"] },
@@ -273,6 +285,13 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         ]}
       />
       <JourneyNav label="Continue" links={receiptJourney()} />
+      {proofHref ? (
+        <nav aria-label="Durable proof">
+          <Link href={proofHref} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+            VIEW DURABLE PROOF <span className="btn-arrow" aria-hidden="true">→</span>
+          </Link>
+        </nav>
+      ) : null}
       <p className="text-[11px] leading-[14px] text-mutedink">{NOT_ADVICE}</p>
     </div>
   );

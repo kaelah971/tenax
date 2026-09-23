@@ -49,6 +49,8 @@ export interface ActivityEventDetails {
   readonly projectedPct?: number | null;
   readonly reasonCodes?: readonly string[];
   readonly outcome?: string | null;
+  /** Standing mandate that evaluated the action, when one did. */
+  readonly mandateId?: string | null;
 }
 
 let activityCounter = 0;
