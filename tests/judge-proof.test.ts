@@ -379,7 +379,8 @@ describe("storage failure isolation", () => {
     expect(result.outcome).toBe("EXECUTED");
     const failing: ProofRepository = {
       backend: "POSTGRES",
-      durable: true,
+      durabilityState: "UNAVAILABLE",
+      durable: false,
       saveProof: async () => { throw new Error("connection refused"); },
       getProof: async () => { throw new Error("connection refused"); },
       listProofs: async () => { throw new Error("connection refused"); },
@@ -420,11 +421,13 @@ describe("repository behavior", () => {
   it("resolves memory fallback without DATABASE_URL and Postgres with it", () => {
     const fallback = getProofRepository({});
     expect(fallback.backend).toBe("MEMORY");
+    expect(fallback.durabilityState).toBe("EPHEMERAL");
     expect(fallback.durable).toBe(false);
     expect(fallback.reason).toMatch(/DATABASE_URL/);
-    const durable = getProofRepository({ DATABASE_URL: "postgres://u:p@localhost:5432/tenax" });
-    expect(durable.backend).toBe("POSTGRES");
-    expect(durable.durable).toBe(true);
+    const postgresHandle = getProofRepository({ DATABASE_URL: "postgres://u:p@localhost:5432/tenax" });
+    expect(postgresHandle.backend).toBe("POSTGRES");
+    expect(postgresHandle.durabilityState).toBe("UNAVAILABLE");
+    expect(postgresHandle.durable).toBe(false);
   });
 
   it("postgres repository emits only ledger SQL with safe parameters", async () => {
@@ -550,7 +553,8 @@ describe("judge display helpers", () => {
 
   it("proof pages carry durability truth and no client writes", () => {
     const listSource = readFileSync(new URL("../src/app/app/proof/page.tsx", import.meta.url), "utf8");
-    expect(listSource).toContain("EPHEMERAL PREVIEW — DURABLE HISTORY UNAVAILABLE");
+    expect(listSource).toContain("EPHEMERAL PREVIEW — NOT DURABLE · SET DATABASE_URL FOR DURABLE JUDGE HISTORY");
+    expect(listSource).toContain("UNAVAILABLE · POSTGRES CONNECTION FAILED");
     expect(listSource).toContain("DURABLE · POSTGRES");
     expect(listSource).not.toContain("fetch(");
     const detailSource = readFileSync(new URL("../src/app/app/proof/[id]/page.tsx", import.meta.url), "utf8");

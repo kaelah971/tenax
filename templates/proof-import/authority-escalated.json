@@ -1,0 +1,18 @@
+{
+  "id": "proof:v1:AUTHORITY_ESCALATED:REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "version": 1,
+  "kind": "AUTHORITY_ESCALATED",
+  "flowId": "REPLACE_WITH_OWNER_FLOW_ID",
+  "subject": "NVDA",
+  "symbol": "NVDAUSDT",
+  "createdAt": "2026-09-20T15:00:00.000Z",
+  "outcome": "NO AUTONOMOUS ORDER SENT",
+  "authority": { "source": "STANDING_MANDATE", "mode": "AUTO_WITH_ESCALATION", "mandateId": "REPLACE_WITH_OWNER_MANDATE_ID", "mandateHash": "REPLACE_WITH_OWNER_MANDATE_HASH" },
+  "proposal": { "protectionPct": 40, "notionalUsd": 200, "side": "sell", "action": "SHORT_HEDGE" },
+  "mandateSnapshot": { "mandateId": "REPLACE_WITH_OWNER_MANDATE_ID", "mode": "AUTO_WITH_ESCALATION", "maxProtectionPct": 30, "maxNotionalUsdt": 150, "maxExecutions": 1, "mandateHash": "REPLACE_WITH_OWNER_MANDATE_HASH" },
+  "execution": null,
+  "receiptId": null,
+  "reasonCodes": ["exceeds_max_protection_pct"],
+  "sourceActivityEventId": "REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "provenance": { "evidenceSource": "TENAX_ACTIVITY_RECEIPT", "recordedAt": "2026-09-20T15:00:00.000Z", "imported": false, "importSource": null }
+}

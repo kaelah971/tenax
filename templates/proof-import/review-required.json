@@ -1,0 +1,18 @@
+{
+  "id": "proof:v1:REVIEW_REQUIRED:REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "version": 1,
+  "kind": "REVIEW_REQUIRED",
+  "flowId": "REPLACE_WITH_OWNER_FLOW_ID",
+  "subject": "NVDA",
+  "symbol": "NVDAUSDT",
+  "createdAt": "2026-09-20T15:00:00.000Z",
+  "outcome": "HUMAN REVIEW REQUIRED — NO AUTONOMOUS ORDER SENT",
+  "authority": { "source": "HUMAN_APPROVAL", "mode": "REVIEW_EVERY_ACTION", "mandateId": "REPLACE_WITH_OWNER_MANDATE_ID", "mandateHash": "REPLACE_WITH_OWNER_MANDATE_HASH" },
+  "proposal": { "protectionPct": 20, "notionalUsd": 100, "side": "sell", "action": "SHORT_HEDGE" },
+  "mandateSnapshot": null,
+  "execution": null,
+  "receiptId": null,
+  "reasonCodes": [],
+  "sourceActivityEventId": "REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "provenance": { "evidenceSource": "TENAX_ACTIVITY_RECEIPT", "recordedAt": "2026-09-20T15:00:00.000Z", "imported": false, "importSource": null }
+}

@@ -22,6 +22,7 @@ import type { JudgeProof } from "@/lib/proof/model";
 import { DecisionRail, ProvenanceStrip } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
+export const runtime = "nodejs";
 
 function filterClass(active: boolean): string {
   return `font-syslabel rounded-[7px] px-3 py-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
@@ -133,9 +134,11 @@ export default async function ProofPage({
           </p>
         </div>
         <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
-          {handle.durable
-            ? "DURABLE · POSTGRES — HISTORY SURVIVES RESTARTS"
-            : "EPHEMERAL PREVIEW — DURABLE HISTORY UNAVAILABLE · SET DATABASE_URL FOR DURABLE JUDGE HISTORY"}
+          {storeError
+            ? "UNAVAILABLE · POSTGRES CONNECTION FAILED — DURABLE HISTORY CANNOT BE LOADED"
+            : handle.durabilityState === "DURABLE"
+              ? "DURABLE · POSTGRES — HISTORY SURVIVES RESTARTS"
+              : "EPHEMERAL PREVIEW — NOT DURABLE · SET DATABASE_URL FOR DURABLE JUDGE HISTORY"}
         </p>
         <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Proof filter">
           {PROOF_FILTERS.map((f) => (
@@ -154,9 +157,9 @@ export default async function ProofPage({
       {storeError ? (
         <section className="tx-material-editorial border-t-2 border-ink p-5 sm:p-7">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-            DURABLE HISTORY UNAVAILABLE
+            UNAVAILABLE · POSTGRES CONNECTION FAILED
           </p>
-          <p className="mt-3 text-[16px] leading-[24px]">{storeError} Ephemeral session history is never presented as durable proof.</p>
+          <p className="mt-3 text-[16px] leading-[24px]">{storeError} Durable history cannot be loaded. Ephemeral session history is never presented as durable proof.</p>
         </section>
       ) : proofs.length === 0 ? (
         <section className="tx-material-editorial border-t-2 border-ink p-5 sm:p-7">

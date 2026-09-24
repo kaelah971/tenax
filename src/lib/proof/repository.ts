@@ -1,21 +1,21 @@
-// Tenax Phase 4B-B6.1 — proof repository.
+// Tenax Phase 4B-B6.2 — production proof repository.
 //
-// Two backends behind one interface:
-// - InMemoryProofRepository: process-local fake for local development and
-//   tests. Explicitly NON-DURABLE — the judge UI labels it as such.
-// - PostgresProofRepository: durable Vercel/serverless-compatible storage
-//   behind DATABASE_URL. Per-request pg clients (connect → query → end),
-//   parameterized statements only, lazy `pg` import so builds and tests
-//   without a database never touch the driver.
-//
-// Immutability is enforced by the schema (PRIMARY KEY + UNIQUE event id)
-// and by writers (INSERT ... ON CONFLICT DO NOTHING, first write wins).
+// This module is server-only. It keeps Postgres access behind a narrow,
+// parameterized, serverless-safe boundary and never exposes connection errors.
 
-import { judgeProofSchema, type JudgeProof, type ProofKind } from "./model";
-import { PROOF_LEDGER_SCHEMA_SQL } from "./schema";
+import { judgeProofSchema, type JudgeProof, type ProofKind } from "./model.ts";
+import { PROOF_LEDGER_SCHEMA_SQL } from "./schema.ts";
+
+if (typeof window !== "undefined") {
+  throw new Error("Proof repository is server-only");
+}
+
+export type DurabilityState = "DURABLE" | "EPHEMERAL" | "UNAVAILABLE";
 
 export interface ProofRepository {
   readonly backend: "POSTGRES" | "MEMORY";
+  readonly durabilityState: DurabilityState;
+  /** Compatibility getter; use durabilityState for the full truth state. */
   readonly durable: boolean;
   saveProof(record: JudgeProof): Promise<JudgeProof>;
   getProof(id: string): Promise<JudgeProof | null>;
@@ -30,14 +30,35 @@ export interface ProofRepository {
 
 export class InMemoryProofRepository implements ProofRepository {
   readonly backend = "MEMORY" as const;
-  readonly durable = false;
+  get durabilityState(): DurabilityState {
+    return "EPHEMERAL";
+  }
+  get durable(): boolean {
+    return false;
+  }
   private readonly rows = new Map<string, JudgeProof>();
+  private readonly eventRows = new Map<string, string>();
 
   async saveProof(record: JudgeProof): Promise<JudgeProof> {
-    const proof = judgeProofSchema.parse(record);
+    let proof: JudgeProof;
+    try {
+      proof = judgeProofSchema.parse(record);
+    } catch {
+      throw new Error("PROOF_RECORD_INVALID");
+    }
     const existing = this.rows.get(proof.id);
     if (existing) return existing;
+    if (proof.sourceActivityEventId) {
+      const existingId = this.eventRows.get(proof.sourceActivityEventId);
+      if (existingId) {
+        const existingByEvent = this.rows.get(existingId);
+        if (existingByEvent) return existingByEvent;
+      }
+    }
     this.rows.set(proof.id, proof);
+    if (proof.sourceActivityEventId) {
+      this.eventRows.set(proof.sourceActivityEventId, proof.id);
+    }
     return proof;
   }
 
@@ -69,6 +90,7 @@ export class InMemoryProofRepository implements ProofRepository {
   }
 }
 
+
 // ---- Postgres backend --------------------------------------------------------
 
 type PgRows = Array<Record<string, unknown>>;
@@ -83,12 +105,96 @@ export type PgClientFactory = (connectionString: string) => Promise<{
   end(): Promise<void>;
 }>;
 
+type PostgresConfigIssue =
+  | "UNSUPPORTED_SCHEME"
+  | "MISSING_HOST"
+  | "MISSING_DATABASE"
+  | "MISSING_USER"
+  | "SSL_DISABLED_FOR_HOSTED"
+  | "MALFORMED_URL";
+
+const POSTGRES_CONFIG_REASONS: Record<PostgresConfigIssue, string> = {
+  UNSUPPORTED_SCHEME: "DATABASE_URL must use postgres:// or postgresql://",
+  MISSING_HOST: "DATABASE_URL is missing its host",
+  MISSING_DATABASE: "DATABASE_URL is missing its database",
+  MISSING_USER: "DATABASE_URL is missing its user",
+  SSL_DISABLED_FOR_HOSTED: "DATABASE_URL requires SSL for hosted databases",
+  MALFORMED_URL: "DATABASE_URL is malformed",
+};
+
+interface ParsedPostgresConfig {
+  readonly isNeon: boolean;
+  readonly sslRequired: boolean;
+}
+
+function parsePostgresConfig(connectionString: string): ParsedPostgresConfig {
+  const trimmed = connectionString.trim();
+  const lower = trimmed.toLowerCase();
+  const hasScheme =
+    lower.startsWith("postgres://") || lower.startsWith("postgresql://");
+  if (!hasScheme) {
+    throw new Error(POSTGRES_CONFIG_REASONS.UNSUPPORTED_SCHEME);
+  }
+  if (/%(?![0-9A-Fa-f]{2})/.test(trimmed)) {
+    throw new Error(POSTGRES_CONFIG_REASONS.MALFORMED_URL);
+  }
+  let url: URL;
+  try {
+    url = new URL(trimmed);
+  } catch {
+    throw new Error(POSTGRES_CONFIG_REASONS.MALFORMED_URL);
+  }
+  const host = url.hostname.trim();
+  if (host === "") {
+    throw new Error(POSTGRES_CONFIG_REASONS.MISSING_HOST);
+  }
+  const database = url.pathname.replace(/^\/+/, "").split("/")[0] ?? "";
+  if (database === "") {
+    throw new Error(POSTGRES_CONFIG_REASONS.MISSING_DATABASE);
+  }
+  let decodedUser: string;
+  try {
+    decodedUser = decodeURIComponent(url.username);
+  } catch {
+    throw new Error(POSTGRES_CONFIG_REASONS.MALFORMED_URL);
+  }
+  if (decodedUser.trim() === "") {
+    throw new Error(POSTGRES_CONFIG_REASONS.MISSING_USER);
+  }
+  const hostLower = host.toLowerCase();
+  const isNeon = hostLower === "neon.tech" || hostLower.includes("neon.tech");
+  const sslMode = (url.searchParams.get("sslmode") ?? "").toLowerCase();
+  if (isNeon && sslMode === "disable") {
+    throw new Error(POSTGRES_CONFIG_REASONS.SSL_DISABLED_FOR_HOSTED);
+  }
+  return { isNeon, sslRequired: isNeon || sslMode === "require" };
+}
+
+export function getPostgresConfigReason(connectionString: string): string | null {
+  try {
+    parsePostgresConfig(connectionString);
+    return null;
+  } catch (error) {
+    if (error instanceof Error) {
+      const known = Object.values(POSTGRES_CONFIG_REASONS) as string[];
+      if (known.includes(error.message)) return error.message;
+    }
+    return POSTGRES_CONFIG_REASONS.MALFORMED_URL;
+  }
+}
+
+// The pg driver remains server-only and is loaded lazily so builds and
+// tests without DATABASE_URL never touch the driver.
 async function defaultPgClientFactory(connectionString: string) {
+  const config = parsePostgresConfig(connectionString);
   const pg = await import("pg");
   return new pg.Client({
     connectionString,
-    connectionTimeoutMillis: 8000,
-    statement_timeout: 10000,
+    connectionTimeoutMillis: 8_000,
+    statement_timeout: 10_000,
+    query_timeout: 10_000,
+    keepAlive: true,
+    ...(config.sslRequired ? { ssl: { rejectUnauthorized: true } } : {}),
   });
 }
 
@@ -162,33 +268,102 @@ function proofValues(proof: JudgeProof): unknown[] {
 
 export class PostgresProofRepository implements ProofRepository {
   readonly backend = "POSTGRES" as const;
-  readonly durable = true;
+  private _durabilityState: DurabilityState = "UNAVAILABLE";
   private schemaReady = false;
+  private schemaPromise: Promise<void> | null = null;
+  private connectionString: string;
+  private clientFactory: PgClientFactory;
 
-  constructor(
-    private readonly connectionString: string,
-    private readonly clientFactory: PgClientFactory = defaultPgClientFactory,
-  ) {}
+  constructor(connectionString: string, clientFactory: PgClientFactory = defaultPgClientFactory) {
+    const reason = getPostgresConfigReason(connectionString);
+    if (reason !== null) {
+      throw new Error(reason);
+    }
+    this.connectionString = connectionString;
+    this.clientFactory = clientFactory;
+  }
+
+  get durabilityState(): DurabilityState {
+    return this._durabilityState;
+  }
+
+  get durable(): boolean {
+    return this._durabilityState === "DURABLE";
+  }
+
+  private markDurable(): void {
+    this._durabilityState = "DURABLE";
+  }
+
+  private markUnavailable(): void {
+    this._durabilityState = "UNAVAILABLE";
+    this.schemaReady = false;
+    this.schemaPromise = null;
+  }
+
+  private ensureSchema(
+    query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>,
+  ): Promise<void> {
+    if (this.schemaReady) return Promise.resolve();
+    if (!this.schemaPromise) {
+      this.schemaPromise = query(PROOF_LEDGER_SCHEMA_SQL).then(
+        () => {
+          this.schemaReady = true;
+        },
+        (error: unknown) => {
+          this.schemaPromise = null;
+          throw error;
+        },
+      );
+    }
+    return this.schemaPromise;
+  }
 
   private async run<T>(
     op: (query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>) => Promise<T>,
   ): Promise<T> {
-    const client = await this.clientFactory(this.connectionString);
-    await client.connect();
+    let client: {
+      connect(): Promise<void>;
+      query(text: string, values?: unknown[]): Promise<{ rows: PgRows }>;
+      end(): Promise<void>;
+    };
+    try {
+      client = await this.clientFactory(this.connectionString);
+    } catch {
+      this.markUnavailable();
+      throw new Error("PROOF_STORE_UNAVAILABLE");
+    }
+    try {
+      await client.connect();
+    } catch {
+      await client.end().catch(() => {});
+      this.markUnavailable();
+      throw new Error("PROOF_STORE_UNAVAILABLE");
+    }
     try {
       const query = (text: string, values?: unknown[]) => client.query(text, values);
-      if (!this.schemaReady) {
-        await query(PROOF_LEDGER_SCHEMA_SQL);
-        this.schemaReady = true;
+      await this.ensureSchema(query);
+      const result = await op(query);
+      this.markDurable();
+      return result;
+    } catch (error) {
+      this.markUnavailable();
+      if (error instanceof Error && error.message === "PROOF_STORE_CORRUPT") {
+        throw new Error("PROOF_STORE_CORRUPT");
       }
-      return await op(query);
+      throw new Error("PROOF_STORE_UNAVAILABLE");
     } finally {
       await client.end().catch(() => {});
     }
   }
 
   async saveProof(record: JudgeProof): Promise<JudgeProof> {
-    const proof = judgeProofSchema.parse(record);
+    let proof: JudgeProof;
+    try {
+      proof = judgeProofSchema.parse(record);
+    } catch {
+      throw new Error("PROOF_RECORD_INVALID");
+    }
     return this.run(async (query) => {
       const inserted = await query(
         `INSERT INTO tenax_judge_proofs (${PROOF_COLUMNS}) VALUES ` +
@@ -201,8 +376,9 @@ export class PostgresProofRepository implements ProofRepository {
         (
           await query(`SELECT * FROM tenax_judge_proofs WHERE id = $1`, [proof.id])
         ).rows[0];
-      const stored = row ? rowToProof(row) : null;
-      if (!stored) throw new Error("PROOF_STORE_FAILED: proof row unreadable after write");
+      if (!row) throw new Error("PROOF_STORE_CORRUPT");
+      const stored = rowToProof(row);
+      if (!stored) throw new Error("PROOF_STORE_CORRUPT");
       return stored;
     });
   }
@@ -211,9 +387,13 @@ export class PostgresProofRepository implements ProofRepository {
     return this.run(async (query) => {
       const res = await query(`SELECT * FROM tenax_judge_proofs WHERE id = $1`, [id]);
       const row = res.rows[0];
-      return row ? rowToProof(row) : null;
+      if (!row) return null;
+      const parsed = rowToProof(row);
+      if (!parsed) throw new Error("PROOF_STORE_CORRUPT");
+      return parsed;
     });
   }
+
 
   async listProofs(filter: { readonly kind?: ProofKind; readonly flowId?: string; readonly limit?: number } = {}): Promise<JudgeProof[]> {
     const limit = Math.min(Math.max(filter.limit ?? 100, 1), 200);
@@ -238,7 +418,8 @@ export class PostgresProofRepository implements ProofRepository {
       const proofs: JudgeProof[] = [];
       for (const row of res.rows) {
         const parsed = rowToProof(row);
-        if (parsed) proofs.push(parsed);
+        if (!parsed) throw new Error("PROOF_STORE_CORRUPT");
+        proofs.push(parsed);
       }
       return proofs;
     });
@@ -251,7 +432,10 @@ export class PostgresProofRepository implements ProofRepository {
         [receiptId],
       );
       const row = res.rows[0];
-      return row ? rowToProof(row) : null;
+      if (!row) return null;
+      const parsed = rowToProof(row);
+      if (!parsed) throw new Error("PROOF_STORE_CORRUPT");
+      return parsed;
     });
   }
 
@@ -262,7 +446,10 @@ export class PostgresProofRepository implements ProofRepository {
         [flowId],
       );
       const row = res.rows[0];
-      return row ? rowToProof(row) : null;
+      if (!row) return null;
+      const parsed = rowToProof(row);
+      if (!parsed) throw new Error("PROOF_STORE_CORRUPT");
+      return parsed;
     });
   }
 }
@@ -271,8 +458,10 @@ export class PostgresProofRepository implements ProofRepository {
 
 export interface ProofRepositoryHandle {
   readonly repo: ProofRepository;
-  readonly durable: boolean;
   readonly backend: "POSTGRES" | "MEMORY";
+  readonly durabilityState: DurabilityState;
+  /** Compatibility getter; use durabilityState for the full truth state. */
+  readonly durable: boolean;
   /** Human-readable reason when not durable (never a secret). */
   readonly reason: string | null;
 }
@@ -283,7 +472,8 @@ let memorySingleton: InMemoryProofRepository | null = null;
  * Resolve the proof repository for this deployment. DATABASE_URL selects
  * durable Postgres; anything else yields the explicitly non-durable
  * process-local memory store (local development and tests only — judge
- * UI labels it as such).
+ * UI labels it as such). Postgres starts UNAVAILABLE until its first
+ * successful operation proves durable connectivity.
  */
 export function getProofRepository(
   env: Record<string, string | undefined> = process.env,
@@ -291,17 +481,73 @@ export function getProofRepository(
   const url = (env.DATABASE_URL ?? "").trim();
   if (url === "") {
     if (!memorySingleton) memorySingleton = new InMemoryProofRepository();
+    const repo = memorySingleton;
     return {
-      repo: memorySingleton,
-      durable: false,
+      get repo(): ProofRepository {
+        return repo;
+      },
       backend: "MEMORY",
+      get durabilityState(): DurabilityState {
+        return repo.durabilityState;
+      },
+      get durable(): boolean {
+        return false;
+      },
       reason: "DATABASE_URL is not configured",
     };
   }
+  const reason = getPostgresConfigReason(url);
+  if (reason !== null) {
+    const repo: ProofRepository = {
+      backend: "POSTGRES",
+      get durabilityState(): DurabilityState {
+        return "UNAVAILABLE";
+      },
+      get durable(): boolean {
+        return false;
+      },
+      saveProof: async () => {
+        throw new Error("PROOF_STORE_UNAVAILABLE");
+      },
+      getProof: async () => {
+        throw new Error("PROOF_STORE_UNAVAILABLE");
+      },
+      listProofs: async () => {
+        throw new Error("PROOF_STORE_UNAVAILABLE");
+      },
+      findProofByReceiptId: async () => {
+        throw new Error("PROOF_STORE_UNAVAILABLE");
+      },
+      findProofByFlowId: async () => {
+        throw new Error("PROOF_STORE_UNAVAILABLE");
+      },
+    };
+    return {
+      get repo(): ProofRepository {
+        return repo;
+      },
+      backend: "POSTGRES",
+      get durabilityState(): DurabilityState {
+        return "UNAVAILABLE";
+      },
+      get durable(): boolean {
+        return false;
+      },
+      reason,
+    };
+  }
+  const repo = new PostgresProofRepository(url);
   return {
-    repo: new PostgresProofRepository(url),
-    durable: true,
+    get repo(): ProofRepository {
+      return repo;
+    },
     backend: "POSTGRES",
+    get durabilityState(): DurabilityState {
+      return repo.durabilityState;
+    },
+    get durable(): boolean {
+      return repo.durabilityState === "DURABLE";
+    },
     reason: null,
   };
 }

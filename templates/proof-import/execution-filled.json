@@ -1,0 +1,18 @@
+{
+  "id": "proof:v1:EXECUTION_FILLED:REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "version": 1,
+  "kind": "EXECUTION_FILLED",
+  "flowId": "REPLACE_WITH_OWNER_FLOW_ID",
+  "subject": "NVDA",
+  "symbol": "NVDAUSDT",
+  "createdAt": "2026-09-20T15:00:00.000Z",
+  "outcome": "FILLED · VERIFIED",
+  "authority": { "source": "STANDING_MANDATE", "mode": "AUTO_WITHIN_MANDATE", "mandateId": "REPLACE_WITH_OWNER_MANDATE_ID", "mandateHash": "REPLACE_WITH_OWNER_MANDATE_HASH" },
+  "proposal": { "protectionPct": 20, "notionalUsd": 100, "side": "sell", "action": "SHORT_HEDGE" },
+  "mandateSnapshot": { "mandateId": "REPLACE_WITH_OWNER_MANDATE_ID", "mode": "AUTO_WITHIN_MANDATE", "maxProtectionPct": 30, "maxNotionalUsdt": 150, "maxExecutions": 1, "mandateHash": "REPLACE_WITH_OWNER_MANDATE_HASH" },
+  "execution": { "environment": "BITGET_DEMO", "provider": "Bitget", "providerOrderId": "REPLACE_WITH_OWNER_ORDER_ID", "quantity": "REPLACE_WITH_OWNER_FILLED_QUANTITY", "avgFillPrice": "REPLACE_WITH_OWNER_AVERAGE_FILL_PRICE", "executedValueUsdt": 100.75, "status": "FILLED", "fundsLabel": "DEMO · VIRTUAL FUNDS" },
+  "receiptId": "REPLACE_WITH_OWNER_RECEIPT_ID",
+  "reasonCodes": [],
+  "sourceActivityEventId": "REPLACE_WITH_OWNER_ACTIVITY_EVENT_ID",
+  "provenance": { "evidenceSource": "TENAX_ACTIVITY_RECEIPT", "recordedAt": "2026-09-20T15:00:00.000Z", "imported": false, "importSource": null }
+}
