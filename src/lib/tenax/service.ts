@@ -98,11 +98,12 @@ import {
   bindHumanAuthority,
   bindStandingAuthority,
   type ExecutionAuthority,
-} from "./authority";import { emitActivityEvent } from "./activity";
-import type { ActivityEventDetails, ActivityEventType } from "./activity";
+} from "./authority";
+import { emitActivityEvent } from "./activity";
+import type { ActivityEvent, ActivityEventDetails, ActivityEventType } from "./activity";
 import { notifyForActivityEvent } from "./notifications";
 import { dispatchTelegramForNotification } from "../telegram/delivery";
-import { recordJudgeProof } from "../proof/seam";
+import { ProofPersistenceError, recordJudgeProof } from "../proof/seam";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -210,17 +211,30 @@ function emitActivity(
   const notification = notifyForActivityEvent(store, event);
   if (notification) {
     try {
-      void dispatchTelegramForNotification(store, notification).catch(() => {});
+      void dispatchTelegramForNotification(store, notification).catch(() => undefined);
     } catch {
       // Telegram is best-effort; the canonical records already exist.
     }
   }
-  // Phase 4B-B6.1 — durable judge evidence, same isolation contract:
-  // failure (or absence) of proof storage never affects the result.
+  return event;
+}
+
+async function emitActivityAndAwaitProof(
+  store: TenaxDevStore,
+  input: {
+    readonly type: ActivityEventType;
+    readonly flowId: string;
+    readonly summary: string;
+    readonly receiptId?: string | null;
+    readonly details?: ActivityEventDetails | null;
+  },
+  nowMs: number = Date.now(),
+): Promise<ActivityEvent> {
+  const event = emitActivity(store, input, nowMs);
   try {
-    void recordJudgeProof(store, event).catch(() => {});
-  } catch {
-    // Proof storage is downstream evidence only.
+    await recordJudgeProof(store, event);
+  } catch (error) {
+    if (!(error instanceof ProofPersistenceError)) throw error;
   }
   return event;
 }
@@ -1352,7 +1366,7 @@ export async function runProtectionAgentCycle(
         proposalHash: hashProposal(proposal),
       });
     }
-    return settleAutonomous(
+    return await settleAutonomous(
       flowId,
       flow,
       describeCompletedAuthority(flow, proposal, nowMs),
@@ -1406,7 +1420,7 @@ export async function runProtectionAgentCycle(
   });
   const evaluation = evaluateStandingAuthority(mandate, action, nowMs);
   if (evaluation.decision === "REFUSED") {
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: "STANDING_AUTHORITY_REFUSED",
       flowId,
       summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
@@ -1421,7 +1435,7 @@ export async function runProtectionAgentCycle(
     // never substitute for fresh, valid execution evidence.
     const route = classifyStandingRoute(evaluation.reasonCodes);
     if (route === "SAFETY_REFUSAL") {
-      emitActivity(store, {
+      await emitActivityAndAwaitProof(store, {
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
@@ -1433,7 +1447,7 @@ export async function runProtectionAgentCycle(
       // Ordinary per-action approval path: the mandate proves the action
       // class, but this mode never auto-authorizes. Distinct from an
       // out-of-bounds escalation — no escalation record, no budget touch.
-      emitActivity(store, {
+      await emitActivityAndAwaitProof(store, {
         type: "STANDING_REVIEW_REQUIRED",
         flowId,
         summary: `Standing ${evaluation.mandateId} requires human approval (review every action)`,
@@ -1456,7 +1470,7 @@ export async function runProtectionAgentCycle(
       proposedProtectionPct: proposal.protectionPct,
       proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
     });
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: "STANDING_AUTHORITY_ESCALATED",
       flowId,
       summary: `Standing ${evaluation.mandateId} escalated — human review required`,
@@ -1520,7 +1534,7 @@ export async function runProtectionAgentCycle(
           proposedProtectionPct: proposal.protectionPct,
           proposedTradeValueUsdt: analysis.authority.calculatedTradeValueUsdt,
         });
-        emitActivity(store, {
+        await emitActivityAndAwaitProof(store, {
           type: "STANDING_AUTHORITY_ESCALATED",
           flowId,
           summary: `Standing ${evaluation.mandateId} escalated (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
@@ -1558,7 +1572,7 @@ export async function runProtectionAgentCycle(
           },
         };
       }
-      emitActivity(store, {
+      await emitActivityAndAwaitProof(store, {
         type: "STANDING_AUTHORITY_REFUSED",
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (projected ${cumulative.projectedPct ?? "?"}% > max ${cumulative.maxPct}%)`,
@@ -1625,9 +1639,9 @@ export async function runProtectionAgentCycle(
     readFetchImpl: deps.readFetchImpl,
     nowMs: deps.nowMs,
   };
+  let autonomousResult: ExecutionResult | DemoFlowExecution;
   try {
-    const result = await flow.executeAutonomous(autonomousOpts);
-    return settleAutonomous(flowId, flow, authority, null, result, false, store, reservationKey, nowMs);
+    autonomousResult = await flow.executeAutonomous(autonomousOpts);
   } catch (err) {
     const state = flow.getFlowState();
     if (state === "COMPLETED") {
@@ -1637,7 +1651,7 @@ export async function runProtectionAgentCycle(
       const reconciled = await flow.executeAutonomous(autonomousOpts);
       ensureConsumedIfSubmitted(store, reservationKey);
       const { receipt } = getDecisionReceipt(store, flowId);
-      return settleAutonomous(flowId, flow, authority, receipt, reconciled, true, store, undefined, nowMs, false);
+      return await settleAutonomous(flowId, flow, authority, receipt, reconciled, true, store, undefined, nowMs, false);
     }
     if (state === "EXECUTING") {
       // A concurrent attempt owns this action; leave its reservation intact.
@@ -1646,13 +1660,14 @@ export async function runProtectionAgentCycle(
     // Pre-submit or submit failure: nothing was accepted — release.
     releaseStandingReservation(store, reservationKey);
     const reason = err instanceof Error ? err.message : "Autonomous execution failed";
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
       summary: `Autonomous attempt failed (${reason.slice(0, 160)})`,
     }, nowMs);
     return { outcome: "FAILED", flowId, state, reason };
   }
+  return await settleAutonomous(flowId, flow, authority, null, autonomousResult, false, store, reservationKey, nowMs);
 }
 
 /** Best-effort fresh market read for the cumulative gate. Null on any failure. */
@@ -1688,7 +1703,7 @@ function ensureConsumedIfSubmitted(
 }
 
 /** Settle a successful autonomous execution into the cycle result shape. */
-function settleAutonomous(
+async function settleAutonomous(
   flowId: string,
   flow: ProtectionFlow,
   authority: ExecutionAuthority,
@@ -1699,14 +1714,14 @@ function settleAutonomous(
   reservationKey?: { mandateId: string; flowId: string; proposalHash: string },
   nowMs?: number,
   emitEvents: boolean = true,
-): Extract<AgentCycleResult, { outcome: "EXECUTED" }> {
+): Promise<Extract<AgentCycleResult, { outcome: "EXECUTED" }>> {
   const state = flow.getFlowState() as FlowState;
   if ("request" in result) {
     // DRY_RUN: preview only — release the reservation, budget untouched.
     if (store && reservationKey) releaseStandingReservation(store, reservationKey);
     const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
     if (store && emitEvents) {
-      emitActivity(store, {
+      await emitActivityAndAwaitProof(store, {
         type: "DECISION_RECEIPT_READY",
         flowId,
         summary: `Receipt ${finalReceipt.receiptId} ready (DRY_RUN preview, no funds moved)`,
@@ -1733,13 +1748,13 @@ function settleAutonomous(
   const finalReceipt = receipt ?? getDecisionReceipt(store as TenaxDevStore, flowId).receipt;
   if (store && emitEvents) {
     const at = nowMs ?? Date.now();
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: "AUTONOMOUS_EXECUTION_SUBMITTED",
       flowId,
       summary: `Demo order ${result.orderId ?? "unresolved"} submitted (${result.qty} NVDAUSDT short)`,
       receiptId: finalReceipt.receiptId,
     }, at);
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: result.filled ? "AUTONOMOUS_EXECUTION_FILLED" : "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
       summary: result.filled
@@ -1747,7 +1762,7 @@ function settleAutonomous(
         : `Demo order not filled (${result.orderStatus ?? "unknown"})`,
       receiptId: finalReceipt.receiptId,
     }, at);
-    emitActivity(store, {
+    await emitActivityAndAwaitProof(store, {
       type: "DECISION_RECEIPT_READY",
       flowId,
       summary: `Receipt ${finalReceipt.receiptId} ready (BITGET_DEMO, virtual funds)`,

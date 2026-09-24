@@ -19,7 +19,7 @@ import {
   PROOF_VERSION,
   type JudgeProof,
   type ProofKind,
-} from "./model";
+} from "./model.ts";
 
 function readReceipt(store: TenaxDevStore, flowId: string): DecisionReceipt | null {
   try {

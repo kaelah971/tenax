@@ -6,8 +6,9 @@
 // fill never implies an open position. Server-rendered, navigation only:
 // no POSTs, no mutations, no secrets.
 import Link from "next/link";
-
 import { getProofRepository } from "@/lib/proof/repository";
+import { reconcileJudgeProofs } from "@/lib/proof/seam";
+import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import {
   formatProofTime,
   formatProofUsd,
@@ -110,8 +111,16 @@ export default async function ProofPage({
   const { kind } = await searchParams;
   const filter = parseProofFilter(kind);
   const handle = getProofRepository();
+  const store = getTenaxDevStore();
   let proofs: JudgeProof[] = [];
   let storeError: string | null = null;
+  let reconcileIncomplete = false;
+  try {
+    const result = await reconcileJudgeProofs(store, handle.repo);
+    reconcileIncomplete = result.failures.length > 0;
+  } catch {
+    reconcileIncomplete = true;
+  }
   try {
     proofs = await handle.repo.listProofs({ kind: proofKindForFilter(filter) ?? undefined });
   } catch {
@@ -140,6 +149,11 @@ export default async function ProofPage({
               ? "DURABLE · POSTGRES — HISTORY SURVIVES RESTARTS"
               : "EPHEMERAL PREVIEW — NOT DURABLE · SET DATABASE_URL FOR DURABLE JUDGE HISTORY"}
         </p>
+        {!storeError && reconcileIncomplete ? (
+          <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+            DURABLE HISTORY MAY BE INCOMPLETE
+          </p>
+        ) : null}
         <div className="mt-4 flex flex-wrap items-center gap-2" role="group" aria-label="Proof filter">
           {PROOF_FILTERS.map((f) => (
             <Link

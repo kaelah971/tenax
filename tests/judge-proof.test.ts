@@ -51,7 +51,7 @@ import {
   PostgresProofRepository,
   type ProofRepository,
 } from "../src/lib/proof/repository";
-import { recordJudgeProof } from "../src/lib/proof/seam";
+import { ProofPersistenceError, recordJudgeProof } from "../src/lib/proof/seam";
 import { FULL_PAYLOADS, stubClientFor } from "./fixtures/reality-payloads";
 
 const RAW_TEXT = "Protect my NVIDIA through earnings, but don't hedge more than 30%.";
@@ -387,7 +387,9 @@ describe("storage failure isolation", () => {
       findProofByReceiptId: async () => { throw new Error("connection refused"); },
       findProofByFlowId: async () => { throw new Error("connection refused"); },
     };
-    expect(await recordJudgeProof(store, filledEventFor(store, flowId), failing)).toBeNull();
+    await expect(
+      recordJudgeProof(store, filledEventFor(store, flowId), failing),
+    ).rejects.toThrowError(ProofPersistenceError);
     expect(result.outcome).toBe("EXECUTED");
   });
 

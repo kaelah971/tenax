@@ -40,6 +40,7 @@ import {
   analysisJourney,
   DecisionRail,
   JourneyNav,
+  latestMeaningfulEvent,
   ProvenanceStrip,
 } from "../../_components/ui";
 import { LiveDot, TenaxAgent, staggerStyle } from "../../_components/living";
@@ -153,8 +154,11 @@ export default async function AnalysisPage({
       : projection.unknownReason === "unvalued"
         ? "position_unvalued"
         : "unknown";
-
   const journey = analysisJourney({ flowId: id, hasReceipt });
+  // Real agent-cycle truth vs pre-cycle projection: a genuine post-cycle
+  // ESCALATE leaves a STANDING_AUTHORITY_ESCALATED activity event for this
+  // flow; a projection-only ESCALATE has no such event. Display only.
+  const cycleEvent = latestMeaningfulEvent(store.activities, id);
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-5 pt-6 sm:gap-6 sm:pt-8">
@@ -378,7 +382,7 @@ export default async function AnalysisPage({
           </div>
         ) : null}
 
-        {finalState === "ESCALATE" ? (
+        {finalState === "ESCALATE" && cycleEvent?.type === "STANDING_AUTHORITY_ESCALATED" ? (
           <div className="mt-3 flex flex-col gap-3">
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               HUMAN REVIEW REQUIRED
@@ -394,6 +398,21 @@ export default async function AnalysisPage({
                 REVIEW ACTION <span className="btn-arrow" aria-hidden="true">→</span>
               </Link>
             </div>
+          </div>
+        ) : null}
+
+        {finalState === "ESCALATE" && (!cycleEvent || cycleEvent.type !== "STANDING_AUTHORITY_ESCALATED") ? (
+          <div className="mt-3 flex flex-col gap-3">
+            <p className="max-w-2xl text-[18px] font-bold leading-[26px]">
+              PROJECTED OVER MANDATE
+            </p>
+            <p className="font-syslabel mt-1 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              PROJECTION ONLY — NO AGENT CYCLE HAS RUN FOR THIS FLOW YET
+            </p>
+            <p className="max-w-2xl text-[14px] leading-[20px] text-mutedink">
+              Run the deterministic cycle to evaluate this projection against the active mandate.
+            </p>
+            <RunAgentPanel flowId={id} />
           </div>
         ) : null}
 

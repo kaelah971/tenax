@@ -297,10 +297,11 @@ describe("cockpit final-state presentation", () => {
     expect(pageSource).toContain("TENAX REFUSED");
   });
 
-  it("shows RUN TENAX AGENT only in the AUTHORIZED branch", () => {
+  it("shows RUN TENAX AGENT in AUTHORIZED and projection-only ESCALATE branches", () => {
     const renders = pageSource.split("<RunAgentPanel").length - 1;
-    expect(renders).toBe(1);
+    expect(renders).toBe(2);
     expect(pageSource).toMatch(/finalState === "AUTHORIZED"[\s\S]{0,600}<RunAgentPanel/);
+    expect(pageSource).toMatch(/finalState === "ESCALATE"[\s\S]{0,2000}<RunAgentPanel/);
     expect(pageSource).not.toMatch(/finalState === "REFUSED"[\s\S]{0,200}<RunAgentPanel/);
   });
 
