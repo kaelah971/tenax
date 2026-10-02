@@ -12,6 +12,7 @@ import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { getUnreadNotificationCount } from "@/lib/tenax/notifications";
 import { TenaxEnvironment } from "./_components/living";
 import NotificationBell from "./_components/NotificationBell";
+import SessionBootstrap from "./_components/SessionBootstrap";
 import ShellNav from "./_components/ShellNav";
 import "./observatory.css";
 
@@ -23,6 +24,7 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   return (
     <div className="tx-observatory-app min-h-screen bg-ivory/60 text-ink">
       <TenaxEnvironment />
+      <SessionBootstrap />
       <header className="px-3 pt-3 text-softwhite sm:px-5 sm:pt-5">
         <div className="tx-authority-dock mx-auto flex w-full max-w-[1408px] flex-wrap items-center gap-x-6 gap-y-3 rounded-[18px] px-4 py-3 sm:px-6 sm:py-3.5">
           <Link href="/app" className="flex items-center gap-2.5" aria-label="Tenax Capital home">

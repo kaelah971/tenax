@@ -10,6 +10,7 @@ const NAV = [
   { href: "/app/mandate", label: "MANDATE" },
   { href: "/app/proof", label: "PROOF" },
   { href: "/app/activity", label: "ACTIVITY" },
+  { href: "/app/connected", label: "CONNECTED" },
 ];
 
 function isActive(pathname: string, href: string): boolean {
