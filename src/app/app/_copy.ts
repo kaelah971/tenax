@@ -28,7 +28,7 @@ export const EVENT_UNAVAILABLE_LINE =
   "Event data unavailable. Tenax will not propose actions on stale data.";
 
 export const SESSION_ONLY_NOTICE =
-  "Current session only — activity resets when the server restarts. No database yet.";
+  "Session activity resets when the server restarts. Verified decision proof is stored separately in durable history.";
 
 // Tenax Decision Rail stages (DESIGN.md beta-signal): six technical stages.
 export const CHAIN_STEPS = [
