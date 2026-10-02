@@ -15,11 +15,13 @@ import {
   connectedAccountOverviewSchema,
   connectedSessionSchema,
   pairingRecordSchema,
+  type AccountSnapshot,
   type ConnectedAccountOverview,
   type ConnectedSession,
   type PairingRecord,
 } from "./model.ts";
 import { CONNECTED_MODE_SCHEMA_SQL } from "./schema.ts";
+import { createConnectionSyncToken, hashConnectionSyncToken } from "./sync-token.ts";
 
 if (typeof window !== "undefined") {
   throw new Error("Connected repository is server-only");
@@ -36,6 +38,22 @@ export interface ConsumedPairing {
   readonly provider: "BITGET";
   readonly status: "PAIRING";
   readonly accessMode: "READ_ONLY";
+  /** Raw value returned once to the local connector; never persisted. */
+  readonly syncToken: string;
+}
+
+export interface ConnectedSnapshotSyncResult {
+  readonly snapshotId: string;
+  readonly connectionId: string;
+  readonly provider: "BITGET";
+  readonly providerUserId: string | null;
+  readonly status: "CONNECTED";
+  readonly accessMode: "READ_ONLY";
+  readonly syncedAt: string;
+}
+
+export interface DisconnectedConnection {
+  readonly status: "DISCONNECTED";
 }
 
 export interface ConnectedRepository {
@@ -57,6 +75,15 @@ export interface ConnectedRepository {
     now?: Date;
   }): Promise<PairingRecord | null>;
   consumePairing(input: { secretHash: string; now?: Date }): Promise<ConsumedPairing | null>;
+  syncSnapshotByTokenHash(input: {
+    syncTokenHash: string;
+    snapshot: AccountSnapshot;
+    now?: Date;
+  }): Promise<ConnectedSnapshotSyncResult | null>;
+  disconnectConnectionBySessionTokenHash(input: {
+    sessionTokenHash: string;
+    now?: Date;
+  }): Promise<DisconnectedConnection | null>;
   getAccountOverviewByTokenHash(tokenHash: string, now?: Date): Promise<ConnectedAccountOverview | null>;
 }
 
@@ -348,6 +375,8 @@ export class PostgresConnectedRepository implements ConnectedRepository {
     if (!/^[a-f0-9]{64}$/.test(input.secretHash)) return null;
     const now = input.now ?? new Date();
     const connectionId = randomUUID();
+    const syncToken = createConnectionSyncToken();
+    const syncTokenHash = hashConnectionSyncToken(syncToken);
     return this.run(async (query) => {
       await query("BEGIN");
       try {
@@ -376,8 +405,8 @@ export class PostgresConnectedRepository implements ConnectedRepository {
         }
 
         await query(
-          "INSERT INTO tenax_bitget_connections (id, user_id, provider, provider_user_id, status, access_mode, created_at, updated_at, disconnected_at) VALUES ($1, $2, 'BITGET', NULL, 'PAIRING', 'READ_ONLY', $3, $3, NULL)",
-          [connectionId, pending.userId, now.toISOString()],
+          "INSERT INTO tenax_bitget_connections (id, user_id, provider, provider_user_id, status, access_mode, sync_token_hash, created_at, updated_at, disconnected_at) VALUES ($1, $2, 'BITGET', NULL, 'PAIRING', 'READ_ONLY', $3, $4, $4, NULL)",
+          [connectionId, pending.userId, syncTokenHash, now.toISOString()],
         );
         const consumed = await query(
           "UPDATE tenax_connected_pairings SET status = 'CONSUMED', consumed_at = $2, connection_id = $3 WHERE id = $1 AND status = 'PENDING' AND expires_at > $2 RETURNING id, user_id, session_id, secret_hash, status, created_at, expires_at, consumed_at, connection_id",
@@ -396,7 +425,167 @@ export class PostgresConnectedRepository implements ConnectedRepository {
           provider: "BITGET" as const,
           status: "PAIRING" as const,
           accessMode: "READ_ONLY" as const,
+          syncToken,
         };
+      } catch (error) {
+        await query("ROLLBACK").catch(() => {});
+        throw error;
+      }
+    });
+  }
+
+  async syncSnapshotByTokenHash(input: {
+    syncTokenHash: string;
+    snapshot: AccountSnapshot;
+    now?: Date;
+  }): Promise<ConnectedSnapshotSyncResult | null> {
+    if (!/^[a-f0-9]{64}$/.test(input.syncTokenHash)) return null;
+    const parsed = accountSnapshotSchema.safeParse(input.snapshot);
+    if (!parsed.success) return null;
+    const now = input.now ?? new Date();
+
+    return this.run(async (query) => {
+      await query("BEGIN");
+      try {
+        const connectionResult = await query(
+          "SELECT id, user_id, provider, provider_user_id, status, access_mode FROM tenax_bitget_connections WHERE sync_token_hash = $1 FOR UPDATE",
+          [input.syncTokenHash],
+        );
+        const connection = connectionResult.rows[0];
+        if (!connection || connection.status === "DISCONNECTED") {
+          await query("COMMIT");
+          return null;
+        }
+        if (
+          connection.provider !== "BITGET" ||
+          connection.access_mode !== "READ_ONLY" ||
+          parsed.data.connectionId !== String(connection.id) ||
+          parsed.data.provider !== "BITGET" ||
+          parsed.data.accessMode !== "READ_ONLY" ||
+          parsed.data.connectionStatus !== "CONNECTED"
+        ) {
+          await query("COMMIT");
+          return null;
+        }
+
+        const storedProviderUserId =
+          connection.provider_user_id === null || connection.provider_user_id === undefined
+            ? parsed.data.providerUserId
+            : String(connection.provider_user_id);
+        if (
+          connection.provider_user_id !== null &&
+          connection.provider_user_id !== undefined &&
+          parsed.data.providerUserId !== null &&
+          String(connection.provider_user_id) !== parsed.data.providerUserId
+        ) {
+          await query("COMMIT");
+          return null;
+        }
+
+        const syncedAt = now.toISOString();
+        const storedSnapshot = {
+          ...parsed.data,
+          connectionId: String(connection.id),
+          providerUserId: storedProviderUserId,
+          connectionStatus: "CONNECTED" as const,
+          accessMode: "READ_ONLY" as const,
+          syncedAt,
+        };
+        const validatedStoredSnapshot = accountSnapshotSchema.safeParse(storedSnapshot);
+        if (!validatedStoredSnapshot.success) {
+          await query("COMMIT");
+          return null;
+        }
+
+        const snapshotId = randomUUID();
+        const snapshotResult = await query(
+          `INSERT INTO tenax_connected_account_snapshots
+             (id, user_id, connection_id, payload, synced_at, created_at)
+           VALUES ($1, $2, $3, $4, $5, $5)
+           ON CONFLICT (user_id, connection_id)
+           DO UPDATE SET payload = EXCLUDED.payload, synced_at = EXCLUDED.synced_at
+           RETURNING id`,
+          [
+            snapshotId,
+            String(connection.user_id),
+            String(connection.id),
+            JSON.stringify(validatedStoredSnapshot.data),
+            syncedAt,
+          ],
+        );
+        const storedRow = snapshotResult.rows[0];
+        if (!storedRow?.id) {
+          await query("ROLLBACK");
+          return storeCorrupt();
+        }
+        const updated = await query(
+          "UPDATE tenax_bitget_connections SET provider_user_id = COALESCE(provider_user_id, $2), status = 'CONNECTED', updated_at = $3 WHERE id = $1 AND user_id = $4 AND status <> 'DISCONNECTED' RETURNING id",
+          [String(connection.id), storedProviderUserId, syncedAt, String(connection.user_id)],
+        );
+        if (!updated.rows[0]) {
+          await query("ROLLBACK");
+          return null;
+        }
+        await query("COMMIT");
+        return {
+          snapshotId: String(storedRow.id),
+          connectionId: String(connection.id),
+          provider: "BITGET" as const,
+          providerUserId: storedProviderUserId === null ? null : String(storedProviderUserId),
+          status: "CONNECTED" as const,
+          accessMode: "READ_ONLY" as const,
+          syncedAt,
+        };
+      } catch (error) {
+        await query("ROLLBACK").catch(() => {});
+        throw error;
+      }
+    });
+  }
+
+  async disconnectConnectionBySessionTokenHash(input: {
+    sessionTokenHash: string;
+    now?: Date;
+  }): Promise<DisconnectedConnection | null> {
+    if (!/^[a-f0-9]{64}$/.test(input.sessionTokenHash)) return null;
+    const now = input.now ?? new Date();
+    return this.run(async (query) => {
+      await query("BEGIN");
+      try {
+        const current = await query(
+          `SELECT c.id, c.user_id, c.status
+             FROM tenax_connected_sessions AS s
+             JOIN tenax_bitget_connections AS c ON c.user_id = s.user_id
+            WHERE s.token_hash = $1
+              AND s.revoked_at IS NULL
+              AND s.expires_at > $2
+              AND c.status <> 'DISCONNECTED'
+            ORDER BY c.updated_at DESC
+            LIMIT 1
+            FOR UPDATE OF c`,
+          [input.sessionTokenHash, now.toISOString()],
+        );
+        const connection = current.rows[0];
+        if (!connection) {
+          await query("COMMIT");
+          return null;
+        }
+
+        const disconnected = await query(
+          "UPDATE tenax_bitget_connections SET status = 'DISCONNECTED', sync_token_hash = NULL, updated_at = $2, disconnected_at = $2 WHERE id = $1 AND user_id = $3 AND status <> 'DISCONNECTED' RETURNING id",
+          [String(connection.id), now.toISOString(), String(connection.user_id)],
+        );
+        if (!disconnected.rows[0]) {
+          await query("ROLLBACK");
+          return null;
+        }
+        // Pending pairings are owner-scoped and must not survive a disconnect.
+        await query(
+          "UPDATE tenax_connected_pairings SET status = 'REVOKED' WHERE user_id = $1 AND status = 'PENDING'",
+          [String(connection.user_id)],
+        );
+        await query("COMMIT");
+        return { status: "DISCONNECTED" as const };
       } catch (error) {
         await query("ROLLBACK").catch(() => {});
         throw error;
@@ -426,6 +615,7 @@ export class PostgresConnectedRepository implements ConnectedRepository {
            FROM tenax_connected_account_snapshots AS snapshot
            WHERE snapshot.connection_id = c.id
              AND snapshot.user_id = s.user_id
+             AND c.status <> 'DISCONNECTED'
            ORDER BY snapshot.synced_at DESC
            LIMIT 1
          ) AS latest ON TRUE
@@ -455,6 +645,8 @@ function unavailableRepository(): ConnectedRepository {
     createPairing: unavailable,
     getCurrentPairingForSession: unavailable,
     consumePairing: unavailable,
+    syncSnapshotByTokenHash: unavailable,
+    disconnectConnectionBySessionTokenHash: unavailable,
     getAccountOverviewByTokenHash: unavailable,
   };
 }

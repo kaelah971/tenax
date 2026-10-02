@@ -2,7 +2,8 @@
 //
 // Connected state is intentionally separate from the shared Demo store and
 // proof ledger. Ownership is enforced by foreign keys and by session-scoped
-// queries; no credential column exists in this schema.
+// queries; provider credentials never exist here. The connector sync token is
+// represented only by a one-way hash.
 export const CONNECTED_MODE_SCHEMA_SQL = `
 CREATE TABLE IF NOT EXISTS tenax_connected_users (
   id TEXT PRIMARY KEY,
@@ -28,11 +29,17 @@ CREATE TABLE IF NOT EXISTS tenax_bitget_connections (
   provider_user_id TEXT NULL,
   status TEXT NOT NULL CHECK (status IN ('PAIRING', 'CONNECTED', 'STALE', 'DISCONNECTED', 'ERROR')),
   access_mode TEXT NOT NULL CHECK (access_mode = 'READ_ONLY'),
+  sync_token_hash TEXT NULL,
   created_at TIMESTAMPTZ NOT NULL,
   updated_at TIMESTAMPTZ NOT NULL,
   disconnected_at TIMESTAMPTZ NULL,
   UNIQUE (id, user_id)
 );
+ALTER TABLE tenax_bitget_connections
+  ADD COLUMN IF NOT EXISTS sync_token_hash TEXT NULL;
+CREATE UNIQUE INDEX IF NOT EXISTS tenax_bitget_connections_sync_token_idx
+  ON tenax_bitget_connections (sync_token_hash)
+  WHERE sync_token_hash IS NOT NULL;
 CREATE INDEX IF NOT EXISTS tenax_bitget_connections_user_idx
   ON tenax_bitget_connections (user_id, updated_at DESC);
 CREATE TABLE IF NOT EXISTS tenax_connected_pairings (
@@ -65,6 +72,8 @@ CREATE TABLE IF NOT EXISTS tenax_connected_account_snapshots (
     REFERENCES tenax_bitget_connections (id, user_id)
     ON DELETE CASCADE
 );
+CREATE UNIQUE INDEX IF NOT EXISTS tenax_connected_snapshots_connection_idx
+  ON tenax_connected_account_snapshots (user_id, connection_id);
 CREATE INDEX IF NOT EXISTS tenax_connected_snapshots_latest_idx
   ON tenax_connected_account_snapshots (user_id, connection_id, synced_at DESC);
 `.trim();

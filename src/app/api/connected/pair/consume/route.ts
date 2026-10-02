@@ -64,6 +64,7 @@ export async function POST(request: Request) {
       connectionId: consumed.connectionId,
       provider: consumed.provider,
       accessMode: consumed.accessMode,
+      syncToken: consumed.syncToken,
     });
   } catch {
     return unavailableResponse();

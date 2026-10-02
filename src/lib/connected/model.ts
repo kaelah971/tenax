@@ -5,7 +5,11 @@
 // that Tenax is allowed to retain.
 import { z } from "zod";
 
-const nonEmptyText = z.string().trim().min(1);
+const nonEmptyText = z
+  .string()
+  .trim()
+  .min(1)
+  .refine((value) => !/[\u0000-\u001f\u007f]/.test(value), "Control characters are not allowed.");
 const isoDate = z.string().datetime({ offset: true });
 const decimalText = z.string().regex(/^-?(?:0|[1-9]\d*)(?:\.\d+)?$/);
 const nullableDecimalText = decimalText.nullable();

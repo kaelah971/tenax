@@ -1,8 +1,12 @@
-// Tenax Connected Mode — Slice 2 pairing surface.
-// No OAuth, provider calls, account sync, or execution are wired in this slice.
+// Tenax Connected Mode — authenticated personal account and pairing surface.
+// Provider credentials remain on the local connector; this page reads only the
+// current browser session's sanitized snapshot.
 import Link from "next/link";
 
+import AccountSnapshotPanel from "./AccountSnapshotPanel";
 import PairingPanel from "./PairingPanel";
+import { connectedAccountStateLabel, connectedAccountViewState } from "@/lib/connected/presentation";
+import type { ConnectedAccountOverview } from "@/lib/connected/model";
 import { getCurrentConnectedSession } from "@/lib/connected/session";
 
 export const dynamic = "force-dynamic";
@@ -40,22 +44,36 @@ export default async function ConnectedPage() {
   const state = sessionState(currentSession.status);
   let connectionStatus = "NOT_CONNECTED";
   let pendingPairing = false;
+  let overview: ConnectedAccountOverview | null = null;
 
   if (currentSession.status === "READY") {
     try {
-      const [overview, pairing] = await Promise.all([
+      const [accountOverview, pairing] = await Promise.all([
         currentSession.repository.getAccountOverviewByTokenHash(currentSession.tokenHash),
         currentSession.repository.getCurrentPairingForSession({
           userId: currentSession.session.userId,
           sessionId: currentSession.session.id,
         }),
       ]);
+      overview = accountOverview;
       connectionStatus = overview?.connection?.status ?? "NOT_CONNECTED";
       pendingPairing = pairing !== null;
     } catch {
       connectionStatus = "ERROR";
     }
   }
+
+  const accountViewState = connectedAccountViewState({
+    connectionStatus,
+    hasSnapshot: overview?.latestSnapshot !== null && overview?.latestSnapshot !== undefined,
+    syncedAt: overview?.latestSnapshot?.syncedAt ?? null,
+  });
+  const accountStateLabel = connectedAccountStateLabel(accountViewState);
+  const privateDataLabel = overview?.latestSnapshot
+    ? "RECEIVED · SANITIZED"
+    : overview?.connection
+      ? "AWAITING FIRST SYNC"
+      : "NOT RECEIVED";
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -112,7 +130,7 @@ export default async function ConnectedPage() {
           <dl className="grid gap-0 border-t border-softwhite/15">
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-softwhite/15 py-4">
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">CONNECTION STATE</dt>
-              <dd className="text-right text-[18px] font-bold leading-[22px]">{connectionStatus === "CONNECTED" ? "CONNECTED · READ ONLY" : connectionStatus}</dd>
+              <dd className="text-right text-[18px] font-bold leading-[22px]">{accountStateLabel}</dd>
             </div>
             <div className="flex flex-wrap items-baseline justify-between gap-3 border-b border-softwhite/15 py-4">
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">TENAX SESSION</dt>
@@ -125,11 +143,17 @@ export default async function ConnectedPage() {
             </div>
             <div className="flex flex-wrap items-baseline justify-between gap-3 py-4">
               <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">PRIVATE DATA</dt>
-              <dd className="text-right text-[18px] font-bold leading-[22px]">NOT RECEIVED</dd>
+              <dd className="text-right text-[18px] font-bold leading-[22px]">{privateDataLabel}</dd>
             </div>
           </dl>
         </div>
       </section>
+
+      <AccountSnapshotPanel
+        snapshot={overview?.latestSnapshot ?? null}
+        viewState={accountViewState}
+        hasConnection={overview?.connection !== null && overview?.connection !== undefined}
+      />
 
       <section className="tx-material-light-frost rounded-[16px] p-5 sm:p-8">
         <div>
@@ -139,7 +163,11 @@ export default async function ConnectedPage() {
             This code authorizes one connector pairing to this Tenax session. It expires quickly, works once, and does not perform OAuth or receive provider credentials.
           </p>
           <div className="mt-6">
-            <PairingPanel connectionStatus={connectionStatus} pendingPairing={pendingPairing} />
+            <PairingPanel
+              connectionStatus={connectionStatus}
+              pendingPairing={pendingPairing}
+              hasSnapshot={overview?.latestSnapshot !== null && overview?.latestSnapshot !== undefined}
+            />
           </div>
         </div>
       </section>

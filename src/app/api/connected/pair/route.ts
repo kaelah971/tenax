@@ -80,6 +80,13 @@ export async function POST(request: Request) {
   const expiresAt = pairingExpiresAt(now);
 
   try {
+    const existing = await current.repository.getAccountOverviewByTokenHash(current.tokenHash, now);
+    if (existing?.connection && existing.connection.status !== "DISCONNECTED") {
+      return Response.json(
+        { ok: false, code: "CONNECTION_ALREADY_ACTIVE", message: "Disconnect the current Tenax connection before pairing again." },
+        { status: 409 },
+      );
+    }
     await current.repository.createPairing({
       userId: current.session.userId,
       sessionId: current.session.id,

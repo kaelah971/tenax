@@ -8,9 +8,9 @@
 ## MVP slices
 - [x] Slice 1: Durable tenant/session boundary, connected data model, and Connected Mode shell.
 - [x] Slice 2: One-time pairing protocol with expiry, replay protection, and connection states.
-- [ ] Slice 3: Local official Bitget Agentic connector with credential-free sanitized snapshot upload.
-- [ ] Slice 4: Connected account snapshot storage, read-only UI, stale/error states, and isolation proof.
-- [ ] Slice 5: Disconnect and isolation hardening; no connected execution.
+- [x] Slice 3: Local official Bitget Agentic connector with credential-free sanitized snapshot preparation.
+- [x] Slice 4: Authenticated snapshot sync, read-only personal account UI, stale/error states, and isolation proof.
+- [x] Slice 5: Disconnect, sync-token revocation, isolation hardening, and owner QA readiness; no connected execution.
 
 ## Existing capabilities
 - Demo Mode and shared Bitget Demo adapters: working; must remain separate from Connected Mode.
@@ -23,7 +23,7 @@
 - Pairing, local connector, sanitized snapshots, disconnect, and final isolation verification.
 
 ## Current slice
-- Slice 2 complete: short-lived, one-time pairing creates a read-only connection atomically. No OAuth, provider calls, account sync, or execution.
+- Slice 5 complete: browser-owned disconnect revokes Tenax sync access, reconnects require a fresh connection/token, and owner QA commands are documented. No connected execution.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -31,14 +31,22 @@
 - Added authenticated browser create/status APIs and connector-facing consume API with generic invalid/expired responses.
 - Added row-lock transaction consume path: one concurrent consume succeeds; replay fails.
 - Wired `/app/connected` to honest CONNECT BITGET / pairing-code / READ ONLY states.
+- Added `src/lib/connected/connector.ts` and `snapshot.ts`: POST-only pairing consumption, local official SDK OAuth, credential-file identity match, fixed private GET allowlist, SDK `readOnly`, strict fail-closed sanitization, and safe summary metadata.
+- Added `scripts/bitget-agentic-connector.ts` and offline fake-boundary tests. No provider credentials, hosted OAuth, trading, or connected execution path was added.
+- Added one-time-returned 256-bit connection sync token; Postgres stores only `sync_token_hash`, and local metadata stores the raw token outside the repo with 0600 permissions.
+- Added `POST /api/connected/snapshot`: bearer sync-token auth, strict DTO validation, token-bound connection ownership, latest-snapshot upsert, provider identity binding, and CONNECTED status update.
+- Extended the CLI to upload sanitized snapshots and retry the last upload without repeating OAuth. `/app/connected` now renders personal assets/positions with honest empty, awaiting, stale, disconnected, and error states.
+- Added authenticated `POST /api/connected/disconnect`, atomic connection status/token-hash revocation, pending-pairing revocation, disconnected snapshot hiding, fresh reconnect behavior, and a `DISCONNECT BITGET` UI action.
+- Added local `--disconnect` cleanup that removes only Tenax connector metadata; Bitget OAuth credentials remain untouched and remote revocation is not claimed. Added PowerShell owner QA commands to README.
 
 ## Blockers
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
+- Live OAuth/provider/snapshot sync QA requires an owner-run Bitget OAuth account, configured local connector access, and durable Postgres; it was intentionally not run here.
 
 ## Verification
-- Focused Connected Mode + pairing tests: 18 passed.
-- Full Vitest: 767 passed across 39 files.
-- `npx tsc --noEmit`, `npm run lint`, `npm run build`, and `git diff --check` passed.
+- Focused Connected Mode/Slice 5 suites: 40 passed across 6 files.
+- Full Vitest: 789 passed across 43 files; production build, `npx tsc --noEmit`, `npm run lint`, CLI node check, and `git diff --check` passed at the Slice 5 checkpoint.
+- Automated tests use fake HTTP/OAuth/provider boundaries only; no live OAuth or Bitget calls were made.
 
 ## Next action
-- Slice 3: build the local Bitget Agentic connector. Keep OAuth local, upload sanitized snapshots only, and do not add connected execution.
+- READ ONLY Connected Mode milestone is complete. Remaining work is owner-controlled real OAuth/provider QA only; do not start connected trading, mandates, or autonomous watchers.

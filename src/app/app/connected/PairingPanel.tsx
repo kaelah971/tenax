@@ -9,6 +9,7 @@ const EMPTY_CONNECTION_STATES = new Set(["NOT_CONNECTED", "DISCONNECTED", "ERROR
 type PairingPanelProps = {
   readonly connectionStatus: string;
   readonly pendingPairing: boolean;
+  readonly hasSnapshot: boolean;
 };
 
 type PairingState = "IDLE" | "CREATING" | "PAIRING" | "ERROR";
@@ -25,7 +26,7 @@ function minutesRemaining(expiresAt: string | null): string {
   return `${Math.max(1, Math.ceil(remaining / 60_000))} MINUTES`;
 }
 
-export default function PairingPanel({ connectionStatus, pendingPairing }: PairingPanelProps) {
+export default function PairingPanel({ connectionStatus, pendingPairing, hasSnapshot }: PairingPanelProps) {
   const [state, setState] = useState<PairingState>("IDLE");
   const [pairingCode, setPairingCode] = useState<string | null>(null);
   const [expiresAt, setExpiresAt] = useState<string | null>(null);
@@ -76,7 +77,7 @@ export default function PairingPanel({ connectionStatus, pendingPairing }: Pairi
     return (
       <div className="border-t border-ink/15 pt-4">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-pass">CONNECTED · READ ONLY</p>
-        <p className="mt-2 text-[14px] leading-[21px] text-mutedink">This account is paired. Initial account sync is the next connector slice.</p>
+        <p className="mt-2 text-[14px] leading-[21px] text-mutedink">{hasSnapshot ? "This account is paired. The latest sanitized snapshot is shown above." : "This account is paired. Tenax is waiting for the first sanitized read-only snapshot."}</p>
       </div>
     );
   }
