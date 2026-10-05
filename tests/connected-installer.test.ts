@@ -12,6 +12,7 @@ import {
   WINDOWS_TENAX_REGISTRY_ROOT,
 } from "@/lib/connected/windows-install-contract";
 import { inspectConnectorRuntime } from "@/lib/connected/connector";
+import { parseSetupArgs, setupRuntimeArgs } from "@/lib/connected/windows-setup-args";
 
 const INSTALLER_URL = "https://downloads.example.com/tenax/tenax-connector-setup.exe";
 const INSTALL_EXE = "C:\\Users\\owner\\AppData\\Local\\Tenax\\Connector\\tenax-connector.exe";
@@ -81,6 +82,20 @@ describe("Windows Connector install contract", () => {
     });
     expect(runtime.localMetadataPath).toContain(".tenax");
     expect(() => inspectConnectorRuntime("https://app.example.com/?pairingCode=secret")).toThrow("SERVER_ORIGIN_INVALID");
+  });
+
+  it("treats the Node SEA duplicate-executable argv shape as zero user arguments", () => {
+    const setupExecutable = "C:\\Users\\owner\\AppData\\Local\\Tenax\\Connector\\tenax-connector-setup.exe";
+    const options = parseSetupArgs(setupRuntimeArgs([setupExecutable, setupExecutable]));
+
+    expect(options).toEqual({
+      uninstall: false,
+      removeMetadata: false,
+      removeBitgetCredentials: false,
+      help: false,
+    });
+    expect(parseSetupArgs(setupRuntimeArgs([setupExecutable, setupExecutable, "--uninstall"]))).toMatchObject({ uninstall: true });
+    expect(parseSetupArgs(setupRuntimeArgs([setupExecutable, setupExecutable, "--invalid"]))).toBeNull();
   });
 
   it("defines safe uninstall, no-duplicate launch, and no-provider-write behavior", () => {

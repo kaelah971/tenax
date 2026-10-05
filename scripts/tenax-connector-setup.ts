@@ -13,46 +13,17 @@ import {
   TENAX_CONNECTOR_EXECUTABLE_NAME,
   WINDOWS_TENAX_REGISTRY_ROOT,
 } from "../src/lib/connected/windows-install-contract.ts";
+import { parseSetupArgs, setupRuntimeArgs, type SetupOptions } from "../src/lib/connected/windows-setup-args.ts";
 
 declare const __TENAX_SERVER_ORIGIN__: string;
 
 const embeddedServerOrigin =
   typeof __TENAX_SERVER_ORIGIN__ === "string" ? __TENAX_SERVER_ORIGIN__ : process.env.TENAX_SERVER_ORIGIN;
 
-type SetupOptions = {
-  readonly uninstall: boolean;
-  readonly removeMetadata: boolean;
-  readonly removeBitgetCredentials: boolean;
-  readonly help: boolean;
-};
-
 type SeaApi = {
   readonly getAsset: (name: string) => ArrayBuffer | Uint8Array;
 };
 
-function runtimeArgs(): readonly string[] {
-  const flags = new Set(["--uninstall", "--remove-local-metadata", "--remove-bitget-credentials", "--help"]);
-  const firstFlag = process.argv.findIndex((argument, index) => index > 0 && flags.has(argument));
-  if (firstFlag >= 0) return process.argv.slice(firstFlag);
-  const entry = process.argv[1] ?? "";
-  return /\.(?:c?m?js|ts)$/iu.test(entry) ? process.argv.slice(2) : process.argv.slice(1).filter((argument) => argument !== "");
-}
-
-function parseArgs(argv: readonly string[]): SetupOptions | null {
-  let uninstall = false;
-  let removeMetadata = false;
-  let removeBitgetCredentials = false;
-  let help = false;
-  for (const argument of argv) {
-    if (argument === "--uninstall") uninstall = true;
-    else if (argument === "--remove-local-metadata") removeMetadata = true;
-    else if (argument === "--remove-bitget-credentials") removeBitgetCredentials = true;
-    else if (argument === "--help") help = true;
-    else return null;
-  }
-  if ((removeMetadata || removeBitgetCredentials) && !uninstall) return null;
-  return { uninstall, removeMetadata, removeBitgetCredentials, help };
-}
 
 function installDirectory(): string {
   const localAppData = process.env.LOCALAPPDATA || join(homedir(), "AppData", "Local");
@@ -124,7 +95,7 @@ function printUsage(): void {
 }
 
 async function main(): Promise<number> {
-  const options = parseArgs(runtimeArgs());
+  const options = parseSetupArgs(setupRuntimeArgs(process.argv));
   if (!options || options.help) {
     printUsage();
     return options?.help ? 0 : 2;

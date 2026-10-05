@@ -62,6 +62,7 @@
 - Added `inspectConnectorRuntime()` and packaged `--preflight` / `--preflight-handoff` modes. Preflight prints only version, configured origin, loopback endpoint/status, local metadata path, SDK availability, read-only availability, and fake handoff acceptance; it never starts OAuth or provider reads.
 - Embedded the exact build-time origin into connector SEA bundles. Local QA accepts `http://localhost:3000`; production builds require their explicit public HTTPS origin and do not silently trust localhost.
 - Documented PowerShell-friendly local build, install, HKCU verification, protocol launch, bridge status, preflight, and uninstall commands in `README.md`.
+- Fixed the packaged setup executable's zero-argument Node SEA argv shape: when SEA exposes the executable path as `argv[1]`, it is now discarded instead of parsed as an invalid user argument. Zero args installs; uninstall and invalid-argument semantics remain unchanged.
 
 ## Blockers
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
@@ -72,6 +73,7 @@
 - Focused installer/browser/bridge/pairing tests: 29 passed across 4 files; full Vitest: 809 passed across 46 files.
 - `npx tsc --noEmit`, `npm run lint`, Next production build, `npm run build:connector -- --server-origin http://localhost:3000`, packaged preflight and fake handoff from an arbitrary cwd, setup `--help`, CLI node checks, and `git diff --check` passed.
 - Automated tests and preflight use fake HTTP/OAuth/provider/registry boundaries only; no registry mutation, live OAuth, or Bitget calls were made.
+- Installer regression: 6 focused tests pass, including SEA duplicate-executable argv → INSTALL selection. Rebuilt localhost setup executable installed the connector into an isolated `%LOCALAPPDATA%` root, registered `HKCU\\Software\\Classes\\tenax`, rejected invalid args, and cleanly uninstalled the runtime and protocol key.
 
 ## Next action
 - Local Connector UX is code-complete. Await explicit owner OAuth QA; do not start another implementation slice automatically.
