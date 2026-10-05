@@ -42,11 +42,11 @@ export default function AccountSnapshotPanel({ snapshot, viewState, hasConnectio
   const showPnl = positions.some((position) => position.unrealizedPnl !== null);
 
   return (
-    <section className="tx-material-light-frost rounded-[16px] p-5 sm:p-8" aria-labelledby="connected-account-heading">
-      <div className="flex flex-wrap items-start justify-between gap-5 border-b border-ink/15 pb-5">
+    <section className="tx-material-light-frost rounded-[16px] p-4 sm:p-6" aria-labelledby="connected-account-heading">
+      <div className="flex flex-wrap items-start justify-between gap-4 border-b border-ink/15 pb-4">
         <div>
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">{viewState === "DISCONNECTED" ? "BITGET DISCONNECTED" : "CONNECTED ACCOUNT · YOUR BITGET DATA"}</p>
-          <h2 id="connected-account-heading" className="mt-2 text-[32px] font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-[46px]">{viewState === "DISCONNECTED" ? "BITGET DISCONNECTED" : "BITGET"}</h2>
+          <h2 id="connected-account-heading" className="tx-connected-display mt-2 text-[clamp(1.875rem,3vw,2.625rem)] font-semibold leading-[0.98] tracking-[-0.01em]">{viewState === "DISCONNECTED" ? "BITGET DISCONNECTED" : "BITGET"}</h2>
         </div>
         <div className="flex flex-col items-end gap-3">
           <p className={`font-syslabel text-right text-[11px] uppercase leading-[14px] tracking-[0.08em] ${stateTone(viewState)}`}>
@@ -57,24 +57,24 @@ export default function AccountSnapshotPanel({ snapshot, viewState, hasConnectio
       </div>
 
       <dl className="grid gap-0 border-b border-ink/15 sm:grid-cols-3">
-        <div className="border-b border-ink/15 py-4 sm:border-r sm:pr-5">
+        <div className="border-b border-ink/15 py-3 sm:border-r sm:pr-5">
           <dt className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">PROVIDER</dt>
           <dd className="mt-2 text-[18px] font-bold">BITGET</dd>
         </div>
-        <div className="border-b border-ink/15 py-4 sm:border-r sm:px-5">
+        <div className="border-b border-ink/15 py-3 sm:border-r sm:px-5">
           <dt className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">TENAX ACCESS</dt>
           <dd className="mt-2 text-[18px] font-bold">{viewState === "DISCONNECTED" ? "NO ACTIVE SYNC" : "READ ONLY"}</dd>
         </div>
-        <div className="py-4 sm:pl-5">
+        <div className="py-3 sm:pl-5">
           <dt className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">LAST SYNC</dt>
           <dd className="mt-2 text-[15px] font-bold leading-[20px]">{timestamp(snapshot?.syncedAt ?? null)}</dd>
         </div>
       </dl>
 
       {!snapshot ? (
-        <div className="mt-6 border-l-2 border-signal bg-signal/10 p-5">
+        <div className="mt-5 border-l-2 border-signal bg-signal/10 p-4">
           <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-ink">{viewState === "NOT_CONNECTED" ? "NOT CONNECTED" : connectedAccountStateLabel(viewState)}</p>
-          <p className="mt-2 max-w-xl text-[14px] leading-[21px] text-mutedink">
+          <p className="mt-2 max-w-xl text-[15px] leading-[22px] text-mutedink">
             {viewState === "DISCONNECTED"
               ? "Tenax can no longer accept snapshots from this connection. Local Bitget credentials may still exist on the connector device."
               : viewState === "NOT_CONNECTED"
@@ -85,7 +85,7 @@ export default function AccountSnapshotPanel({ snapshot, viewState, hasConnectio
           </p>
         </div>
       ) : (
-        <div className="mt-6 grid gap-8">
+        <div className="mt-5 grid gap-6">
           {viewState === "SYNC_STALE" ? (
             <div className="border-l-2 border-signal bg-signal/10 p-4">
               <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-ink">SYNC STALE · LAST KNOWN DATA RETAINED</p>
@@ -99,7 +99,7 @@ export default function AccountSnapshotPanel({ snapshot, viewState, hasConnectio
               <span className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">{assets.length} ASSET{assets.length === 1 ? "" : "S"}</span>
             </div>
             {assets.length === 0 ? (
-              <p className="mt-4 border border-ink/15 p-4 text-[14px] leading-[21px] text-mutedink">No asset rows were returned by Bitget in the latest snapshot.</p>
+              <p className="mt-3 border border-ink/15 p-4 text-[14px] leading-[21px] text-mutedink">No asset rows were returned by Bitget in the latest snapshot.</p>
             ) : (
               <div className="mt-3 overflow-x-auto border-y border-ink/15">
                 <table className="w-full min-w-[520px] text-left text-[13px]">
@@ -132,7 +132,7 @@ export default function AccountSnapshotPanel({ snapshot, viewState, hasConnectio
               <span className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">{positions.length} POSITION{positions.length === 1 ? "" : "S"}</span>
             </div>
             {positions.length === 0 ? (
-              <p className="mt-4 border border-ink/15 p-4 text-[14px] leading-[21px] text-mutedink">No positions were returned by Bitget in the latest snapshot.</p>
+              <p className="mt-3 border border-ink/15 p-4 text-[14px] leading-[21px] text-mutedink">No positions were returned by Bitget in the latest snapshot.</p>
             ) : (
               <div className="mt-3 overflow-x-auto border-y border-ink/15">
                 <table className="w-full min-w-[680px] text-left text-[13px]">

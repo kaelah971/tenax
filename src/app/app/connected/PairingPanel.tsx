@@ -77,7 +77,7 @@ export default function PairingPanel({ connectionStatus, pendingPairing, hasSnap
     return (
       <div className="border-t border-ink/15 pt-4">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-pass">CONNECTED · READ ONLY</p>
-        <p className="mt-2 text-[14px] leading-[21px] text-mutedink">{hasSnapshot ? "This account is paired. The latest sanitized snapshot is shown above." : "This account is paired. Tenax is waiting for the first sanitized read-only snapshot."}</p>
+        <p className="mt-2 text-[15px] leading-[22px] text-mutedink">{hasSnapshot ? "This account is paired. The latest sanitized snapshot is shown above." : "This account is paired. Tenax is waiting for the first sanitized read only snapshot."}</p>
       </div>
     );
   }
@@ -86,26 +86,26 @@ export default function PairingPanel({ connectionStatus, pendingPairing, hasSnap
     return (
       <div className="border-t border-ink/15 pt-4">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PAIRING</p>
-        <p className="mt-2 text-[14px] leading-[21px] text-mutedink">The local connector has paired. Tenax is waiting for the first sanitized read-only snapshot.</p>
+        <p className="mt-2 text-[15px] leading-[22px] text-mutedink">The local connector has paired. Tenax is waiting for the first sanitized read only snapshot.</p>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-5 border-t border-ink/15 pt-5">
+    <div className="flex flex-col gap-4 border-t border-ink/15 pt-4">
       {state === "PAIRING" && pairingCode ? (
         <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PAIRING CODE</p>
             <p className="mt-2 break-all font-mono text-[24px] font-bold leading-[30px] tracking-[0.12em] text-ink sm:text-[30px]" aria-label="One-time pairing code">{pairingCode}</p>
-            <p className="mt-2 text-[12px] leading-[17px] text-mutedink">Expires in ~{displayedExpiry.toLowerCase()}. Run the Tenax local connector and enter this code.</p>
+            <p className="mt-2 text-[13px] leading-[18px] text-mutedink">Expires in ~{displayedExpiry.toLowerCase()}. Run the Tenax local connector and enter this code.</p>
           </div>
           <button type="button" onClick={copyCode} className="min-h-11 rounded-[10px] bg-ink px-5 py-3 text-[13px] font-bold leading-[18px] text-softwhite hover:bg-graphite">{copied ? "COPIED" : "COPY CODE"}</button>
         </div>
       ) : (
         <div>
-          <p className="text-[15px] leading-[22px] text-mutedink">
-            {pendingPairing ? "A previous code is active but is not shown again. Generate a new code to replace it." : "Create a short-lived code to pair the local Tenax connector with this session."}
+          <p className="text-[16px] leading-[24px] text-mutedink">
+            {pendingPairing ? "A previous code is active but is not shown again. Generate a new code to replace it." : "Create a short lived code to pair the local Tenax connector with this session."}
           </p>
           <button type="button" onClick={createPairing} disabled={!canCreate || state === "CREATING"} className="mt-4 min-h-11 rounded-[10px] bg-signal px-5 py-3 text-[13px] font-bold leading-[18px] text-ink disabled:cursor-wait disabled:opacity-60">
             {state === "CREATING" ? "CREATING PAIRING…" : pendingPairing ? "GENERATE NEW CODE" : "CONNECT BITGET"}

@@ -12,6 +12,8 @@
   --color-pass: #177a50;
   --color-clay: #c74b3b;
   --font-sans: "Inter Tight", "General Sans", Inter, ui-sans-serif, sans-serif;
+  --font-body: var(--font-georama), ui-sans-serif, sans-serif;
+  --font-display: var(--font-rajdhani), "Arial Narrow", ui-sans-serif, sans-serif;
   --font-syslabel: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 
@@ -920,6 +922,24 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
+}
+
+/* Connected Mode uses a denser product type system without changing the root landing page. */
+.tx-connected {
+  font-family: var(--font-body);
+}
+
+.tx-connected .font-syslabel {
+  font-family: var(--font-syslabel);
+}
+
+.tx-connected .font-mono {
+  font-family: var(--font-geist-mono), var(--font-syslabel);
+}
+
+.tx-connected-display {
+  font-family: var(--font-display);
+  font-optical-sizing: auto;
 }
 
 /* One focus treatment across ivory, authority, and signal controls. */

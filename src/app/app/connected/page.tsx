@@ -19,7 +19,7 @@ function sessionState(status: Awaited<ReturnType<typeof getCurrentConnectedSessi
     case "READY":
       return {
         label: "SESSION READY",
-        detail: "Server-derived identity is active for this browser.",
+        detail: "Server derived identity is active for this browser.",
       };
     case "UNAVAILABLE":
       return {
@@ -34,7 +34,7 @@ function sessionState(status: Awaited<ReturnType<typeof getCurrentConnectedSessi
     default:
       return {
         label: "SESSION INITIALIZING",
-        detail: "Tenax is establishing a server-side identity. No account data is loaded yet.",
+        detail: "Tenax is establishing a server side identity. No account data is loaded yet.",
       };
   }
 }
@@ -76,17 +76,17 @@ export default async function ConnectedPage() {
       : "NOT RECEIVED";
 
   return (
-    <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
-      <section className="tx-material-editorial border-t-2 border-ink px-1 pb-2 pt-8 sm:px-5 sm:pt-12">
+    <div className="tx-connected tx-observatory-entry flex flex-col gap-6 pt-6 sm:gap-7 sm:pt-8">
+      <section className="tx-material-editorial border-t-2 border-ink px-1 pb-1 pt-6 sm:px-5 sm:pt-8">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           CONNECTED_001 · PERSONAL ACCOUNT
         </p>
-        <div className="mt-4 grid gap-8 sm:grid-cols-[minmax(0,1fr)_minmax(280px,0.65fr)] sm:items-end sm:gap-12">
+        <div className="mt-3 grid gap-6 sm:grid-cols-[minmax(0,1fr)_minmax(280px,0.65fr)] sm:items-end sm:gap-8">
           <div>
-            <h1 className="max-w-3xl text-[42px] font-extrabold leading-[0.93] tracking-[-0.04em] sm:text-[78px]">
+            <h1 className="tx-connected-display max-w-2xl text-[clamp(2.75rem,5vw,3.75rem)] font-semibold leading-[0.92] tracking-[-0.02em] text-balance">
               Your account. Your boundary.
             </h1>
-            <p className="mt-5 max-w-xl text-[16px] leading-[24px] text-mutedink">
+            <p className="mt-4 max-w-xl text-[16px] leading-[24px] text-mutedink">
               Connected Mode is the private view for your Bitget Agentic account. Tenax will receive only sanitized account information; provider credentials stay on your local connector.
             </p>
           </div>
@@ -94,9 +94,9 @@ export default async function ConnectedPage() {
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               TENAX ACCESS
             </p>
-            <p className="mt-2 text-[30px] font-extrabold leading-none tracking-[-0.03em]">READ ONLY</p>
-            <p className="mt-2 text-[12px] leading-[17px] text-mutedink">
-              No connected-user trading or autonomous execution is available.
+            <p className="tx-connected-display mt-2 text-[28px] font-semibold leading-none tracking-[-0.01em] sm:text-[32px]">READ ONLY</p>
+            <p className="mt-2 text-[13px] leading-[18px] text-mutedink">
+              No connected user trading or autonomous execution is available.
             </p>
           </div>
         </div>
@@ -108,23 +108,23 @@ export default async function ConnectedPage() {
           className="tx-material-light-frost rounded-[12px] p-4 transition-transform hover:-translate-y-0.5 sm:p-5"
         >
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">DEMO MODE</p>
-          <p className="mt-2 text-[22px] font-bold leading-[24px]">Explore shared Demo capital <span aria-hidden="true">→</span></p>
-          <p className="mt-2 text-[12px] leading-[17px] text-mutedink">Instant judge experience · virtual funds · unchanged.</p>
+          <p className="tx-connected-display mt-2 text-[23px] font-semibold leading-[25px]">Explore shared Demo capital <span aria-hidden="true">→</span></p>
+          <p className="mt-2 text-[13px] leading-[18px] text-mutedink">Instant judge experience · virtual funds · unchanged.</p>
         </Link>
         <div className="rounded-[12px] border-2 border-ink bg-signal p-4 text-ink sm:p-5">
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em]">CONNECTED MODE</p>
-          <p className="mt-2 text-[22px] font-bold leading-[24px]">Private account boundary</p>
-          <p className="mt-2 text-[12px] leading-[17px]">This session never reads the shared Demo account.</p>
+          <p className="tx-connected-display mt-2 text-[23px] font-semibold leading-[25px]">Private account boundary</p>
+          <p className="mt-2 text-[13px] leading-[18px]">This session never reads the shared Demo account.</p>
         </div>
       </nav>
 
-      <section className="tx-material-authority rounded-[18px] p-5 sm:p-8">
-        <div className="grid gap-8 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] sm:gap-12">
+      <section className="tx-material-authority rounded-[18px] p-4 sm:p-6">
+        <div className="grid gap-6 sm:grid-cols-[minmax(0,0.8fr)_minmax(0,1.2fr)] sm:gap-8">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">ACCOUNT BOUNDARY</p>
-            <h2 className="mt-3 text-[36px] font-extrabold leading-[0.95] tracking-[-0.04em] sm:text-[52px]">One session.<br />One account.</h2>
-            <p className="mt-4 max-w-md text-[14px] leading-[21px] text-softwhite/70">
-              Account-dependent records are owned through the server session, never through a user id or connection id supplied by the browser.
+            <h2 className="tx-connected-display mt-2 text-[clamp(2rem,4vw,2.75rem)] font-semibold leading-[0.96] tracking-[-0.02em]">One session.<br />One account.</h2>
+            <p className="mt-3 max-w-md text-[15px] leading-[22px] text-softwhite/70 sm:text-[16px] sm:leading-[24px]">
+              Account dependent records are owned through the server session, never through a user id or connection id supplied by the browser.
             </p>
           </div>
           <dl className="grid gap-0 border-t border-softwhite/15">
@@ -155,14 +155,14 @@ export default async function ConnectedPage() {
         hasConnection={overview?.connection !== null && overview?.connection !== undefined}
       />
 
-      <section className="tx-material-light-frost rounded-[16px] p-5 sm:p-8">
+      <section className="tx-material-light-frost rounded-[16px] p-4 sm:p-6">
         <div>
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">CONNECT BITGET</p>
-          <h2 className="mt-2 text-[32px] font-extrabold leading-[0.98] tracking-[-0.03em] sm:text-[46px]">Pair locally. Keep keys local.</h2>
-          <p className="mt-4 max-w-2xl text-[15px] leading-[22px] text-mutedink">
+          <h2 className="tx-connected-display mt-2 text-[clamp(2rem,3.5vw,2.75rem)] font-semibold leading-[0.98] tracking-[-0.02em] text-balance">Pair locally. Keep keys local.</h2>
+          <p className="mt-3 max-w-2xl text-[16px] leading-[24px] text-mutedink">
             This code authorizes one connector pairing to this Tenax session. It expires quickly, works once, and does not perform OAuth or receive provider credentials.
           </p>
-          <div className="mt-6">
+          <div className="mt-5">
             <PairingPanel
               connectionStatus={connectionStatus}
               pendingPairing={pendingPairing}

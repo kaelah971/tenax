@@ -23,7 +23,7 @@
 - Pairing, local connector, sanitized snapshots, disconnect, and final isolation verification.
 
 ## Current slice
-- Slice 5 complete: browser-owned disconnect revokes Tenax sync access, reconnects require a fresh connection/token, and owner QA commands are documented. No connected execution.
+- Connected Mode typography refinement complete: Rajdhani display headings, Georama body copy, preserved mono labels, reduced page scale/spacing, and responsive connected UI. No Connected Mode behavior or Demo changes.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -44,8 +44,8 @@
 - Live OAuth/provider/snapshot sync QA requires an owner-run Bitget OAuth account, configured local connector access, and durable Postgres; it was intentionally not run here.
 
 ## Verification
-- Focused Connected Mode/Slice 5 suites: 40 passed across 6 files.
-- Full Vitest: 789 passed across 43 files; production build, `npx tsc --noEmit`, `npm run lint`, CLI node check, and `git diff --check` passed at the Slice 5 checkpoint.
+- Focused Connected UI test: 3 passed.
+- Full Vitest baseline: 789 passed across 43 files; this refinement's production build, `npx tsc --noEmit`, `npm run lint`, and `git diff --check` passed.
 - Automated tests use fake HTTP/OAuth/provider boundaries only; no live OAuth or Bitget calls were made.
 
 ## Next action
