@@ -74,6 +74,7 @@ export default async function ConnectedPage() {
     : overview?.connection
       ? "AWAITING FIRST SYNC"
       : "NOT RECEIVED";
+  const hasConnectedAccount = connectionStatus === "CONNECTED";
 
   return (
     <div className="tx-connected tx-observatory-entry flex flex-col gap-6 pt-6 sm:gap-7 sm:pt-8">
@@ -157,10 +158,12 @@ export default async function ConnectedPage() {
 
       <section className="tx-material-light-frost rounded-[16px] p-4 sm:p-6">
         <div>
-          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">CONNECT BITGET</p>
-          <h2 className="tx-connected-display mt-2 text-[clamp(2rem,3.5vw,2.75rem)] font-semibold leading-[0.98] tracking-[-0.02em] text-balance">Pair locally. Keep keys local.</h2>
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">{hasConnectedAccount ? "CONNECTED · READ ONLY" : "CONNECT YOUR BITGET ACCOUNT"}</p>
+          <h2 className="tx-connected-display mt-2 text-[clamp(2rem,3.5vw,2.75rem)] font-semibold leading-[0.98] tracking-[-0.02em] text-balance">{hasConnectedAccount ? "Your Bitget account is connected." : "Pair locally. Keep keys local."}</h2>
           <p className="mt-3 max-w-2xl text-[16px] leading-[24px] text-mutedink">
-            This code authorizes one connector pairing to this Tenax session. It expires quickly, works once, and does not perform OAuth or receive provider credentials.
+            {hasConnectedAccount
+              ? "Your personal account data is shown above. Tenax remains read only and receives only sanitized account information."
+              : "Your Bitget credentials stay on this device. Tenax receives only sanitized account information."}
           </p>
           <div className="mt-5">
             <PairingPanel

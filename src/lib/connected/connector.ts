@@ -34,6 +34,9 @@ import {
   type ConnectorSummary,
 } from "./snapshot.ts";
 
+export const TENAX_CONNECTOR_VERSION = "0.1.0" as const;
+export const DEFAULT_CONNECTOR_METADATA_PATH = join(homedir(), ".tenax", "connected-sync.json");
+
 export const CONNECTOR_READ_OPERATION_IDS = [
   "getAccountInfo",
   "getAccountAssets",
@@ -323,7 +326,7 @@ export interface ConnectorLocalStore {
 }
 
 export function createFileConnectorStore(
-  filePath = join(homedir(), ".tenax", "connected-sync.json"),
+  filePath = DEFAULT_CONNECTOR_METADATA_PATH,
 ): ConnectorLocalStore {
   return {
     async save(metadata) {
@@ -389,6 +392,26 @@ export function assertReadOnlySdkConfig(config: Pick<BitgetConfig, "readOnly" | 
       throw new ConnectorError("READ_ONLY_CONFIG_FAILED");
     }
   }
+}
+
+export interface ConnectorPreflight {
+  readonly connectorVersion: typeof TENAX_CONNECTOR_VERSION;
+  readonly serverOrigin: string;
+  readonly localMetadataPath: string;
+  readonly bitgetSdkAvailable: true;
+  readonly readOnlyModeAvailable: true;
+}
+
+export function inspectConnectorRuntime(serverOrigin: string): ConnectorPreflight {
+  const normalizedOrigin = validateServerOrigin(serverOrigin);
+  assertReadOnlySdkConfig({ readOnly: true, paperTrading: false });
+  return {
+    connectorVersion: TENAX_CONNECTOR_VERSION,
+    serverOrigin: normalizedOrigin,
+    localMetadataPath: DEFAULT_CONNECTOR_METADATA_PATH,
+    bitgetSdkAvailable: true,
+    readOnlyModeAvailable: true,
+  };
 }
 
 export function createOfficialOAuthAdapter(): LocalOAuthAdapter {
@@ -481,6 +504,8 @@ export interface ConnectorSafeMetadata {
   readonly accessMode: "READ_ONLY";
   readonly lastSuccessfulLocalSync: string;
 }
+
+export type ConnectorProgressState = "HANDOFF_ACCEPTED" | "OAUTH_PENDING" | "SYNCING";
 
 export interface ConnectorResult {
   readonly bootstrap: SafePairingBootstrap | null;
@@ -621,6 +646,7 @@ export async function runLocalConnector(
     readonly pairingCode: string;
     readonly oauthTimeoutMs?: number;
     readonly onAuthorizeUrl?: (authorizeUrl: string) => void;
+    readonly onProgress?: (state: ConnectorProgressState) => void;
   },
   dependencies: ConnectorDependencies,
 ): Promise<ConnectorResult> {
@@ -630,6 +656,7 @@ export async function runLocalConnector(
     pairingCode: input.pairingCode,
     fetchImpl: dependencies.fetchImpl,
   });
+  input.onProgress?.("HANDOFF_ACCEPTED");
   const localStore = dependencies.localStore ?? createFileConnectorStore();
   const uploadSnapshot = dependencies.uploadSnapshot ?? defaultUploader(dependencies.fetchImpl);
   await saveLocalMetadata(
@@ -641,6 +668,7 @@ export async function runLocalConnector(
   try {
     oauthStart = await dependencies.oauth.start();
     const safeAuthorizeUrl = validateAuthorizeUrl(oauthStart.authorizeUrl);
+    input.onProgress?.("OAUTH_PENDING");
     input.onAuthorizeUrl?.(safeAuthorizeUrl);
   } catch (error) {
     if (error instanceof ConnectorError) throw error;
@@ -669,6 +697,7 @@ export async function runLocalConnector(
     if (error instanceof ConnectorError) throw error;
     throw new ConnectorError("READ_ONLY_CONFIG_FAILED");
   }
+  input.onProgress?.("SYNCING");
   const snapshot = await readProviderAndSanitize({
     reader,
     connectionId: bootstrap.connectionId,

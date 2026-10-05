@@ -49,6 +49,10 @@ describe("Landing Page & Judge Journey (Phase B7)", () => {
       expect(landingSource).toContain("VIEW VERIFIED DECISIONS");
       expect(landingSource).toContain('href="/app/mandate"');
       expect(landingSource).toContain("INSPECT STANDING MANDATE");
+      expect(landingSource).toContain('href="/app/connected"');
+      expect(landingSource).toContain("USE YOUR OWN ACCOUNT");
+      expect(landingSource).toContain("CONNECTED · READ ONLY");
+      expect(landingSource).not.toContain("CONNECTED USER TRADING");
     });
 
     it("includes the 4-part truth and status strip", () => {
@@ -191,6 +195,8 @@ describe("Landing Page & Judge Journey (Phase B7)", () => {
       expect(landingSource).toContain('href="/app/mandate"');
       expect(landingSource).toContain('href="/app/proof"');
       expect(landingSource).toContain('href="/app/activity"');
+      expect(landingSource).toContain("CONNECTED");
+      expect(landingSource).toContain('href="/app/connected"');
     });
 
     it("resolves dynamic execution mode for truthful capability display", () => {

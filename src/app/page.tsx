@@ -132,6 +132,12 @@ export default async function LandingPage() {
             >
               ACTIVITY
             </Link>
+            <Link
+              href="/app/connected"
+              className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-softwhite/80 transition-colors hover:text-signal"
+            >
+              CONNECTED
+            </Link>
           </nav>
 
           <div className="ml-auto flex items-center gap-3">
@@ -182,6 +188,12 @@ export default async function LandingPage() {
               >
                 ACTIVITY
               </Link>
+              <Link
+                href="/app/connected"
+                className="font-syslabel rounded-[6px] px-3 py-2 text-[12px] uppercase tracking-[0.08em] text-softwhite/90 hover:bg-softwhite/5 hover:text-signal"
+              >
+                CONNECTED
+              </Link>
             </div>
           </details>
         </div>
@@ -211,24 +223,31 @@ export default async function LandingPage() {
               </p>
 
               {/* Action Buttons Row */}
-              <div className="mt-2 flex flex-wrap items-center gap-4 sm:gap-5">
+              <div className="mt-2 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center sm:gap-5">
                 <Link
                   href="/app/protect/nvidia"
-                  className="btn-living inline-flex min-h-12 items-center justify-center rounded-[11px] bg-signal px-6 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink shadow-[0_4px_16px_rgba(245,255,59,0.35)] hover:brightness-95"
+                  className="btn-living inline-flex min-h-12 w-full items-center justify-center rounded-[11px] bg-signal px-6 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink shadow-[0_4px_16px_rgba(245,255,59,0.35)] hover:brightness-95 sm:w-auto"
                 >
                   LAUNCH NVIDIA PROTECTION <span className="btn-arrow ml-1.5" aria-hidden="true">→</span>
                 </Link>
                 <Link
                   href="/app/proof"
-                  className="btn-living inline-flex min-h-12 items-center justify-center rounded-[11px] border-2 border-ink bg-softwhite/80 px-6 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:bg-ink hover:text-softwhite"
+                  className="btn-living inline-flex min-h-12 w-full items-center justify-center rounded-[11px] border-2 border-ink bg-softwhite/80 px-6 py-3.5 text-[15px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:bg-ink hover:text-softwhite sm:w-auto"
                 >
                   VIEW VERIFIED DECISIONS <span className="btn-arrow ml-1.5" aria-hidden="true">→</span>
                 </Link>
                 <Link
                   href="/app/mandate"
-                  className="font-syslabel text-[11px] font-bold uppercase tracking-[0.08em] text-mutedink underline decoration-signal decoration-2 underline-offset-4 transition-colors hover:text-ink"
+                  className="font-syslabel self-start text-left text-[11px] font-bold uppercase tracking-[0.08em] text-mutedink underline decoration-signal decoration-2 underline-offset-4 transition-colors hover:text-ink"
                 >
                   INSPECT STANDING MANDATE →
+                </Link>
+                <Link
+                  href="/app/connected"
+                  className="inline-flex min-h-11 self-start items-center justify-center rounded-[9px] border border-ink/25 bg-softwhite/60 px-4 py-2.5 text-left text-[12px] font-bold leading-[16px] tracking-[0.02em] text-ink transition-colors hover:border-ink hover:bg-ink hover:text-softwhite sm:ml-1"
+                >
+                  <span className="font-syslabel text-[10px] uppercase tracking-[0.08em]">CONNECTED · READ ONLY</span>
+                  <span className="ml-2">USE YOUR OWN ACCOUNT <span aria-hidden="true">→</span></span>
                 </Link>
               </div>
             </div>
