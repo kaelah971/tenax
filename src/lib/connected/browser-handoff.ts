@@ -91,16 +91,14 @@ const pairingPayloadSchema = z
   })
   .strict();
 
-function defaultLaunchProtocol(): void {
-  if (typeof document === "undefined") return;
-  const link = document.createElement("a");
-  link.href = TENAX_PROTOCOL_URI;
-  link.target = "_blank";
-  link.rel = "noopener noreferrer";
-  link.hidden = true;
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+export function defaultLaunchProtocol(): void {
+  if (typeof document === "undefined" || !document.body) return;
+  const frame = document.createElement("iframe");
+  frame.src = TENAX_PROTOCOL_URI;
+  frame.hidden = true;
+  frame.setAttribute("aria-hidden", "true");
+  document.body.appendChild(frame);
+  globalThis.setTimeout(() => frame.remove(), 1_000);
 }
 
 function defaultDelay(milliseconds: number, signal: AbortSignal): Promise<void> {

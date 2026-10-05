@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it, vi } from "vitest";
 
 import {
+  defaultLaunchProtocol,
   runConnectedHandoff,
   type BrowserConnectState,
 } from "@/lib/connected/browser-handoff";
@@ -49,6 +50,43 @@ function pairing() {
 }
 
 describe("browser Connected Mode handoff", () => {
+  it("launches secret-free protocol in a transient iframe without replacing the current page", () => {
+    vi.useFakeTimers();
+    const frame = {
+      src: "",
+      hidden: false,
+      setAttribute: vi.fn(),
+      remove: vi.fn(),
+    };
+    const body = { appendChild: vi.fn() };
+    const currentPage = { href: "http://localhost:3000/app/connected" };
+    vi.stubGlobal("document", {
+      body,
+      createElement: vi.fn(() => frame),
+    } as unknown as Document);
+    vi.stubGlobal("window", { location: currentPage } as unknown as Window);
+
+    try {
+      defaultLaunchProtocol();
+
+      expect(frame.src).toBe("tenax://open");
+      expect(frame.src).not.toContain(PAIRING_CODE);
+      expect(frame.hidden).toBe(true);
+      expect(frame.setAttribute).toHaveBeenCalledWith("aria-hidden", "true");
+      expect(body.appendChild).toHaveBeenCalledWith(frame);
+      expect(frame.remove).not.toHaveBeenCalled();
+      expect(currentPage.href).toBe("http://localhost:3000/app/connected");
+
+      vi.advanceTimersByTime(999);
+      expect(frame.remove).not.toHaveBeenCalled();
+      vi.advanceTimersByTime(1);
+      expect(frame.remove).toHaveBeenCalledOnce();
+    } finally {
+      vi.useRealTimers();
+      vi.unstubAllGlobals();
+    }
+  });
+
   it("creates pairing internally, posts the secret only in the localhost body, and reaches CONNECTED", async () => {
     const bridge = makeFetch([
       { ok: true, state: "CONNECTOR_READY", errorCode: null },
@@ -123,16 +161,19 @@ describe("browser Connected Mode handoff", () => {
   it("stops bounded polling and reports connector not detected", async () => {
     const bridge = makeFetch([new Error("offline"), new Error("offline"), new Error("offline"), new Error("offline")]);
     const launchProtocol = vi.fn();
+    const states: BrowserConnectState[] = [];
     const result = await runConnectedHandoff(
       {
         serverOrigin: SERVER_ORIGIN,
         signal: new AbortController().signal,
         createPairing: async () => pairing(),
+        onState: (state) => states.push(state),
       },
       { fetchImpl: bridge.fetchImpl, launchProtocol, delay: async () => {}, maxPolls: 3 },
     );
 
     expect(result.outcome).toBe("CONNECTOR_NOT_DETECTED");
+    expect(states.at(-1)).toBe("CONNECTOR_NOT_DETECTED");
     expect(launchProtocol).toHaveBeenCalledOnce();
     expect(bridge.handoffBodies).toHaveLength(0);
     expect(bridge.statusCalls).toHaveLength(4);
@@ -192,6 +233,35 @@ describe("browser Connected Mode handoff", () => {
     expect(fetchImpl).toHaveBeenCalledOnce();
   });
 
+  it("allows one fresh bounded protocol launch on a retry", async () => {
+    const createPairing = vi
+      .fn()
+      .mockResolvedValueOnce({ pairingCode: "FIRST", expiresAt: EXPIRES_AT })
+      .mockResolvedValueOnce({ pairingCode: "SECOND", expiresAt: EXPIRES_AT });
+    const launches: string[] = [];
+
+    const run = async () => {
+      const bridge = makeFetch([new Error("offline"), new Error("offline")]);
+      const result = await runConnectedHandoff(
+        {
+          serverOrigin: SERVER_ORIGIN,
+          signal: new AbortController().signal,
+          createPairing,
+        },
+        { fetchImpl: bridge.fetchImpl, launchProtocol: () => launches.push("tenax://open"), delay: async () => {}, maxPolls: 1 },
+      );
+      expect(bridge.statusCalls).toHaveLength(2);
+      return result;
+    };
+
+    expect((await run()).outcome).toBe("CONNECTOR_NOT_DETECTED");
+    expect((await run()).outcome).toBe("CONNECTOR_NOT_DETECTED");
+    expect(createPairing).toHaveBeenCalledTimes(2);
+    expect(launches).toEqual(["tenax://open", "tenax://open"]);
+    expect(launches.join(" ")).not.toContain("FIRST");
+    expect(launches.join(" ")).not.toContain("SECOND");
+  });
+
   it("creates fresh pairing material on every retry", async () => {
     const createPairing = vi
       .fn()
@@ -236,6 +306,7 @@ describe("browser Connected Mode handoff", () => {
     expect(panel).toContain("COPY CODE");
     expect(panel).toContain("GENERATE NEW CODE");
     expect(panel).toContain("INSTALL TENAX CONNECTOR");
+    expect(panel).toContain("TRY AGAIN");
     expect(panel).toContain("INSTALLER UNAVAILABLE IN THIS DEVELOPMENT BUILD");
     expect(panel).toContain("/api/connected/installer");
     expect(panel).toContain("router.refresh");
@@ -243,6 +314,10 @@ describe("browser Connected Mode handoff", () => {
     expect(idleSection).not.toContain("pairingCode}");
     expect(handoff).toContain("credentials: \"omit\"");
     expect(handoff).toContain("TENAX_PROTOCOL_URI");
+    expect(handoff).toContain("createElement(\"iframe\")");
+    expect(handoff).toContain("frame.remove()");
+    expect(handoff).not.toContain('target = \"_blank\"');
+    expect(handoff).not.toContain("window.location");
     expect(handoff).not.toMatch(/BITGET_API_KEY|BITGET_SECRET_KEY|passphrase|secretKey|api\.bitget/i);
     expect(panel).not.toMatch(/BITGET_API_KEY|BITGET_SECRET_KEY|passphrase|secretKey|api\.bitget/i);
     expect(panel).toContain("flex-col");
