@@ -11,6 +11,7 @@ import {
 } from "@/lib/connected/browser-handoff";
 
 const EMPTY_CONNECTION_STATES = new Set(["NOT_CONNECTED", "DISCONNECTED", "ERROR"]);
+const LOCAL_INSTALLER_URL = "/api/connected/installer";
 
 type PairingPanelProps = {
   readonly connectionStatus: string;
@@ -30,6 +31,7 @@ type InstallerAvailability = {
 };
 
 function safeInstallerUrl(value: unknown): string | null {
+  if (value === LOCAL_INSTALLER_URL) return value;
   if (typeof value !== "string") return null;
   try {
     const url = new URL(value);

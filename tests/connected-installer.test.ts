@@ -1,4 +1,7 @@
 import { readFileSync } from "node:fs";
+import { mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import * as fsPromises from "node:fs/promises";
+import { tmpdir } from "node:os";
 import { resolve } from "node:path";
 
 import { afterEach, describe, expect, it, vi } from "vitest";
@@ -14,8 +17,30 @@ import {
 import { inspectConnectorRuntime } from "@/lib/connected/connector";
 import { parseSetupArgs, setupRuntimeArgs } from "@/lib/connected/windows-setup-args";
 
+vi.mock("node:fs/promises", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("node:fs/promises")>();
+  return { ...actual, lstat: vi.fn(actual.lstat), readFile: vi.fn(actual.readFile) };
+});
+
 const INSTALLER_URL = "https://downloads.example.com/tenax/tenax-connector-setup.exe";
 const INSTALL_EXE = "C:\\Users\\owner\\AppData\\Local\\Tenax\\Connector\\tenax-connector.exe";
+
+async function withTemporaryWorkingDirectory(run: (root: string) => Promise<void>): Promise<void> {
+  const root = await mkdtemp(resolve(tmpdir(), "tenax-installer-"));
+  const cwd = vi.spyOn(process, "cwd").mockReturnValue(root);
+  try {
+    await run(root);
+  } finally {
+    cwd.mockRestore();
+    await rm(root, { recursive: true, force: true });
+  }
+}
+
+async function writeExpectedInstaller(root: string, content: Buffer): Promise<void> {
+  const directory = resolve(root, "release", "tenax-connector");
+  await mkdir(directory, { recursive: true });
+  await writeFile(resolve(directory, "tenax-connector-setup.exe"), content);
+}
 
 afterEach(() => {
   vi.unstubAllEnvs();
@@ -60,16 +85,55 @@ describe("Windows Connector install contract", () => {
     expect(await invalid.json()).toEqual({ ok: false, code: "INSTALLER_UNAVAILABLE" });
   });
 
-  it("returns a genuine configured artifact only and stays honestly unavailable in development", async () => {
+  it("serves only the fixed local setup artifact in development", async () => {
+    await withTemporaryWorkingDirectory(async (root) => {
+      vi.stubEnv("NODE_ENV", "development");
+      const content = Buffer.from([0x4d, 0x5a, 0x54, 0x45, 0x4e, 0x41, 0x58]);
+
+      const unavailable = await GET(new Request("http://localhost:3000/api/connected/installer"));
+      expect(unavailable.status).toBe(404);
+      expect(await unavailable.json()).toEqual({ ok: false, code: "INSTALLER_UNAVAILABLE" });
+
+      await writeExpectedInstaller(root, content);
+      const metadata = await GET(new Request("http://localhost:3000/api/connected/installer", { headers: { Accept: "application/json" } }));
+      expect(metadata.status).toBe(200);
+      expect(await metadata.json()).toEqual({ ok: true, available: true, url: "/api/connected/installer" });
+
+      const download = await GET(new Request("http://localhost:3000/api/connected/installer"));
+      expect(download.status).toBe(200);
+      expect(download.headers.get("content-disposition")).toBe('attachment; filename="TenaxConnectorSetup.exe"');
+      expect(download.headers.get("content-type")).toBe("application/octet-stream");
+      expect(download.headers.get("content-length")).toBe(String(content.byteLength));
+      expect(download.headers.get("x-content-type-options")).toBe("nosniff");
+      expect(new Uint8Array(await download.arrayBuffer())).toEqual(new Uint8Array(content));
+
+      const arbitraryPath = await GET(new Request("http://localhost:3000/api/connected/installer?path=../../.env"));
+      expect(new Uint8Array(await arbitraryPath.arrayBuffer())).toEqual(new Uint8Array(content));
+    });
+  });
+
+  it("returns the configured production URL without reading the local release artifact", async () => {
+    await withTemporaryWorkingDirectory(async (root) => {
+      vi.stubEnv("NODE_ENV", "production");
+      vi.stubEnv("TENAX_CONNECTOR_INSTALLER_URL", INSTALLER_URL);
+      await writeExpectedInstaller(root, Buffer.from("local-only-artifact"));
+      vi.mocked(fsPromises.lstat).mockClear();
+      vi.mocked(fsPromises.readFile).mockClear();
+
+      const available = await GET();
+      expect(available.status).toBe(200);
+      expect(await available.json()).toEqual({ ok: true, available: true, url: INSTALLER_URL });
+      expect(fsPromises.lstat).not.toHaveBeenCalled();
+      expect(fsPromises.readFile).not.toHaveBeenCalled();
+    });
+  });
+
+  it("reports missing production configuration honestly", async () => {
+    vi.stubEnv("NODE_ENV", "production");
     vi.stubEnv("TENAX_CONNECTOR_INSTALLER_URL", "");
     const unavailable = await GET();
     expect(unavailable.status).toBe(404);
     expect(await unavailable.json()).toEqual({ ok: false, code: "INSTALLER_UNAVAILABLE" });
-
-    vi.stubEnv("TENAX_CONNECTOR_INSTALLER_URL", INSTALLER_URL);
-    const available = await GET();
-    expect(available.status).toBe(200);
-    expect(await available.json()).toEqual({ ok: true, available: true, url: INSTALLER_URL });
   });
 
   it("reports packaged runtime preflight without OAuth or provider access", () => {
