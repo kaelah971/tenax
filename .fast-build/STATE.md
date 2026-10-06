@@ -20,7 +20,8 @@
 
 ## Agentic Trading Evidence milestone
 - [x] Slice 1: Canonical Paper-Trading Run Ledger.
-- [ ] Slice 2: Judge Paper-Trading Log UI + Export.
+- [x] Slice 2: Judge Paper-Trading Log UI + Export.
+- [ ] Slice 3: Observed Outcome + Quantitative Metrics.
 
 ## Existing capabilities
 - Demo Mode and shared Bitget Demo adapters: working; must remain separate from Connected Mode.
@@ -33,14 +34,14 @@
 - Packaged runtime preflight: working outside the repo cwd; validates embedded Tenax origin, loopback bridge, SDK catalog, read-only operation boundary, metadata path, and safe fake handoff.
 
 ## Remaining MVP gaps
-- Judge paper-trading log UI and export remain the next evidence slice.
-- Sharpe, drawdown, win-rate, and risk-control effectiveness metrics require genuinely observed outcome series.
+- Observed outcome capture and quantitative metrics require genuinely observed market/settlement data.
+- Sharpe, drawdown, win-rate, and risk-control effectiveness metrics remain Slice 3.
 - Owner-controlled real OAuth/snapshot QA remains separately gated: durable Postgres, approved Bitget OAuth access, installed local connector, and explicit owner authorization are required.
 - Public release hosting/signing/configuration remains owner-side; experimental connector infrastructure is not public onboarding.
 
 ## Current slice
-- Agentic Trading Evidence Slice 1 complete: canonical paper/Demo run model, additive Postgres schema/repository, cycle wiring, idempotent reconciliation, and read-only summaries. No provider writes or invented outcomes.
-- Next work is the judge-visible paper-trading log UI + export slice.
+- Agentic Trading Evidence Slice 2 complete: judge-visible chronological run log, run detail evidence view, factual filters/counts, honest persistence states, CSV/JSON exports, and navigation. No metric invention or provider writes.
+- Next work is observed outcome capture + quantitative metrics.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -71,6 +72,7 @@
 - Documented PowerShell-friendly local build, install, HKCU verification, protocol launch, bridge status, preflight, and uninstall commands in `README.md`.
 - Fixed the packaged setup executable's zero-argument Node SEA argv shape: when SEA exposes the executable path as `argv[1]`, it is now discarded instead of parsed as an invalid user argument. Zero args installs; uninstall and invalid-argument semantics remain unchanged.
 - Added the canonical paper/Demo run ledger: validated run model with field-level provenance, additive Postgres DDL/repository, best-effort agent-cycle writes, idempotent activity/proof reconciliation, and chronological/filterable/aggregate data access. Unknown outcomes remain null.
+- Added `/app/paper-trading`, `/app/paper-trading/[runId]`, factual environment/authority/execution filters, truthful durable/ephemeral labels, CSV/JSON exports, and `PAPER TRADING` app navigation. Exports use canonical ledger rows only and leave unknown financial fields blank.
 
 ## Blockers
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
@@ -78,9 +80,9 @@
 - Public installer hosting and code signing remain release work; unsigned local SEA artifacts are acceptable for owner QA only.
 
 ## Verification
-- Paper ledger focused tests: 5 passed; relevant service/proof tests: 56 passed; full Vitest: 821 passed across 47 files.
+- Slice 2 UI/export tests: 7 passed; Slice 1 ledger tests: 5 passed; relevant service/proof tests: 56 passed; full Vitest: 823 passed across 48 files.
 - `npx tsc --noEmit`, `npm run lint`, Next production build, and `git diff --check` passed.
-- Ledger tests use fake flows, activity/proof records, injected Postgres clients, and fake public data; no provider writes, OAuth, or live Bitget calls were made.
+- UI/export tests use fixture ledger data; all ledger/provider tests use fake repositories/boundaries; no provider writes, OAuth, or live Bitget calls were made.
 
 ## Next action
-- Judge Paper-Trading Log UI + Export; do not start that slice in this invocation.
+- Observed Outcome + Quantitative Metrics; do not start that slice in this invocation.

@@ -9,6 +9,8 @@ import {
 } from "../proof/repository.ts";
 import {
   paperTradingRunSchema,
+  type PaperRunAuthorityOutcome,
+  type PaperRunExecutionStatus,
   type PaperTradingRun,
 } from "./paper-trading-run.ts";
 import { PAPER_TRADING_RUN_SCHEMA_SQL } from "./paper-trading-run-schema.ts";
@@ -24,6 +26,8 @@ export type PaperTradingRunDurabilityState = "DURABLE" | "EPHEMERAL" | "UNAVAILA
 export interface PaperTradingRunFilter {
   readonly environment?: "DRY_RUN" | "BITGET_DEMO";
   readonly status?: PaperTradingRun["status"];
+  readonly authorityOutcome?: PaperRunAuthorityOutcome;
+  readonly executionStatus?: PaperRunExecutionStatus;
   readonly symbol?: string;
   readonly limit?: number;
 }
@@ -86,6 +90,8 @@ export class InMemoryPaperTradingRunRepository implements PaperTradingRunReposit
     return sortRuns(this.rows.values())
       .filter((run) => (filter.environment ? run.environment === filter.environment : true))
       .filter((run) => (filter.status ? run.status === filter.status : true))
+      .filter((run) => (filter.authorityOutcome ? run.authority.outcome === filter.authorityOutcome : true))
+      .filter((run) => (filter.executionStatus ? run.execution.status === filter.executionStatus : true))
       .filter((run) => (filter.symbol ? run.symbol === filter.symbol : true))
       .slice(0, limit);
   }
@@ -231,6 +237,14 @@ export class PostgresPaperTradingRunRepository implements PaperTradingRunReposit
       values.push(filter.status);
       clauses.push(`status = $${values.length}`);
     }
+    if (filter.authorityOutcome) {
+      values.push(filter.authorityOutcome);
+      clauses.push(`authority_outcome = $${values.length}`);
+    }
+    if (filter.executionStatus) {
+      values.push(filter.executionStatus);
+      clauses.push(`execution_status = $${values.length}`);
+    }
     if (filter.symbol) {
       values.push(filter.symbol);
       clauses.push(`symbol = $${values.length}`);
@@ -259,6 +273,14 @@ export class PostgresPaperTradingRunRepository implements PaperTradingRunReposit
     if (filter.status) {
       values.push(filter.status);
       clauses.push(`status = $${values.length}`);
+    }
+    if (filter.authorityOutcome) {
+      values.push(filter.authorityOutcome);
+      clauses.push(`authority_outcome = $${values.length}`);
+    }
+    if (filter.executionStatus) {
+      values.push(filter.executionStatus);
+      clauses.push(`execution_status = $${values.length}`);
     }
     if (filter.symbol) {
       values.push(filter.symbol);
