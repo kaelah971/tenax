@@ -36,10 +36,13 @@ describe("Landing Page & Judge Journey (Phase B7)", () => {
       expect(landingSource).toContain(
         "Tenax lets tokenized equity holders define standing protection mandates.",
       );
-      expect(landingSource).toContain("AI recommends what to do.");
+      expect(landingSource).toContain("AI analyzes the event and proposes what to do.");
       expect(landingSource).toContain(
         "Deterministic rules decide what the agent is actually allowed to execute.",
       );
+      expect(landingSource).toContain("AGENTIC TRADING");
+      expect(landingSource).toContain("CROSS-ASSET EXECUTION AGENT");
+      expect(landingSource).toContain("EVENT → DECISION → EXECUTION → PROOF");
     });
 
     it("has working primary and secondary judge CTAs", () => {
@@ -50,8 +53,12 @@ describe("Landing Page & Judge Journey (Phase B7)", () => {
       expect(landingSource).toContain('href="/app/mandate"');
       expect(landingSource).toContain("INSPECT STANDING MANDATE");
       expect(landingSource).toContain('href="/app/connected"');
-      expect(landingSource).toContain("USE YOUR OWN ACCOUNT");
-      expect(landingSource).toContain("CONNECTED · READ ONLY");
+      expect(landingSource).toContain("PERSONAL BITGET ACCOUNTS");
+      expect(landingSource).toContain("Bring your own portfolio into Tenax.");
+      expect(landingSource).toContain("COMING SOON — HOSTED CONNECTION");
+      expect(landingSource).not.toContain("USE YOUR OWN ACCOUNT");
+      expect(landingSource).not.toContain("CONNECTED · READ ONLY");
+      expect(landingSource).not.toContain("INSTALL TENAX CONNECTOR");
       expect(landingSource).not.toContain("CONNECTED USER TRADING");
     });
 
@@ -195,7 +202,7 @@ describe("Landing Page & Judge Journey (Phase B7)", () => {
       expect(landingSource).toContain('href="/app/mandate"');
       expect(landingSource).toContain('href="/app/proof"');
       expect(landingSource).toContain('href="/app/activity"');
-      expect(landingSource).toContain("CONNECTED");
+      expect(landingSource).toContain("PERSONAL ACCOUNTS");
       expect(landingSource).toContain('href="/app/connected"');
     });
 

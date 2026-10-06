@@ -61,21 +61,20 @@ describe("Connected Account UI truth states", () => {
     expect(snapshot.positions).toHaveLength(0);
   });
 
-  it("pins the personal-account boundary, stale retention, and no-invention copy", () => {
+  it("shows hosted personal-account connection as coming soon and keeps Demo entry available", () => {
     const page = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "page.tsx"), "utf8");
-    const panel = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "AccountSnapshotPanel.tsx"), "utf8");
-    const disconnectButton = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "DisconnectButton.tsx"), "utf8");
-    const disconnectRoute = readFileSync(resolve(process.cwd(), "src", "app", "api", "connected", "disconnect", "route.ts"), "utf8");
-    const repository = readFileSync(resolve(process.cwd(), "src", "lib", "connected", "repository.ts"), "utf8");
-    expect(panel).toContain("CONNECTED ACCOUNT · YOUR BITGET DATA");
-    expect(page).toContain("DEMO MODE");
-    expect(page).toContain("This session never reads the shared Demo account.");
-    expect(panel).toContain("SYNC STALE · LAST KNOWN DATA RETAINED");
-    expect(disconnectButton).toContain("DISCONNECT BITGET");
-    expect(panel).toContain("Tenax can no longer accept snapshots from this connection.");
-    expect(disconnectRoute).toContain("isSameOrigin");
-    expect(repository).toContain("sync_token_hash = NULL");
-    expect(panel).toContain("No balances or positions are fabricated here.");
-    expect(panel).not.toContain("$0");
+    expect(page).toContain("PERSONAL BITGET ACCOUNTS");
+    expect(page).toContain("Bring your own portfolio into Tenax.");
+    expect(page).toContain("COMING SOON — HOSTED CONNECTION");
+    expect(page).toContain("No installation is required for the main Tenax experience.");
+    expect(page).toContain("Personal-account trading is not enabled.");
+    expect(page).toContain('href="/app/protect/nvidia"');
+    expect(page).toContain("LAUNCH NVIDIA PROTECTION");
+    expect(page).not.toContain("CONNECT BITGET");
+    expect(page).not.toContain("INSTALL TENAX CONNECTOR");
+    expect(page).not.toContain("TRY AGAIN");
+    expect(page).not.toContain("PAIRING CODE");
+    expect(page).not.toContain("127.0.0.1");
+    expect(page).not.toContain("TENAX CONNECTOR NOT DETECTED");
   });
 });

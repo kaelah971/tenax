@@ -21,6 +21,37 @@ The first demonstration is autonomous protection for simulated NVIDIA exposure, 
 
 The point is not to make an AI sound confident. The point is to make its authority inspectable.
 
+## Hackathon positioning
+
+**Track:** Track 2 — Agentic Trading<br />
+**Sub-theme:** Cross-Asset Execution Agent
+
+Tenax demonstrates a complete:
+
+```text
+EVENT → DECISION → EXECUTION
+```
+
+The current proof is NVIDIA exposure around changing market conditions:
+
+```text
+NVIDIA exposure / market event
+      →
+LLM reasoning and protection proposal
+      →
+Deterministic Standing Mandate
+      →
+EXECUTE / ESCALATE / REFUSE
+      →
+Bitget Demo where permitted
+      →
+Durable decision proof
+```
+
+The LLM is the primary trading decision-maker and proposer. The deterministic authority layer does not choose the trade; it governs whether the LLM's decision has permission to execute.
+
+> Other agents decide what to trade. Tenax decides what they are allowed to do with the capital.
+
 ## The problem
 
 AI can increasingly decide what financial action it wants to take. The harder problem is:
@@ -153,9 +184,21 @@ With `DATABASE_URL` configured, proof is stored in PostgreSQL and survives brows
 
 Historical proof is historical evidence. It records what Tenax decided at that time; it does not prove that a position is still open, that capital is still protected, or that the user is profitable now.
 
-## Connected Mode
+## Personal Bitget accounts
 
-**Connected Mode is read only today.** It is the personal Bitget account path, separate from the shared Demo experience.
+**COMING SOON — HOSTED CONNECTION**
+
+Bring your own portfolio into Tenax. The public `/app/connected` surface is an informational coming-soon page for a future browser-native hosted account connection.
+
+The main Tenax experience is available immediately through simulated NVIDIA exposure, shared Bitget Demo capital, deterministic Standing Mandates, and durable decision proof. No installation is required for that experience.
+
+Personal-account trading and autonomous execution are not enabled.
+
+## Experimental connector infrastructure
+
+The repository retains a local Tenax Connector as experimental infrastructure for engineering and owner QA. It is not the public onboarding path and normal users are not asked to install it, download an executable, use PowerShell, or copy pairing codes.
+
+The experimental architecture is:
 
 ```text
 User Bitget Account
@@ -170,46 +213,10 @@ Read-only account / assets / positions
       →
 Sanitized snapshot
       →
-Tenax Connected Mode
+Experimental Connected Mode boundary
 ```
 
-Connected Mode currently supports:
-
-- a personal Bitget connection;
-- sanitized assets and positions;
-- last-sync, awaiting-sync, stale, disconnected, and error states;
-- authenticated disconnect and reconnect through a fresh pairing;
-- connection-scoped sanitized snapshot syncing.
-
-Connected Mode currently does **not** support:
-
-- personal-account trading;
-- autonomous execution on a personal Bitget account;
-- connected-user mandates that can write to a personal account.
-
-The Connected Mode surface explicitly displays `READ ONLY` and does not read the shared Demo account.
-
-## The Tenax Connector
-
-The local connector exists to keep the personal credential boundary on the owner's device while the web app receives only sanitized account information.
-
-The intended user flow is:
-
-```text
-Open Tenax
-      →
-CONNECT BITGET
-      →
-Install Tenax Connector once, if needed
-      →
-Approve Bitget locally
-      →
-Connected · READ ONLY
-```
-
-Normal users should not need PowerShell, Node commands, manual registry editing, or manual pairing codes. Those are engineering and owner-QA tools, not the product path.
-
-Current connector security properties:
+The connector infrastructure currently includes the following security properties:
 
 - loopback-only bridge on `127.0.0.1:43127`;
 - strict browser Origin validation;
@@ -224,17 +231,17 @@ Current connector security properties:
 
 The Windows connector is packaged as a per-user executable using Node SEA. Generated release binaries stay outside source control under `release/tenax-connector/`.
 
-## Demo Mode vs Connected Mode
+## Demo Mode vs Personal accounts
 
-| | Demo Mode | Connected Mode |
+| | Demo Mode | Personal accounts |
 | --- | --- | --- |
-| Account | Shared Bitget Demo environment | User's own Bitget account |
-| Funds | Virtual funds | Personal account data; no Tenax trading |
-| Purpose | Judge-friendly autonomous mandate demonstration | Private account boundary and read-only sync |
-| Credentials | Server-side Demo configuration when explicitly enabled | Local connector device |
-| Authority | Standing Mandate can drive the Demo agent cycle | Read-only today |
-| Execution | `DRY_RUN` by default; gated `BITGET_DEMO` path | No personal execution |
-| Proof | Decision receipt and proof ledger | Connection/snapshot status, not personal trade proof |
+| Account | Shared Bitget Demo environment | Hosted connection coming soon |
+| Funds | Virtual funds | Personal account access not enabled |
+| Purpose | Judge-friendly autonomous mandate demonstration | Future private portfolio boundary |
+| Credentials | Server-side Demo configuration when explicitly enabled | Hosted design pending; no public connector onboarding |
+| Authority | Standing Mandate can drive the Demo agent cycle | Not available |
+| Execution | `DRY_RUN` by default; gated `BITGET_DEMO` path | Personal-account trading not enabled |
+| Proof | Decision receipt and proof ledger | No personal execution proof yet |
 
 ## Safety model
 
@@ -283,7 +290,7 @@ Tenax's safety boundary is implemented in code, not in a prompt:
 └──────────────┘  └──────────────────────┘
 ```
 
-### Personal account boundary
+### Experimental personal-account infrastructure
 
 ```text
 ┌──────────────────────────┐
@@ -301,7 +308,7 @@ Tenax's safety boundary is implemented in code, not in a prompt:
 └──────────────────────────┘
 ```
 
-The two paths are intentionally different. Demo Mode proves bounded autonomous protection. Connected Mode proves the personal credential and account-data boundary without implying personal trading is available.
+The product path is immediate: Demo Mode proves bounded autonomous protection today. The personal-account path is retained as experimental infrastructure while hosted onboarding is designed; personal trading is not enabled.
 
 ## Notifications
 
@@ -356,7 +363,7 @@ This repository does not ship a tracked `.env.example`. Create the ignored `.env
 if (Test-Path .env.example) { Copy-Item .env.example .env.local }
 ```
 
-Never commit `.env.local`, API keys, OAuth credentials, database URLs, or connector metadata. Durable Connected Mode and durable proof require a valid server-side `DATABASE_URL`.
+Never commit `.env.local`, API keys, OAuth credentials, database URLs, or connector metadata. Future hosted personal-account state and durable proof require a valid server-side `DATABASE_URL`.
 
 Run the app and verification commands with npm:
 
@@ -384,7 +391,7 @@ Generated binaries are written to and remain ignored under:
 release/tenax-connector/
 ```
 
-The expected setup artifact is `release/tenax-connector/tenax-connector-setup.exe`. The web Connected Mode install button serves that ignored local artifact only in development. Public production hosting uses the configured `TENAX_CONNECTOR_INSTALLER_URL` release URL instead.
+The expected setup artifact is `release/tenax-connector/tenax-connector-setup.exe`. The installer route and packaged connector remain experimental development/owner-QA infrastructure; public `/app/connected` does not expose installer onboarding. Public hosted deployment is a future capability, not a current personal-account flow.
 
 ## Current product truth
 
@@ -399,11 +406,12 @@ The expected setup artifact is `release/tenax-connector/tenax-connector-setup.ex
 | In-app notifications | Implemented |
 | Browser notifications | Implemented as explicit opt-in foreground/session alerts |
 | Telegram notifications | Implemented as optional best-effort delivery |
-| Personal Bitget connection | Implemented through the local connector and local OAuth boundary |
-| Personal asset / position sync | Implemented as sanitized read-only snapshots |
-| Local credential boundary | Implemented: credentials remain on the connector device |
-| Personal Bitget trading | Not available |
-| Autonomous personal-account execution | Not available |
+| Personal Bitget connection infrastructure | Experimental local connector/OAuth boundary; not public onboarding |
+| Hosted personal-account onboarding | Coming soon — hosted connection |
+| Personal asset / position sync | Experimental sanitized read-only snapshot infrastructure |
+| Local credential boundary | Experimental connector security boundary |
+| Personal Bitget trading | Not enabled |
+| Autonomous personal-account execution | Not enabled |
 
 ## Why Tenax matters
 
@@ -425,12 +433,11 @@ Tenax is building that boundary.
 
 Near-term work is deliberately grounded in the current product boundary:
 
-- complete real Connected Mode owner QA;
-- production connector distribution and release hosting;
-- code signing for the Windows installer;
-- improve production Bitget public-data reliability;
+- design and ship the browser-native hosted personal-account connection;
 - strengthen per-user mandate ownership and account isolation;
-- strengthen per-user proof isolation.
+- strengthen per-user proof isolation;
+- improve production Bitget public-data reliability;
+- retain the local connector as separately gated experimental infrastructure, including owner QA and eventual signing if it remains useful.
 
 Later direction, not current capability:
 

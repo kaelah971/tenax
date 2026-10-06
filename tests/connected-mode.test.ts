@@ -171,8 +171,9 @@ describe("Connected Mode session and tenant boundary", () => {
     const page = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "page.tsx"), "utf8");
     expect(route).not.toContain("BITGET_API_KEY");
     expect(route).not.toContain("BITGET_SECRET_KEY");
-    expect(page).toContain("READ ONLY");
-    expect(page).toContain("PROVIDER TRADE CAPABILITY");
+    expect(page).toContain("PERSONAL BITGET ACCOUNTS");
+    expect(page).toContain("COMING SOON — HOSTED CONNECTION");
+    expect(page).not.toContain("CONNECT BITGET");
     expect(readFileSync(resolve(connectedRoot, "repository.ts"), "utf8")).not.toContain("BITGET_API_KEY");
   });
 
@@ -180,9 +181,10 @@ describe("Connected Mode session and tenant boundary", () => {
     const shell = readFileSync(resolve(process.cwd(), "src", "app", "app", "_components", "ShellNav.tsx"), "utf8");
     const page = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "page.tsx"), "utf8");
     expect(shell).toContain('href: "/app/connected"');
-    expect(page).toContain("DEMO MODE");
-    expect(page).toContain("CONNECTED MODE");
-    expect(page).toContain("This session never reads the shared Demo account.");
+    expect(page).toContain("TENAX NOW");
+    expect(page).toContain("LAUNCH NVIDIA PROTECTION");
+    expect(page).toContain("COMING SOON — HOSTED CONNECTION");
+    expect(page).not.toContain("INSTALL TENAX CONNECTOR");
   });
 
   it("keeps the public overview strict and nullable before a connection exists", () => {

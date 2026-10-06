@@ -365,16 +365,23 @@ describe("browser Connected Mode handoff", () => {
     expect(bodies.map((body) => body.pairingCode)).toEqual(["FIRST", "SECOND"]);
   });
 
-  it("keeps the normal UI one-click, fallback-only, read-only, and refreshes the server page", () => {
+  it("keeps public Connected Mode informational while preserving experimental handoff contracts", () => {
     const panel = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "PairingPanel.tsx"), "utf8");
     const page = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "page.tsx"), "utf8");
     const handoff = readFileSync(resolve(process.cwd(), "src", "lib", "connected", "browser-handoff.ts"), "utf8");
     const idleSection = panel.slice(panel.indexOf('{state === "IDLE"'), panel.indexOf('{pairing && !connected'));
     const finallyBlock = panel.slice(panel.indexOf("    } finally {"), panel.indexOf("    } finally {") + 220);
 
-    expect(page).toContain("CONNECT YOUR BITGET ACCOUNT");
-    expect(page).toContain("Your Bitget credentials stay on this device.");
-    expect(page).toContain("Tenax receives only sanitized account information.");
+    expect(page).toContain("PERSONAL BITGET ACCOUNTS");
+    expect(page).toContain("Bring your own portfolio into Tenax.");
+    expect(page).toContain("COMING SOON — HOSTED CONNECTION");
+    expect(page).toContain("LAUNCH NVIDIA PROTECTION");
+    expect(page).not.toContain("CONNECT BITGET");
+    expect(page).not.toContain("INSTALL TENAX CONNECTOR");
+    expect(page).not.toContain("TRY AGAIN");
+    expect(page).not.toContain("PAIRING CODE");
+    expect(page).not.toContain("127.0.0.1");
+    expect(page).not.toContain("TENAX CONNECTOR NOT DETECTED");
     expect(panel).toContain("CONNECT BITGET");
     expect(panel).toContain("SHOW MANUAL PAIRING CODE");
     expect(panel).toContain("COPY CODE");

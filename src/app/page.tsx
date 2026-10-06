@@ -136,7 +136,7 @@ export default async function LandingPage() {
               href="/app/connected"
               className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-softwhite/80 transition-colors hover:text-signal"
             >
-              CONNECTED
+              PERSONAL ACCOUNTS
             </Link>
           </nav>
 
@@ -192,7 +192,7 @@ export default async function LandingPage() {
                 href="/app/connected"
                 className="font-syslabel rounded-[6px] px-3 py-2 text-[12px] uppercase tracking-[0.08em] text-softwhite/90 hover:bg-softwhite/5 hover:text-signal"
               >
-                CONNECTED
+                PERSONAL ACCOUNTS
               </Link>
             </div>
           </details>
@@ -205,7 +205,7 @@ export default async function LandingPage() {
         <section aria-label="Hero" className="relative flex flex-col gap-8 pt-4">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-              BOUNDED AUTONOMY FOR TOKENIZED EQUITIES · INSTITUTIONAL RISK INFRASTRUCTURE
+              AGENTIC TRADING · CROSS-ASSET EXECUTION AGENT · BOUNDED AUTONOMY FOR TOKENIZED EQUITIES
             </p>
             <div className="inline-flex items-center gap-2">
               <LiveDot label="PROTOCOL ACTIVE" />
@@ -219,7 +219,10 @@ export default async function LandingPage() {
                 <span className="block">Not unlimited control of your capital.</span>
               </h1>
               <p className="max-w-2xl text-[16px] leading-[26px] text-mutedink sm:text-[19px] sm:leading-[30px]">
-                Tenax lets tokenized equity holders define standing protection mandates. AI recommends what to do. Deterministic rules decide what the agent is actually allowed to execute.
+                Tenax lets tokenized equity holders define standing protection mandates. AI analyzes the event and proposes what to do. Deterministic rules decide what the agent is actually allowed to execute.
+              </p>
+              <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">
+                EVENT → DECISION → EXECUTION → PROOF
               </p>
 
               {/* Action Buttons Row */}
@@ -246,8 +249,9 @@ export default async function LandingPage() {
                   href="/app/connected"
                   className="inline-flex min-h-11 self-start items-center justify-center rounded-[9px] border border-ink/25 bg-softwhite/60 px-4 py-2.5 text-left text-[12px] font-bold leading-[16px] tracking-[0.02em] text-ink transition-colors hover:border-ink hover:bg-ink hover:text-softwhite sm:ml-1"
                 >
-                  <span className="font-syslabel text-[10px] uppercase tracking-[0.08em]">CONNECTED · READ ONLY</span>
-                  <span className="ml-2">USE YOUR OWN ACCOUNT <span aria-hidden="true">→</span></span>
+                  <span className="font-syslabel text-[10px] uppercase tracking-[0.08em]">PERSONAL BITGET ACCOUNTS</span>
+                  <span className="ml-2">Bring your own portfolio into Tenax.</span>
+                  <span className="ml-2 font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">COMING SOON — HOSTED CONNECTION</span>
                 </Link>
               </div>
             </div>
