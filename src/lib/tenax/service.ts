@@ -104,6 +104,7 @@ import type { ActivityEvent, ActivityEventDetails, ActivityEventType } from "./a
 import { notifyForActivityEvent } from "./notifications";
 import { dispatchTelegramForNotification } from "../telegram/delivery";
 import { ProofPersistenceError, recordJudgeProof } from "../proof/seam";
+import { persistPaperTradingCycle, persistPaperTradingRun } from "./paper-trading-run-service.ts";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -231,11 +232,13 @@ async function emitActivityAndAwaitProof(
   nowMs: number = Date.now(),
 ): Promise<ActivityEvent> {
   const event = emitActivity(store, input, nowMs);
+  let proof = null;
   try {
-    await recordJudgeProof(store, event);
+    proof = await recordJudgeProof(store, event);
   } catch (error) {
     if (!(error instanceof ProofPersistenceError)) throw error;
   }
+  await persistPaperTradingRun({ store, event, proof, nowMs });
   return event;
 }
 
@@ -1317,15 +1320,33 @@ export async function runProtectionAgentCycle(
   const proposal = analysis.proposal;
   const modelDecision = analysis.reasoning.kind === "model" ? (ctx.aiAudit?.decision ?? null) : null;
   if (modelDecision !== null && modelDecision !== "PROTECT") {
+    await persistPaperTradingCycle({
+      store,
+      flowId,
+      terminal: { status: "NO_ACTION", authorityOutcome: "NO_ACTION", reasonCodes: [`ai_${modelDecision.toLowerCase()}`], createdAt: new Date(nowMs).toISOString() },
+      nowMs,
+    });
     return { outcome: "NO_ACTION", flowId, state: flow.getFlowState(), aiDecision: modelDecision };
   }
   if (!(proposal.protectionPct > 0) || !(analysis.authority.calculatedTradeValueUsdt > 0)) {
+    await persistPaperTradingCycle({
+      store,
+      flowId,
+      terminal: { status: "NO_ACTION", authorityOutcome: "NO_ACTION", reasonCodes: ["zero_proposal"], createdAt: new Date(nowMs).toISOString() },
+      nowMs,
+    });
     return { outcome: "NO_ACTION", flowId, state: flow.getFlowState(), aiDecision: modelDecision };
   }
 
   // 3. Deterministic policy re-evaluation from the STORED proposal.
   const fresh = evaluateMandate(proposal, MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE);
   if (fresh.verdict !== "PASS") {
+    await persistPaperTradingCycle({
+      store,
+      flowId,
+      terminal: { status: "REFUSED", authorityOutcome: "REFUSE", reasonCodes: [...fresh.failedRules], createdAt: new Date(nowMs).toISOString() },
+      nowMs,
+    });
     return {
       outcome: "POLICY_REFUSED",
       flowId,
@@ -1408,6 +1429,12 @@ export async function runProtectionAgentCycle(
   // 4–5. Standing authority: fresh mandate, fresh evaluation.
   const mandate = getActiveStandingMandate(store);
   if (!mandate) {
+    await persistPaperTradingCycle({
+      store,
+      flowId,
+      terminal: { status: "REFUSED", authorityOutcome: "REFUSE", reasonCodes: ["no_standing_mandate"], createdAt: new Date(nowMs).toISOString() },
+      nowMs,
+    });
     return { outcome: "NO_STANDING_MANDATE", flowId, state: flow.getFlowState() };
   }
   const analyzedAt = flow.getContext().analyzedAt;

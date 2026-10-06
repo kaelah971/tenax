@@ -185,7 +185,7 @@ export function getPostgresConfigReason(connectionString: string): string | null
 
 // The pg driver remains server-only and is loaded lazily so builds and
 // tests without DATABASE_URL never touch the driver.
-async function defaultPgClientFactory(connectionString: string) {
+export async function defaultPgClientFactory(connectionString: string) {
   const config = parsePostgresConfig(connectionString);
   const pg = await import("pg");
   return new pg.Client({

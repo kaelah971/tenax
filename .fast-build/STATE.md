@@ -2,8 +2,8 @@
 
 ## Product
 - Name: Tenax
-- Outcome: Let a visitor inspect their own Bitget account in a session-scoped, read-only Connected Mode without moving credentials to Tenax.
-- Primary demo path: Demo Mode remains instant; Connected Mode provisions a durable session, pairs a local connector later, then shows sanitized personal account state.
+- Outcome: Demonstrate an agentic NVIDIA protection decision with deterministic authority, permitted Bitget Demo execution, and durable evidence.
+- Primary demo path: NVIDIA exposure/event → LLM proposal → Standing Mandate → EXECUTE / ESCALATE / REFUSE → Bitget Demo or DRY_RUN → proof.
 
 ## MVP slices
 - [x] Slice 1: Durable tenant/session boundary, connected data model, and Connected Mode shell.
@@ -18,22 +18,29 @@
 - [x] Slice 3: Install, registration, and manual fallback UX.
 - [x] Slice 4: Packaging and owner QA readiness.
 
+## Agentic Trading Evidence milestone
+- [x] Slice 1: Canonical Paper-Trading Run Ledger.
+- [ ] Slice 2: Judge Paper-Trading Log UI + Export.
+
 ## Existing capabilities
 - Demo Mode and shared Bitget Demo adapters: working; must remain separate from Connected Mode.
 - Public market-data adapters and server-side Demo execution guards: working; not reused for connected accounts.
 - Durable Postgres proof ledger: working; Connected Mode gets separate ownership tables.
+- Canonical paper/Demo run ledger: working, additive Postgres repository plus idempotent reconciliation/read-only summaries.
 - Auth/session layer for personal accounts: working for Connected Mode.
 - Local connector bridge: working on `127.0.0.1:43127`; fixed `POST /v1/handoff` and safe `GET /v1/status` contract.
 - Windows connector packaging: working via a release-time Node SEA build; no binary is committed or required in development.
 - Packaged runtime preflight: working outside the repo cwd; validates embedded Tenax origin, loopback bridge, SDK catalog, read-only operation boundary, metadata path, and safe fake handoff.
 
 ## Remaining MVP gaps
-- Owner-controlled real OAuth/snapshot QA remains: durable Postgres, approved Bitget OAuth access, installed local connector, and explicit owner authorization are required.
-- Public release hosting/signing/configuration remains owner-side: `TENAX_CONNECTOR_INSTALLER_URL` must point to a real HTTPS setup artifact before the web install button enables.
+- Judge paper-trading log UI and export remain the next evidence slice.
+- Sharpe, drawdown, win-rate, and risk-control effectiveness metrics require genuinely observed outcome series.
+- Owner-controlled real OAuth/snapshot QA remains separately gated: durable Postgres, approved Bitget OAuth access, installed local connector, and explicit owner authorization are required.
+- Public release hosting/signing/configuration remains owner-side; experimental connector infrastructure is not public onboarding.
 
 ## Current slice
-- Local Connector UX Slice 4 complete: localhost QA build profile, embedded exact server origin, packaged preflight, arbitrary-cwd runtime verification, safe fake packaged handoff, and exact owner install/verify/uninstall commands. No live OAuth or connected execution.
-- Local Connector UX milestone is code-complete; next work is owner-controlled real OAuth QA, not another implementation slice.
+- Agentic Trading Evidence Slice 1 complete: canonical paper/Demo run model, additive Postgres schema/repository, cycle wiring, idempotent reconciliation, and read-only summaries. No provider writes or invented outcomes.
+- Next work is the judge-visible paper-trading log UI + export slice.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -63,6 +70,7 @@
 - Embedded the exact build-time origin into connector SEA bundles. Local QA accepts `http://localhost:3000`; production builds require their explicit public HTTPS origin and do not silently trust localhost.
 - Documented PowerShell-friendly local build, install, HKCU verification, protocol launch, bridge status, preflight, and uninstall commands in `README.md`.
 - Fixed the packaged setup executable's zero-argument Node SEA argv shape: when SEA exposes the executable path as `argv[1]`, it is now discarded instead of parsed as an invalid user argument. Zero args installs; uninstall and invalid-argument semantics remain unchanged.
+- Added the canonical paper/Demo run ledger: validated run model with field-level provenance, additive Postgres DDL/repository, best-effort agent-cycle writes, idempotent activity/proof reconciliation, and chronological/filterable/aggregate data access. Unknown outcomes remain null.
 
 ## Blockers
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
@@ -70,10 +78,9 @@
 - Public installer hosting and code signing remain release work; unsigned local SEA artifacts are acceptable for owner QA only.
 
 ## Verification
-- Focused installer/browser/bridge/pairing tests: 29 passed across 4 files; full Vitest: 809 passed across 46 files.
-- `npx tsc --noEmit`, `npm run lint`, Next production build, `npm run build:connector -- --server-origin http://localhost:3000`, packaged preflight and fake handoff from an arbitrary cwd, setup `--help`, CLI node checks, and `git diff --check` passed.
-- Automated tests and preflight use fake HTTP/OAuth/provider/registry boundaries only; no registry mutation, live OAuth, or Bitget calls were made.
-- Installer regression: 6 focused tests pass, including SEA duplicate-executable argv → INSTALL selection. Rebuilt localhost setup executable installed the connector into an isolated `%LOCALAPPDATA%` root, registered `HKCU\\Software\\Classes\\tenax`, rejected invalid args, and cleanly uninstalled the runtime and protocol key.
+- Paper ledger focused tests: 5 passed; relevant service/proof tests: 56 passed; full Vitest: 821 passed across 47 files.
+- `npx tsc --noEmit`, `npm run lint`, Next production build, and `git diff --check` passed.
+- Ledger tests use fake flows, activity/proof records, injected Postgres clients, and fake public data; no provider writes, OAuth, or live Bitget calls were made.
 
 ## Next action
-- Local Connector UX is code-complete. Await explicit owner OAuth QA; do not start another implementation slice automatically.
+- Judge Paper-Trading Log UI + Export; do not start that slice in this invocation.
