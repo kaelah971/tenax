@@ -98,3 +98,8 @@
 
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
+
+## Preflight 2026-10-06 (no write, GENUINE_AI_NO_ACTION)
+- Owner fixed `.env.local` (single TENAX_ANALYSIS_MODE=ai; DATABASE_URL rejoined, len 128) and flattened the Demo position.
+- Verified: env single-ai + groq/openai/gpt-oss-120b + BITGET_DEMO/demo + creds present + no live-money path; Postgres DURABLE on both ledgers (runs 0, proofs 1) after one Neon cold-start retry; Demo discovery overall PASS with currentPosition NONE, pending NVDAUSDT orders 0, hedge_mode/crossed/1x, mark 239.7.
+- Fresh genuine AI inference (new pack hash, overall PASS) decided WAIT: unverified earnings date, simulated exposure only, no live ownership. No override attempted; no authority run (nothing actionable); no order preview constructed; no ledger writes. Focused tests 25/25 pass. No code changes, no commit.
