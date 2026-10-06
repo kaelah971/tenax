@@ -1,4 +1,5 @@
 import type { PaperTradingRun } from "./paper-trading-run.ts";
+import type { PaperTradingMetrics } from "./paper-trading-metrics.ts";
 import type { PaperTradingRunDurabilityState, PaperTradingRunSummary } from "./paper-trading-run-repository.ts";
 
 export const PAPER_TRADING_CSV_FIELDS = [
@@ -24,11 +25,21 @@ export const PAPER_TRADING_CSV_FIELDS = [
   "side",
   "size",
   "fill_price",
-  "fees",
+  "execution_fees",
   "outcome_status",
+  "outcome_state",
   "mark_price",
+  "mark_observed_at",
+  "mark_pnl",
+  "mark_return_pct",
   "exit_price",
-  "pnl",
+  "exit_size",
+  "exit_observed_at",
+  "exit_provider_order_id",
+  "realized_pnl",
+  "realized_return_pct",
+  "fees",
+  "net_realized_pnl",
   "pnl_observed_at",
 ] as const;
 
@@ -39,7 +50,6 @@ function csvValue(value: unknown): string {
 }
 
 function csvRow(run: PaperTradingRun): string[] {
-  const pnl = run.outcome.realizedPnlUsdt ?? run.outcome.unrealizedPnlUsdt;
   const pnlObservedAt = run.outcome.realizedPnlUsdt !== null ? run.outcome.exitAt : run.outcome.markAt;
   return [
     run.runId,
@@ -66,9 +76,19 @@ function csvRow(run: PaperTradingRun): string[] {
     run.execution.price,
     run.execution.fees,
     run.status,
+    run.outcome.outcomeState,
     run.outcome.markPrice,
+    run.outcome.markAt,
+    run.outcome.markPnlUsdt,
+    run.outcome.markReturnPct,
     run.outcome.exitPrice,
-    pnl,
+    run.outcome.exitSize,
+    run.outcome.exitAt,
+    run.outcome.exitProviderOrderId,
+    run.outcome.realizedPnlUsdt,
+    run.outcome.realizedReturnPct,
+    run.outcome.feesUsdt,
+    run.outcome.netRealizedPnlUsdt,
     pnlObservedAt,
   ].map(csvValue);
 }
@@ -81,6 +101,7 @@ export function paperTradingExportPayload(input: {
   readonly exportedAt: string;
   readonly persistence: PaperTradingRunDurabilityState;
   readonly aggregates: PaperTradingRunSummary;
+  readonly metrics: PaperTradingMetrics;
   readonly runs: readonly PaperTradingRun[];
 }) {
   return {
@@ -89,6 +110,7 @@ export function paperTradingExportPayload(input: {
     source: "TENAX_RUN_LEDGER" as const,
     persistence: input.persistence,
     aggregates: input.aggregates,
+    metrics: input.metrics,
     runs: [...input.runs].reverse(),
   };
 }

@@ -4,6 +4,7 @@ import { resolve } from "node:path";
 import { describe, expect, it } from "vitest";
 
 import { buildPaperTradingRun } from "@/lib/tenax/paper-trading-run";
+import { calculatePaperTradingMetrics } from "@/lib/tenax/paper-trading-metrics";
 import { paperTradingExportPayload, paperTradingRunsToCsv } from "@/lib/tenax/paper-trading-run-export";
 import { createDevStore } from "@/lib/tenax/dev-store";
 
@@ -45,8 +46,9 @@ describe("paper-trading evidence UI and exports", () => {
     expect(page).toContain("DOWNLOAD CSV");
     expect(page).toContain("DOWNLOAD JSON");
     expect(page).toContain("NO PAPER-TRADING RUNS RECORDED YET");
-    expect(page).not.toContain("Sharpe");
-    expect(page).not.toContain("drawdown");
+    expect(page).toContain("MAX DRAWDOWN");
+    expect(page).toContain("SHARPE");
+    expect(page).toContain("INSUFFICIENT DATA");
     expect(detail).toContain("01 · EVENT");
     expect(detail).toContain("02 · AI DECISION");
     expect(detail).toContain("03 · AUTHORITY");
@@ -66,6 +68,7 @@ describe("paper-trading evidence UI and exports", () => {
       exportedAt: NOW,
       persistence: "EPHEMERAL",
       aggregates: { totalRuns: 1, executes: 0, escalations: 1, refusals: 0, failedExecutions: 0 },
+      metrics: calculatePaperTradingMetrics([run]),
       runs: [run],
     });
 

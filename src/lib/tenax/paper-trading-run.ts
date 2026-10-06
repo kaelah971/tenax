@@ -52,6 +52,14 @@ export const PAPER_RUN_EXECUTION_STATUSES = [
 ] as const;
 export type PaperRunExecutionStatus = (typeof PAPER_RUN_EXECUTION_STATUSES)[number];
 
+export const PAPER_RUN_OUTCOME_STATES = [
+  "NOT_OBSERVED",
+  "OPEN_MARK",
+  "REALIZED",
+  "UNAVAILABLE",
+] as const;
+export type PaperRunOutcomeState = (typeof PAPER_RUN_OUTCOME_STATES)[number];
+
 const nullableFinite = z.number().finite().nullable();
 const nullableString = z.string().nullable();
 
@@ -114,11 +122,22 @@ const executionSchema = z.object({
 }).strict();
 
 const outcomeSchema = z.object({
+  outcomeState: z.enum(PAPER_RUN_OUTCOME_STATES).default("NOT_OBSERVED"),
   markPrice: nullableFinite,
   markAt: nullableString,
+  markSource: z.enum(PAPER_RUN_SOURCES).nullable().default(null),
+  markPnlUsdt: nullableFinite.default(null),
+  markReturnPct: nullableFinite.default(null),
   exitPrice: nullableFinite,
+  exitSize: nullableString.default(null),
   exitAt: nullableString,
+  exitProviderOrderId: nullableString.default(null),
+  exitSource: z.enum(PAPER_RUN_SOURCES).nullable().default(null),
   realizedPnlUsdt: nullableFinite,
+  realizedReturnPct: nullableFinite.default(null),
+  feesUsdt: nullableFinite.default(null),
+  netRealizedPnlUsdt: nullableFinite.default(null),
+  pnlObservedAt: nullableString.default(null),
   unrealizedPnlUsdt: nullableFinite,
 }).strict();
 
@@ -353,11 +372,22 @@ export function buildPaperTradingRun(input: {
       noOrderReason: executionStatus === "NO_ORDER" ? terminal.noOrderReason : null,
     },
     outcome: {
+      outcomeState: "NOT_OBSERVED",
       markPrice: null,
       markAt: null,
+      markSource: null,
+      markPnlUsdt: null,
+      markReturnPct: null,
       exitPrice: null,
+      exitSize: null,
       exitAt: null,
+      exitProviderOrderId: null,
+      exitSource: null,
       realizedPnlUsdt: null,
+      realizedReturnPct: null,
+      feesUsdt: null,
+      netRealizedPnlUsdt: null,
+      pnlObservedAt: null,
       unrealizedPnlUsdt: null,
     },
     provenance: {

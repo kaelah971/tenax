@@ -10,6 +10,7 @@ import {
   type PaperTradingRunFilter,
 } from "@/lib/tenax/paper-trading-run-repository";
 import type { PaperTradingRun } from "@/lib/tenax/paper-trading-run";
+import { calculatePaperTradingMetrics } from "@/lib/tenax/paper-trading-metrics";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -115,6 +116,7 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
   const store = getTenaxDevStore();
   let runs: PaperTradingRun[] = [];
   let summary = { totalRuns: 0, executes: 0, escalations: 0, refusals: 0, failedExecutions: 0 };
+  let metrics = calculatePaperTradingMetrics([]);
   let unavailable = false;
 
   try {
@@ -125,7 +127,9 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
       executionStatus: filters.execution === "ALL" ? undefined : filters.execution,
       symbol: filters.symbol || undefined,
     };
+    const allRuns = await repository.listRuns({ limit: 5000 });
     [runs, summary] = await Promise.all([repository.listRuns(filter), repository.summarizeRuns(filter)]);
+    metrics = calculatePaperTradingMetrics(allRuns);
   } catch {
     unavailable = true;
   }
@@ -157,6 +161,39 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
         <Summary label="ESCALATED" value={summary.escalations} />
         <Summary label="REFUSED" value={summary.refusals} />
         <Summary label="FAILED" value={summary.failedExecutions} />
+      </section>
+
+      <section className="tx-material-light-frost rounded-[16px] p-4 sm:p-6" aria-label="Quantitative evidence">
+        <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">QUANTITATIVE EVIDENCE</p>
+        <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <MetricPanel title="RISK CONTROL" rows={[
+            ["ACTIONABLE PROPOSALS", String(metrics.riskControl.actionableProposals)],
+            ["EXECUTION RATE", percent(metrics.riskControl.executionRate)],
+            ["ESCALATION RATE", percent(metrics.riskControl.escalationRate)],
+            ["REFUSAL RATE", percent(metrics.riskControl.refusalRate)],
+            ["HUMAN TAKEOVER RATE", percent(metrics.riskControl.humanTakeoverRate)],
+            ["RISK VIOLATION PREVENTION", String(metrics.riskControl.riskViolationPreventionCount)],
+          ]} />
+          <MetricPanel title="TRADING PERFORMANCE" rows={[
+            ["REALIZED SAMPLE", String(metrics.performance.realizedRunCount)],
+            ["WIN RATE", percent(metrics.performance.winRate)],
+            ["GROSS REALIZED PNL", money(metrics.performance.grossRealizedPnl)],
+            ["NET REALIZED PNL", money(metrics.performance.netRealizedPnl)],
+            ["MAX DRAWDOWN", metrics.performance.maxDrawdownStatus === "AVAILABLE" ? percent(metrics.performance.maxDrawdownPct) : "INSUFFICIENT DATA"],
+            ["SHARPE", metrics.performance.sharpeStatus === "AVAILABLE" ? `${metrics.performance.sharpe} · RUN-RETURN NON-ANNUALIZED` : "INSUFFICIENT DATA"],
+            ["SHARPE SAMPLE", String(metrics.performance.sharpeSampleSize)],
+          ]} />
+        </div>
+        <details className="mt-4 rounded-[8px] border border-ink/10 p-3">
+          <summary className="font-syslabel cursor-pointer text-[10px] uppercase tracking-[0.08em] text-mutedink">METHODOLOGY</summary>
+          <div className="mt-3 grid gap-2 text-[12px] leading-[18px] text-mutedink">
+            <p>{metrics.methodology.actionableDenominator}</p>
+            <p>{metrics.methodology.realizedSample}</p>
+            <p>{metrics.methodology.drawdown}</p>
+            <p>{metrics.methodology.sharpe}</p>
+            <p>{metrics.methodology.unknowns}</p>
+          </div>
+        </details>
       </section>
 
       <section className="tx-material-light-frost rounded-[16px] p-4 sm:p-6" aria-label="Run filters">
@@ -210,6 +247,18 @@ function Fact({ label, value }: { label: string; value: string }) {
 
 function Summary({ label, value }: { label: string; value: number }) {
   return <div className="tx-material-editorial border-t-2 border-ink p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">{label}</p><p className="mt-2 text-[32px] font-extrabold leading-none tabular-nums">{value}</p></div>;
+}
+
+function MetricPanel({ title, rows }: { title: string; rows: ReadonlyArray<readonly [string, string]> }) {
+  return <div className="rounded-[10px] border border-ink/10 bg-softwhite/50 p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">{title}</p><dl className="mt-3 grid gap-2">{rows.map(([label, value]) => <div key={label} className="flex items-baseline justify-between gap-3 border-b border-ink/10 pb-2"><dt className="font-syslabel text-[10px] uppercase tracking-[0.06em] text-mutedink">{label}</dt><dd className="text-right text-[13px] font-bold tabular-nums">{value}</dd></div>)}</dl></div>;
+}
+
+function percent(value: number | null): string {
+  return value === null ? "INSUFFICIENT DATA" : `${(value * 100).toFixed(2)}%`;
+}
+
+function money(value: number | null): string {
+  return value === null ? "INSUFFICIENT DATA" : `$${value.toFixed(2)}`;
 }
 
 function FilterGroup<T extends readonly string[]>({ label, values, filters, filterKey }: { label: string; values: T; filters: Filters; filterKey: keyof Filters }) {

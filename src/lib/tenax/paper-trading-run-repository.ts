@@ -45,6 +45,7 @@ export interface PaperTradingRunRepository {
   readonly durabilityState: PaperTradingRunDurabilityState;
   readonly durable: boolean;
   saveRun(run: PaperTradingRun): Promise<PaperTradingRun>;
+  updateRun(run: PaperTradingRun): Promise<PaperTradingRun | null>;
   getRun(runId: string): Promise<PaperTradingRun | null>;
   listRuns(filter?: PaperTradingRunFilter): Promise<PaperTradingRun[]>;
   summarizeRuns(filter?: Omit<PaperTradingRunFilter, "limit">): Promise<PaperTradingRunSummary>;
@@ -76,6 +77,14 @@ export class InMemoryPaperTradingRunRepository implements PaperTradingRunReposit
     const existingId = this.flowRows.get(run.flowId) ?? run.runId;
     const existing = this.rows.get(existingId);
     if (existing) return existing;
+    this.rows.set(run.runId, run);
+    this.flowRows.set(run.flowId, run.runId);
+    return run;
+  }
+
+  async updateRun(input: PaperTradingRun): Promise<PaperTradingRun | null> {
+    const run = paperTradingRunSchema.parse(input);
+    if (!this.rows.has(run.runId)) return null;
     this.rows.set(run.runId, run);
     this.flowRows.set(run.flowId, run.runId);
     return run;
@@ -218,6 +227,17 @@ export class PostgresPaperTradingRunRepository implements PaperTradingRunReposit
     });
   }
 
+  async updateRun(input: PaperTradingRun): Promise<PaperTradingRun | null> {
+    const run = paperTradingRunSchema.parse(input);
+    return this.run(async (query) => {
+      const row = (await query(
+        `UPDATE tenax_paper_trading_runs SET record = $2, status = $3, authority_outcome = $4, execution_status = $5 WHERE run_id = $1 RETURNING record`,
+        [run.runId, JSON.stringify(run), run.status, run.authority.outcome, run.execution.status],
+      )).rows[0];
+      return row ? rowToRun(row) : null;
+    });
+  }
+
   async getRun(runId: string): Promise<PaperTradingRun | null> {
     return this.run(async (query) => {
       const row = (await query(`SELECT record FROM tenax_paper_trading_runs WHERE run_id = $1`, [runId])).rows[0];
@@ -316,6 +336,9 @@ class UnavailablePaperTradingRunRepository implements PaperTradingRunRepository 
     throw new Error("PAPER_RUN_STORE_UNAVAILABLE");
   }
   saveRun(): Promise<PaperTradingRun> {
+    return Promise.reject(this.unavailable());
+  }
+  updateRun(): Promise<PaperTradingRun | null> {
     return Promise.reject(this.unavailable());
   }
   getRun(): Promise<PaperTradingRun | null> {

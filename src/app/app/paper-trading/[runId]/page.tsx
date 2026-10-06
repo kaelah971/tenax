@@ -90,6 +90,7 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
             <div className="mt-5 flex flex-wrap gap-5 font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">
               <span>{run.environment ?? "ENVIRONMENT UNKNOWN"}</span>
               <span>{run.execution.status === "SUBMITTED" ? "SUBMITTED · FILL NOT VERIFIED" : run.execution.status}</span>
+              <span>{run.outcome.outcomeState}</span>
               <span>{run.createdAt}</span>
             </div>
           </section>
@@ -149,13 +150,21 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
           </EvidenceSection>
 
           <EvidenceSection title="05 · OUTCOME" source={run.provenance.outcome}>
+            {run.outcome.outcomeState === "OPEN_MARK" ? <p className="mb-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-signal">UNREALIZED / OBSERVED MARK</p> : null}
+            {run.outcome.outcomeState === "REALIZED" ? <p className="mb-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-pass">REALIZED OUTCOME</p> : null}
             <DetailGrid rows={[
+              ["OUTCOME STATE", run.outcome.outcomeState],
               ["MARK PRICE", valueOrUnknown(run.outcome.markPrice, "NOT YET OBSERVED")],
               ["MARK TIME", valueOrUnknown(run.outcome.markAt, "NOT YET OBSERVED")],
+              ["MARK PNL", valueOrUnknown(run.outcome.markPnlUsdt, "UNKNOWN")],
+              ["MARK RETURN", valueOrUnknown(run.outcome.markReturnPct, "UNKNOWN")],
               ["EXIT PRICE", valueOrUnknown(run.outcome.exitPrice, "NOT YET OBSERVED")],
+              ["EXIT SIZE", valueOrUnknown(run.outcome.exitSize, "UNKNOWN")],
               ["EXIT TIME", valueOrUnknown(run.outcome.exitAt, "NOT YET OBSERVED")],
+              ["EXIT ORDER", valueOrUnknown(run.outcome.exitProviderOrderId, "UNKNOWN")],
               ["REALIZED PNL", valueOrUnknown(run.outcome.realizedPnlUsdt, "UNKNOWN")],
-              ["UNREALIZED PNL", valueOrUnknown(run.outcome.unrealizedPnlUsdt, "UNKNOWN")],
+              ["REALIZED RETURN", valueOrUnknown(run.outcome.realizedReturnPct, "UNKNOWN")],
+              ["NET PNL", valueOrUnknown(run.outcome.netRealizedPnlUsdt, "UNKNOWN")],
             ]} />
             <p className="mt-4 text-[13px] leading-[20px] text-mutedink">Historical evidence records what Tenax observed at that time. It does not claim a position is currently open, closed, or profitable.</p>
           </EvidenceSection>

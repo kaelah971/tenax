@@ -21,7 +21,8 @@
 ## Agentic Trading Evidence milestone
 - [x] Slice 1: Canonical Paper-Trading Run Ledger.
 - [x] Slice 2: Judge Paper-Trading Log UI + Export.
-- [ ] Slice 3: Observed Outcome + Quantitative Metrics.
+- [x] Slice 3: Observed Outcome + Quantitative Metrics.
+- [ ] Slice 4: Submission Evidence QA + Live Paper-Run Capture.
 
 ## Existing capabilities
 - Demo Mode and shared Bitget Demo adapters: working; must remain separate from Connected Mode.
@@ -34,14 +35,14 @@
 - Packaged runtime preflight: working outside the repo cwd; validates embedded Tenax origin, loopback bridge, SDK catalog, read-only operation boundary, metadata path, and safe fake handoff.
 
 ## Remaining MVP gaps
-- Observed outcome capture and quantitative metrics require genuinely observed market/settlement data.
-- Sharpe, drawdown, win-rate, and risk-control effectiveness metrics remain Slice 3.
+- Submission evidence QA and owner-controlled live paper-run capture remain.
+- Further outcome observations require genuinely trusted Demo provider/market data and safe attribution.
 - Owner-controlled real OAuth/snapshot QA remains separately gated: durable Postgres, approved Bitget OAuth access, installed local connector, and explicit owner authorization are required.
 - Public release hosting/signing/configuration remains owner-side; experimental connector infrastructure is not public onboarding.
 
 ## Current slice
-- Agentic Trading Evidence Slice 2 complete: judge-visible chronological run log, run detail evidence view, factual filters/counts, honest persistence states, CSV/JSON exports, and navigation. No metric invention or provider writes.
-- Next work is observed outcome capture + quantitative metrics.
+- Agentic Trading Evidence Slice 3 complete: monotonic trusted mark/exit observations, explicit outcome states, realized-only risk/performance metrics, non-annualized Sharpe methodology, drawdown methodology, UI/detail/export evidence, and no provider writes.
+- Next work is submission evidence QA + owner-controlled live paper-run capture.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -73,6 +74,7 @@
 - Fixed the packaged setup executable's zero-argument Node SEA argv shape: when SEA exposes the executable path as `argv[1]`, it is now discarded instead of parsed as an invalid user argument. Zero args installs; uninstall and invalid-argument semantics remain unchanged.
 - Added the canonical paper/Demo run ledger: validated run model with field-level provenance, additive Postgres DDL/repository, best-effort agent-cycle writes, idempotent activity/proof reconciliation, and chronological/filterable/aggregate data access. Unknown outcomes remain null.
 - Added `/app/paper-trading`, `/app/paper-trading/[runId]`, factual environment/authority/execution filters, truthful durable/ephemeral labels, CSV/JSON exports, and `PAPER TRADING` app navigation. Exports use canonical ledger rows only and leave unknown financial fields blank.
+- Added monotonic trusted outcome observations (OPEN_MARK/REALIZED/UNAVAILABLE), short-entry PnL math, safe exit attribution requirements, realized-only risk/performance metrics, non-annualized Sharpe status, percentage drawdown, methodology display, and additive outcome exports.
 
 ## Blockers
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
@@ -80,9 +82,9 @@
 - Public installer hosting and code signing remain release work; unsigned local SEA artifacts are acceptable for owner QA only.
 
 ## Verification
-- Slice 2 UI/export tests: 7 passed; Slice 1 ledger tests: 5 passed; relevant service/proof tests: 56 passed; full Vitest: 823 passed across 48 files.
+- Slice 3 outcome/metric/UI tests: 12 passed; Slice 2 UI/export tests: 7 passed; Slice 1 ledger tests: 5 passed; full Vitest: 828 passed across 49 files.
 - `npx tsc --noEmit`, `npm run lint`, Next production build, and `git diff --check` passed.
-- UI/export tests use fixture ledger data; all ledger/provider tests use fake repositories/boundaries; no provider writes, OAuth, or live Bitget calls were made.
+- Outcome/metric tests use deterministic fixture runs and injected observations/repositories; no provider writes, OAuth, or live Bitget calls were made.
 
 ## Next action
-- Observed Outcome + Quantitative Metrics; do not start that slice in this invocation.
+- Submission Evidence QA + Live Paper-Run Capture; do not start that slice in this invocation.
