@@ -55,7 +55,9 @@ function stateLabel(state: BrowserConnectState): string {
     case "CONNECTOR_READY":
       return "CONNECTOR READY";
     case "OPENING_CONNECTOR":
-      return "OPENING CONNECTOR";
+      return "OPENING TENAX CONNECTOR";
+    case "WAITING_FOR_CONNECTOR":
+      return "WAITING FOR CONNECTOR";
     case "HANDOFF_ACCEPTED":
       return "OPENING BITGET AUTHORIZATION";
     case "WAITING_FOR_AUTHORIZATION":
@@ -81,6 +83,8 @@ function stateMessage(state: BrowserConnectState): string {
       return "The local connector is ready. Sending the secure pairing handoff.";
     case "OPENING_CONNECTOR":
       return "The local Tenax Connector is being opened on this device.";
+    case "WAITING_FOR_CONNECTOR":
+      return "Waiting for the local Tenax Connector to answer.";
     case "HANDOFF_ACCEPTED":
       return "Opening Bitget authorization in the local connector.";
     case "WAITING_FOR_AUTHORIZATION":
@@ -103,6 +107,7 @@ function isRunning(state: BrowserConnectState): boolean {
     state === "CREATING_PAIRING" ||
     state === "CONNECTOR_READY" ||
     state === "OPENING_CONNECTOR" ||
+    state === "WAITING_FOR_CONNECTOR" ||
     state === "HANDOFF_ACCEPTED" ||
     state === "WAITING_FOR_AUTHORIZATION" ||
     state === "SYNCING_ACCOUNT"
@@ -202,6 +207,7 @@ export default function PairingPanel({ connectionStatus, pendingPairing, hasSnap
           serverOrigin: origin,
           signal: controller.signal,
           createPairing,
+          launchProtocolImmediately: true,
           onPairingCreated: (nextPairing) => {
             if (mounted.current) setPairing(nextPairing);
           },

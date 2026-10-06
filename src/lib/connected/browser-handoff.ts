@@ -18,6 +18,7 @@ export type BrowserConnectState =
   | "CREATING_PAIRING"
   | "CONNECTOR_READY"
   | "OPENING_CONNECTOR"
+  | "WAITING_FOR_CONNECTOR"
   | "HANDOFF_ACCEPTED"
   | "WAITING_FOR_AUTHORIZATION"
   | "SYNCING_ACCOUNT"
@@ -47,6 +48,7 @@ export interface BrowserHandoffInput {
   readonly serverOrigin: string;
   readonly signal: AbortSignal;
   readonly createPairing: () => Promise<BrowserPairingPayload>;
+  readonly launchProtocolImmediately?: boolean;
   readonly onPairingCreated?: (pairing: BrowserPairingPayload) => void;
   readonly onState?: (state: BrowserConnectState) => void;
 }
@@ -58,6 +60,7 @@ export interface BrowserHandoffDependencies {
   readonly now?: () => number;
   readonly pollIntervalMs?: number;
   readonly maxPolls?: number;
+  readonly bridgeRequestTimeoutMs?: number;
 }
 
 const bridgeStateSchema = z.enum([
@@ -91,6 +94,44 @@ const pairingPayloadSchema = z
   })
   .strict();
 
+const DEFAULT_BRIDGE_REQUEST_TIMEOUT_MS = 750;
+const MAX_POLL_COUNT = 60;
+const REQUEST_TIMEOUT = Symbol("REQUEST_TIMEOUT");
+
+type RequestTimeout = typeof REQUEST_TIMEOUT;
+
+async function withBridgeRequestTimeout<T>(input: {
+  readonly signal: AbortSignal;
+  readonly timeoutMs: number;
+  readonly operation: (signal: AbortSignal) => Promise<T>;
+}): Promise<T | RequestTimeout> {
+  const controller = new AbortController();
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let rejectParent: ((reason: unknown) => void) | null = null;
+  const parentAbort = new Promise<never>((_, reject) => {
+    rejectParent = reject;
+  });
+  const onParentAbort = () => {
+    controller.abort();
+    rejectParent?.(new DOMException("The handoff was cancelled.", "AbortError"));
+  };
+  const timeout = new Promise<RequestTimeout>((resolve) => {
+    timer = setTimeout(() => {
+      controller.abort();
+      resolve(REQUEST_TIMEOUT);
+    }, Math.max(1, input.timeoutMs));
+  });
+  input.signal.addEventListener("abort", onParentAbort, { once: true });
+  if (input.signal.aborted) onParentAbort();
+  try {
+    return await Promise.race([input.operation(controller.signal), timeout, parentAbort]);
+  } finally {
+    if (timer !== null) clearTimeout(timer);
+    input.signal.removeEventListener("abort", onParentAbort);
+    controller.abort();
+  }
+}
+
 export function defaultLaunchProtocol(): void {
   if (typeof document === "undefined" || !document.body) return;
   const frame = document.createElement("iframe");
@@ -103,15 +144,15 @@ export function defaultLaunchProtocol(): void {
 
 function defaultDelay(milliseconds: number, signal: AbortSignal): Promise<void> {
   return new Promise((resolve, reject) => {
-    const timer = setTimeout(resolve, milliseconds);
-    signal.addEventListener(
-      "abort",
-      () => {
-        clearTimeout(timer);
-        reject(new DOMException("The handoff was cancelled.", "AbortError"));
-      },
-      { once: true },
-    );
+    const onAbort = () => {
+      clearTimeout(timer);
+      reject(new DOMException("The handoff was cancelled.", "AbortError"));
+    };
+    const timer = setTimeout(() => {
+      signal.removeEventListener("abort", onAbort);
+      resolve();
+    }, milliseconds);
+    signal.addEventListener("abort", onAbort, { once: true });
   });
 }
 
@@ -126,20 +167,28 @@ function pairingExpired(expiresAt: string, now: () => number): boolean {
 async function readBridgeStatus(
   fetchImpl: typeof fetch,
   signal: AbortSignal,
+  timeoutMs: number,
 ): Promise<z.infer<typeof bridgeStatusSchema> | null> {
   try {
-    const response = await fetchImpl(`${LOCAL_BRIDGE_ORIGIN}${LOCAL_BRIDGE_STATUS_PATH}`, {
-      method: "GET",
-      credentials: "omit",
-      cache: "no-store",
-      headers: { Accept: "application/json" },
+    const result = await withBridgeRequestTimeout({
       signal,
+      timeoutMs,
+      operation: async (requestSignal) => {
+        const response = await fetchImpl(`${LOCAL_BRIDGE_ORIGIN}${LOCAL_BRIDGE_STATUS_PATH}`, {
+          method: "GET",
+          credentials: "omit",
+          cache: "no-store",
+          headers: { Accept: "application/json" },
+          signal: requestSignal,
+        });
+        if (!response.ok) return null;
+        const parsed = bridgeStatusSchema.safeParse(await response.json());
+        return parsed.success ? parsed.data : null;
+      },
     });
-    if (!response.ok) return null;
-    const parsed = bridgeStatusSchema.safeParse(await response.json());
-    return parsed.success ? parsed.data : null;
+    return result === REQUEST_TIMEOUT ? null : result;
   } catch (error) {
-    if (isAborted(error, signal)) throw error;
+    if (signal.aborted) throw error;
     return null;
   }
 }
@@ -149,27 +198,35 @@ async function postBridgeHandoff(input: {
   readonly serverOrigin: string;
   readonly pairingCode: string;
   readonly signal: AbortSignal;
+  readonly timeoutMs: number;
 }): Promise<"ACCEPTED" | "BUSY" | "FAILED"> {
   try {
-    const response = await input.fetchImpl(`${LOCAL_BRIDGE_ORIGIN}${LOCAL_BRIDGE_HANDOFF_PATH}`, {
-      method: "POST",
-      credentials: "omit",
-      cache: "no-store",
-      headers: {
-        Accept: "application/json",
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        serverOrigin: input.serverOrigin,
-        pairingCode: input.pairingCode,
-      }),
+    const result = await withBridgeRequestTimeout({
       signal: input.signal,
+      timeoutMs: input.timeoutMs,
+      operation: async (requestSignal) => {
+        const response = await input.fetchImpl(`${LOCAL_BRIDGE_ORIGIN}${LOCAL_BRIDGE_HANDOFF_PATH}`, {
+          method: "POST",
+          credentials: "omit",
+          cache: "no-store",
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            serverOrigin: input.serverOrigin,
+            pairingCode: input.pairingCode,
+          }),
+          signal: requestSignal,
+        });
+        if (response.status === 409) return "BUSY" as const;
+        if (!response.ok) return "FAILED" as const;
+        return handoffResponseSchema.safeParse(await response.json()).success ? "ACCEPTED" as const : "FAILED" as const;
+      },
     });
-    if (response.status === 409) return "BUSY";
-    if (!response.ok) return "FAILED";
-    return handoffResponseSchema.safeParse(await response.json()).success ? "ACCEPTED" : "FAILED";
+    return result === REQUEST_TIMEOUT ? "FAILED" : result;
   } catch (error) {
-    if (isAborted(error, input.signal)) throw error;
+    if (input.signal.aborted) throw error;
     return "FAILED";
   }
 }
@@ -186,12 +243,20 @@ export async function runConnectedHandoff(
   const launchProtocol = dependencies.launchProtocol ?? defaultLaunchProtocol;
   const delay = dependencies.delay ?? defaultDelay;
   const now = dependencies.now ?? Date.now;
-  const pollIntervalMs = dependencies.pollIntervalMs ?? 500;
-  const maxPolls = dependencies.maxPolls ?? 30;
+  const pollIntervalMs = Math.max(0, Math.min(dependencies.pollIntervalMs ?? 500, 5_000));
+  const maxPolls = Math.max(0, Math.min(dependencies.maxPolls ?? 30, MAX_POLL_COUNT));
+  const bridgeRequestTimeoutMs = Math.max(1, Math.min(dependencies.bridgeRequestTimeoutMs ?? DEFAULT_BRIDGE_REQUEST_TIMEOUT_MS, 5_000));
   let pairing: BrowserPairingPayload;
+  let protocolLaunched = false;
 
-  input.onState?.("CREATING_PAIRING");
   try {
+    if (input.launchProtocolImmediately) {
+      input.onState?.("OPENING_CONNECTOR");
+      launchProtocol();
+      protocolLaunched = true;
+    } else {
+      input.onState?.("CREATING_PAIRING");
+    }
     pairing = safePairingPayload(await input.createPairing());
   } catch (error) {
     if (isAborted(error, input.signal)) return { outcome: "ABORTED", pairing: null };
@@ -204,7 +269,6 @@ export async function runConnectedHandoff(
   }
 
   let handoffSent = false;
-  let protocolLaunched = false;
 
   const sendHandoff = async (): Promise<"ACCEPTED" | "BUSY" | "FAILED" | "EXPIRED"> => {
     if (handoffSent) return "ACCEPTED";
@@ -214,6 +278,7 @@ export async function runConnectedHandoff(
       serverOrigin: input.serverOrigin,
       pairingCode: pairing.pairingCode,
       signal: input.signal,
+      timeoutMs: bridgeRequestTimeoutMs,
     });
     if (result === "ACCEPTED") {
       handoffSent = true;
@@ -253,15 +318,18 @@ export async function runConnectedHandoff(
   };
 
   try {
-    let status = await readBridgeStatus(fetchImpl, input.signal);
+    let status = await readBridgeStatus(fetchImpl, input.signal, bridgeRequestTimeoutMs);
     if (pairingExpired(pairing.expiresAt, now)) {
       input.onState?.("PAIRING_EXPIRED");
       return { outcome: "PAIRING_EXPIRED", pairing };
     }
     if (!status) {
-      input.onState?.("OPENING_CONNECTOR");
-      launchProtocol();
-      protocolLaunched = true;
+      if (!protocolLaunched) {
+        input.onState?.("OPENING_CONNECTOR");
+        launchProtocol();
+        protocolLaunched = true;
+      }
+      input.onState?.("WAITING_FOR_CONNECTOR");
     } else {
       const outcome = await inspectStatus(status);
       if (outcome) {
@@ -277,8 +345,11 @@ export async function runConnectedHandoff(
         input.onState?.("PAIRING_EXPIRED");
         return { outcome: "PAIRING_EXPIRED", pairing };
       }
-      status = await readBridgeStatus(fetchImpl, input.signal);
-      if (!status) continue;
+      status = await readBridgeStatus(fetchImpl, input.signal, bridgeRequestTimeoutMs);
+      if (!status) {
+        input.onState?.("WAITING_FOR_CONNECTOR");
+        continue;
+      }
       const outcome = await inspectStatus(status);
       if (outcome) {
         input.onState?.(outcome === "FAILED" ? "FAILED" : "CONNECTED");

@@ -7,6 +7,7 @@ import {
   defaultLaunchProtocol,
   runConnectedHandoff,
   type BrowserConnectState,
+  type BrowserPairingPayload,
 } from "@/lib/connected/browser-handoff";
 import {
   LOCAL_BRIDGE_HANDOFF_PATH,
@@ -85,6 +86,44 @@ describe("browser Connected Mode handoff", () => {
       vi.useRealTimers();
       vi.unstubAllGlobals();
     }
+  });
+
+  it("launches the secret-free protocol before awaiting pairing creation", async () => {
+    const bridge = makeFetch([
+      { ok: true, state: "CONNECTOR_READY", errorCode: null },
+      { ok: true, state: "CONNECTED", errorCode: null },
+    ]);
+    const states: BrowserConnectState[] = [];
+    const launches: string[] = [];
+    let finishPairing!: (value: BrowserPairingPayload) => void;
+    const createPairing = vi.fn(() => new Promise<BrowserPairingPayload>((resolve) => {
+      finishPairing = resolve;
+    }));
+
+    const handoff = runConnectedHandoff(
+      {
+        serverOrigin: SERVER_ORIGIN,
+        signal: new AbortController().signal,
+        createPairing,
+        launchProtocolImmediately: true,
+        onState: (state) => states.push(state),
+      },
+      {
+        fetchImpl: bridge.fetchImpl,
+        launchProtocol: () => launches.push("tenax://open"),
+        delay: async () => {},
+        maxPolls: 2,
+      },
+    );
+
+    expect(createPairing).toHaveBeenCalledOnce();
+    expect(states).toEqual(["OPENING_CONNECTOR"]);
+    expect(launches).toEqual(["tenax://open"]);
+    expect(launches.join(" ")).not.toContain(PAIRING_CODE);
+
+    finishPairing(pairing());
+    expect((await handoff).outcome).toBe("CONNECTED");
+    expect(bridge.handoffBodies).toEqual([{ serverOrigin: SERVER_ORIGIN, pairingCode: PAIRING_CODE }]);
   });
 
   it("creates pairing internally, posts the secret only in the localhost body, and reaches CONNECTED", async () => {
@@ -179,6 +218,36 @@ describe("browser Connected Mode handoff", () => {
     expect(bridge.statusCalls).toHaveLength(4);
   });
 
+  it("bounds a hung localhost status request and reaches connector not detected", async () => {
+    let requestSignal: AbortSignal | undefined;
+    const fetchImpl = vi.fn(async (_url: RequestInfo | URL, init?: RequestInit) => {
+      requestSignal = init?.signal as AbortSignal;
+      return new Promise<Response>(() => {});
+    });
+    const states: BrowserConnectState[] = [];
+    const result = await runConnectedHandoff(
+      {
+        serverOrigin: SERVER_ORIGIN,
+        signal: new AbortController().signal,
+        createPairing: async () => pairing(),
+        onState: (state) => states.push(state),
+      },
+      {
+        fetchImpl,
+        launchProtocol: () => {},
+        delay: async () => {},
+        maxPolls: 0,
+        bridgeRequestTimeoutMs: 5,
+      },
+    );
+
+    expect(result.outcome).toBe("CONNECTOR_NOT_DETECTED");
+    expect(states).toContain("WAITING_FOR_CONNECTOR");
+    expect(states.at(-1)).toBe("CONNECTOR_NOT_DETECTED");
+    expect(fetchImpl).toHaveBeenCalledOnce();
+    expect(requestSignal?.aborted).toBe(true);
+  });
+
   it("maps bridge failure and expiry without exposing provider errors", async () => {
     const bridge = makeFetch([
       { ok: true, state: "CONNECTOR_READY", errorCode: null },
@@ -247,6 +316,7 @@ describe("browser Connected Mode handoff", () => {
           serverOrigin: SERVER_ORIGIN,
           signal: new AbortController().signal,
           createPairing,
+          launchProtocolImmediately: true,
         },
         { fetchImpl: bridge.fetchImpl, launchProtocol: () => launches.push("tenax://open"), delay: async () => {}, maxPolls: 1 },
       );
@@ -307,6 +377,10 @@ describe("browser Connected Mode handoff", () => {
     expect(panel).toContain("GENERATE NEW CODE");
     expect(panel).toContain("INSTALL TENAX CONNECTOR");
     expect(panel).toContain("TRY AGAIN");
+    expect(panel).toContain("OPENING TENAX CONNECTOR");
+    expect(panel).toContain("WAITING FOR CONNECTOR");
+    expect(panel).toContain("launchProtocolImmediately: true");
+    expect(panel).toContain("if (!canCreate || activeController.current) return;");
     expect(panel).toContain("INSTALLER UNAVAILABLE IN THIS DEVELOPMENT BUILD");
     expect(panel).toContain("/api/connected/installer");
     expect(panel).toContain("router.refresh");
@@ -314,6 +388,8 @@ describe("browser Connected Mode handoff", () => {
     expect(idleSection).not.toContain("pairingCode}");
     expect(handoff).toContain("credentials: \"omit\"");
     expect(handoff).toContain("TENAX_PROTOCOL_URI");
+    expect(handoff).toContain("bridgeRequestTimeoutMs");
+    expect(handoff).toContain("REQUEST_TIMEOUT");
     expect(handoff).toContain("createElement(\"iframe\")");
     expect(handoff).toContain("frame.remove()");
     expect(handoff).not.toContain('target = \"_blank\"');
