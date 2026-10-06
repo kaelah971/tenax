@@ -22,7 +22,8 @@
 - [x] Slice 1: Canonical Paper-Trading Run Ledger.
 - [x] Slice 2: Judge Paper-Trading Log UI + Export.
 - [x] Slice 3: Observed Outcome + Quantitative Metrics.
-- [ ] Slice 4: Submission Evidence QA + Live Paper-Run Capture.
+- [x] Slice 4a: Submission Evidence QA (implement-only, never executed live).
+- [ ] Slice 4b: Live Paper-Run Capture (owner-authorized, pending).
 
 ## Existing capabilities
 - Demo Mode and shared Bitget Demo adapters: working; must remain separate from Connected Mode.
@@ -41,8 +42,12 @@
 - Public release hosting/signing/configuration remains owner-side; experimental connector infrastructure is not public onboarding.
 
 ## Current slice
-- Agentic Trading Evidence Slice 3 complete: monotonic trusted mark/exit observations, explicit outcome states, realized-only risk/performance metrics, non-annualized Sharpe methodology, drawdown methodology, UI/detail/export evidence, and no provider writes.
-- Next work is submission evidence QA + owner-controlled live paper-run capture.
+- Agentic Trading Evidence Slice 4a complete: durable QA, fake end-to-end evidence path, Execute/Escalate/Refuse QA, Demo+AI readiness probes (read-only), submission summary API, capture manifest, and 4 new offline tests. No provider writes were made.
+- Next work is Slice 4b owner-controlled live paper-run capture.
+
+## READY_FOR_OWNER_AUTHORIZATION
+- Exact proposed Demo action (NOT executed): one POST /api/v3/trade/place-order on Bitget Demo (paptrading:1) — category=USDT-FUTURES, symbol=NVDAUSDT, side=sell, posSide=short, orderType=market, qty=floor($100/markPrice, precision 2) (~0.41 at 239.7), clientOid=tenax-<flowId>-<proposalHash>, no marginMode/leverage (account 1x crossed untouched), then read-only GET order-info verify; FILLED only on explicit filled status.
+- Required owner decisions first: (1) collapse .env.local to a single TENAX_ANALYSIS_MODE line (ai or fixture); (2) flatten/reduce the pre-existing Demo NVDAUSDT short 0.43 @1x manually for a clean EXECUTE capture (else the cumulative gate will ESCALATE/REFUSE by design); (3) choose agent-cycle vs manual approval path. See docs/agentic-trading-capture-manifest.md.
 
 ## Completed
 - Added 10-minute high-entropy display codes; only SHA-256 hashes persist.
@@ -75,16 +80,21 @@
 - Added the canonical paper/Demo run ledger: validated run model with field-level provenance, additive Postgres DDL/repository, best-effort agent-cycle writes, idempotent activity/proof reconciliation, and chronological/filterable/aggregate data access. Unknown outcomes remain null.
 - Added `/app/paper-trading`, `/app/paper-trading/[runId]`, factual environment/authority/execution filters, truthful durable/ephemeral labels, CSV/JSON exports, and `PAPER TRADING` app navigation. Exports use canonical ledger rows only and leave unknown financial fields blank.
 - Added monotonic trusted outcome observations (OPEN_MARK/REALIZED/UNAVAILABLE), short-entry PnL math, safe exit attribution requirements, realized-only risk/performance metrics, non-annualized Sharpe status, percentage drawdown, methodology display, and additive outcome exports.
+- Added read-only submission summary composer (src/lib/tenax/paper-trading-submission-summary.ts) + GET /api/paper-trading/summary + SUMMARY JSON link on /app/paper-trading; all compose existing ledger/metrics/export modules with zero fabricated values.
+- Added docs/agentic-trading-capture-manifest.md (pre-flight, owner decisions, exact proposed Demo action, post-capture evidence checklist, judge truth rules).
+- Added tests/paper-trading-submission-summary.test.ts (4 offline: fake EXECUTE end-to-end incl. query/exports/summary/secret-scan/zero-writes; ESCALATE NO_ORDER zero-write; REFUSE NO_ORDER zero-write; empty-ledger honesty).
 
 ## Blockers
+- Slice 4b capture needs 3 owner decisions: (1) `.env.local` has DUPLICATE `TENAX_ANALYSIS_MODE` lines (`ai` then `fixture`; effective `fixture`) — collapse to one line; (2) pre-existing Demo NVDAUSDT short 0.43 @1x (~$103) breaks a clean EXECUTE capture (existing+proposed ~40.6% > 30% max → cumulative ESCALATE/REFUSE by design; owner must flatten manually, agent never closes); (3) live groq model decides WAIT on canonical fixture evidence, so a genuine AI EXECUTE needs owner-accepted intent/evidence or the explicit fixture path. `DATABASE_URL` is also split across two lines (stray lowercase `sslmode` line) — works today (config valid, DURABLE proven) but should be rejoined.
 - Connected Mode requires `DATABASE_URL` for durable state; no process-global fallback is allowed for personal account data.
 - Real OAuth/provider/snapshot QA is intentionally owner-gated and was not run: owner approval, approved Bitget OAuth access, durable Postgres, and local connector access remain required.
 - Public installer hosting and code signing remain release work; unsigned local SEA artifacts are acceptable for owner QA only.
 
 ## Verification
-- Slice 3 outcome/metric/UI tests: 12 passed; Slice 2 UI/export tests: 7 passed; Slice 1 ledger tests: 5 passed; full Vitest: 828 passed across 49 files.
-- `npx tsc --noEmit`, `npm run lint`, Next production build, and `git diff --check` passed.
-- Outcome/metric tests use deterministic fixture runs and injected observations/repositories; no provider writes, OAuth, or live Bitget calls were made.
+- Slice 4a: 4 new submission-QA tests pass; related evidence suites (agent-cycle, authority-routing, demo-hedge-executor, paper-trading run/ui/outcomes, judge-proof): 113 pass; full Vitest: 832 passed across 50 files (one earlier run flaked 6 tests with 1 error, clean on rerun).
+- `npx tsc --noEmit`, `npm run lint`, Next production build (incl. /api/paper-trading/summary), and `git diff --check` passed.
+- Durable Postgres proven live read-only: run ledger DURABLE (0 runs), proof ledger DURABLE (1 proof); Demo discovery overall PASS (exit 0, read-only); AI verify overall PASS with live WAIT decision (groq openai/gpt-oss-120b, one inference, no approve/execute).
+- New tests use deterministic fixtures and injected fetch boundaries; no provider writes, OAuth, or live Bitget writes were made.
 
 ## Next action
-- Submission Evidence QA + Live Paper-Run Capture; do not start that slice in this invocation.
+- Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.

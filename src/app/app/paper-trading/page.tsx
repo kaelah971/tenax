@@ -227,6 +227,7 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
             <div className="flex flex-wrap gap-2">
               <a href={`/api/paper-trading/export.csv${exports}`} className="font-syslabel rounded-[7px] bg-ink px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-softwhite">DOWNLOAD CSV</a>
               <a href={`/api/paper-trading/export.json${exports}`} className="font-syslabel rounded-[7px] border border-ink/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-ink">DOWNLOAD JSON</a>
+              <a href="/api/paper-trading/summary" className="font-syslabel rounded-[7px] border border-ink/30 px-3 py-2 text-[10px] font-bold uppercase tracking-[0.08em] text-ink">SUMMARY JSON</a>
             </div>
           </div>
           <div className="hidden grid-cols-[120px_minmax(110px,0.8fr)_minmax(160px,1.2fr)_minmax(150px,1fr)_minmax(120px,0.8fr)] gap-4 border-b border-ink/10 py-3 font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink md:grid">
