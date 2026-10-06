@@ -253,15 +253,18 @@ describe("browser Connected Mode handoff", () => {
       { ok: true, state: "CONNECTOR_READY", errorCode: null },
       { ok: true, state: "FAILED", errorCode: "CONNECTOR_FAILED" },
     ]);
+    const failedStates: BrowserConnectState[] = [];
     const failed = await runConnectedHandoff(
       {
         serverOrigin: SERVER_ORIGIN,
         signal: new AbortController().signal,
         createPairing: async () => pairing(),
+        onState: (state) => failedStates.push(state),
       },
       { fetchImpl: bridge.fetchImpl, delay: async () => {}, maxPolls: 3 },
     );
     expect(failed.outcome).toBe("FAILED");
+    expect(failedStates.at(-1)).toBe("FAILED");
 
     const fetchNever = vi.fn(async () => {
       throw new Error("must not poll expired pairing");
@@ -367,6 +370,7 @@ describe("browser Connected Mode handoff", () => {
     const page = readFileSync(resolve(process.cwd(), "src", "app", "app", "connected", "page.tsx"), "utf8");
     const handoff = readFileSync(resolve(process.cwd(), "src", "lib", "connected", "browser-handoff.ts"), "utf8");
     const idleSection = panel.slice(panel.indexOf('{state === "IDLE"'), panel.indexOf('{pairing && !connected'));
+    const finallyBlock = panel.slice(panel.indexOf("    } finally {"), panel.indexOf("    } finally {") + 220);
 
     expect(page).toContain("CONNECT YOUR BITGET ACCOUNT");
     expect(page).toContain("Your Bitget credentials stay on this device.");
@@ -381,6 +385,10 @@ describe("browser Connected Mode handoff", () => {
     expect(panel).toContain("WAITING FOR CONNECTOR");
     expect(panel).toContain("launchProtocolImmediately: true");
     expect(panel).toContain("if (!canCreate || activeController.current) return;");
+    expect(panel).toContain("mounted.current = true;");
+    expect(panel).toContain("setState(\"FAILED\")");
+    expect(panel).not.toContain("setState(\"IDLE\")");
+    expect(finallyBlock).not.toContain("setState");
     expect(panel).toContain("INSTALLER UNAVAILABLE IN THIS DEVELOPMENT BUILD");
     expect(panel).toContain("/api/connected/installer");
     expect(panel).toContain("router.refresh");

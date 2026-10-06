@@ -139,6 +139,7 @@ export default function PairingPanel({ connectionStatus, pendingPairing, hasSnap
   const displayedExpiry = useMemo(() => minutesRemaining(pairing?.expiresAt ?? null), [pairing?.expiresAt]);
 
   useEffect(() => {
+    mounted.current = true;
     return () => {
       mounted.current = false;
       activeController.current?.abort();
