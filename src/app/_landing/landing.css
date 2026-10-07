@@ -110,24 +110,6 @@ html:has(.tx-landing) {
   --scene-h: 54;
 }
 
-.tx-scene-traces {
-  position: absolute;
-  inset: -4em -3em 0 -3em;
-  z-index: 0;
-  width: calc(100% + 6em);
-  height: calc(100% + 4em);
-  pointer-events: none;
-}
-
-@keyframes tx-trace-run {
-  to { stroke-dashoffset: -600; }
-}
-
-.tx-trace-pulse {
-  stroke-dasharray: 4 46;
-  animation: tx-trace-run 14s linear infinite;
-}
-
 /* Green under-light: the devices sit in the signal field. */
 .tx-scene-floor {
   position: absolute;
@@ -202,9 +184,6 @@ html:has(.tx-landing) {
     0 5em 8em -2em rgba(0, 0, 0, 0.95),
     0 0 6em -2em rgba(99, 255, 42, 0.35);
 }
-
-
-
 
 .tx-phone-d {
   left: 3em;
@@ -365,141 +344,37 @@ html:has(.tx-landing) {
   }
 }
 
-/* ---- Mascot hero ------------------------------------------------------------
-   Scene unit: 1em = 10 asset pixels of the 1254px mascot render, derived
-   from container width, so mascot, phones and finger overlays stay locked
-   together at every size. Stack: traces → aura → floor → mascot → light
-   spill → held phones → finger overlays. */
-.tx-mascot-scene {
-  position: relative;
-  font-size: calc(100cqw / 130);
-  width: 130em;
-  height: 128em;
-  margin-inline: auto;
+/* Opaque-render fallback: when the hero render ships without an alpha
+   channel, its solid black ground is composited away with `lighten`, and a
+   soft dark occluder behind the figure keeps the field's light from
+   showing through the character. A true RGBA export needs neither. */
+.tx-hero-art-opaque {
+  isolation: auto;
 }
 
-.tx-mascot-scene .tx-scene-traces {
-  left: -4em;
-  top: 4em;
-  width: calc(100% + 8em);
-  height: calc(100% - 22em);
+.tx-hero-art-opaque .tx-hero-art-img {
+  mix-blend-mode: lighten;
+  filter: none;
 }
 
-.tx-mascot-aura {
+.tx-hero-art-occluder {
   position: absolute;
-  left: 14em;
-  top: 4em;
-  width: 104em;
-  height: 92em;
-  z-index: 1;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(99, 255, 42, 0.2), rgba(18, 61, 22, 0.42) 52%, transparent 78%);
-  filter: blur(5em);
-}
-
-.tx-mascot-floor {
-  position: absolute;
-  left: 20em;
-  top: 112em;
-  width: 90em;
-  height: 15em;
-  z-index: 1;
-  border-radius: 50%;
-  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.9), rgba(0, 0, 0, 0.55) 38%, rgba(99, 255, 42, 0.22) 62%, transparent 80%);
-  filter: blur(1.4em);
-}
-
-.tx-mascot-layer {
-  position: absolute;
-  left: 2em;
-  top: 0;
-  width: 125.4em;
-  height: 125.4em;
+  inset: 4% 2% 2% 2%;
+  z-index: 0;
+  border-radius: 46% 46% 40% 40% / 42% 42% 36% 36%;
+  background: radial-gradient(closest-side, #000 70%, rgba(0, 0, 0, 0.85) 82%, transparent 100%);
+  filter: blur(14px);
   pointer-events: none;
-  user-select: none;
 }
 
-.tx-mascot-base {
-  z-index: 2;
-  filter:
-    drop-shadow(-0.6em -0.4em 1.6em rgba(99, 255, 42, 0.34))
-    drop-shadow(0 4em 4em rgba(0, 0, 0, 0.75));
+/* Second occluder: a soft band behind both held phones, whose dark screens
+   reach the render's outer edges. */
+.tx-hero-art-occluder-band {
+  inset: 18% 0.5% 25% 0.5%;
+  border-radius: 22% / 30%;
+  background: radial-gradient(closest-side, #000 82%, rgba(0, 0, 0, 0.9) 94%, rgba(0, 0, 0, 0.6) 100%);
+  filter: blur(16px);
 }
-
-.tx-mascot-hand {
-  z-index: 5;
-  filter: drop-shadow(0 0.5em 0.6em rgba(0, 0, 0, 0.6));
-}
-
-/* Screen light falling back onto the figure. */
-.tx-mascot-spill {
-  position: absolute;
-  z-index: 3;
-  border-radius: 50%;
-  mix-blend-mode: screen;
-  pointer-events: none;
-  filter: blur(3em);
-}
-
-.tx-mascot-spill-l {
-  left: 40em;
-  top: 58em;
-  width: 30em;
-  height: 44em;
-  background: radial-gradient(closest-side, rgba(99, 255, 42, 0.26), transparent 75%);
-}
-
-.tx-mascot-spill-r {
-  left: 70em;
-  top: 34em;
-  width: 26em;
-  height: 44em;
-  background: radial-gradient(closest-side, rgba(99, 255, 42, 0.22), transparent 75%);
-}
-
-/* Held devices: pivot at the hand, tilted outward from the body. */
-.tx-held {
-  position: absolute;
-  z-index: 4;
-  width: 34em;
-  transform-origin: 50% 100%;
-}
-
-.tx-held-l {
-  left: 18.5em;
-  top: 33.8em;
-  transform: rotate(-10deg);
-}
-
-.tx-held-r {
-  left: 82.5em;
-  top: 8.2em;
-  transform: rotate(10deg);
-}
-
-.tx-phone.tx-phone-held {
-  position: relative;
-  width: 100%;
-  font-size: calc(34em / 22);
-  box-shadow:
-    inset 0 0 0 0.1em rgba(255, 255, 255, 0.12),
-    inset 0.14em 0 0 rgba(99, 255, 42, 0.32),
-    0 0 0 0.1em #020302,
-    0 2.6em 4em -1em rgba(0, 0, 0, 0.9),
-    0 0 5em -1.4em rgba(99, 255, 42, 0.45);
-}
-
-/* Held screens carry fewer, larger elements so they stay readable. */
-.tx-phone-held .tx-ps-label { font-size: 0.78em; }
-.tx-phone-held .tx-ps-title { font-size: 2.4em; }
-.tx-phone-held .tx-ps-copy { font-size: 0.82em; }
-.tx-phone-held .tx-ps-row { font-size: 0.8em; }
-.tx-phone-held .tx-ps-tag { font-size: 0.7em; }
-.tx-phone-held .tx-ps-proposal { font-size: 1.8em; }
-.tx-phone-held .tx-ps-seam { font-size: 0.56em; }
-.tx-phone-held .tx-ps-verdict { font-size: 5em; }
-.tx-phone-held .tx-ps-cta,
-.tx-phone-held .tx-ps-result { font-size: 0.78em; }
 
 /* Phone screen content. */
 .tx-ps-label {
@@ -914,7 +789,6 @@ html:has(.tx-landing) {
 
 @media (prefers-reduced-motion: reduce) {
   .tx-flow-pulse,
-  .tx-trace-pulse,
   .tx-outcome-card,
   .tx-faq-item[open] .tx-faq-answer {
     animation: none !important;

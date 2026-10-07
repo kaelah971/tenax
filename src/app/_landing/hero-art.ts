@@ -9,7 +9,9 @@
 // current code-rendered hero stays in place.
 export const HERO_ART = {
   src: "/brand/tenax-agent-hero.png",
-  width: 1122,
-  height: 1402,
-  approved: false,
+  width: 1132,
+  height: 1390,
+  approved: true,
+  /** The current render is RGB on solid black (no alpha channel). */
+  alpha: false,
 } as const;

@@ -94,42 +94,6 @@ describe("Device mockups", () => {
   });
 });
 
-describe("Mascot hero", () => {
-  const mascotSource = read("src/app/_landing/MascotHero.tsx");
-
-  it("uses the exact existing Tenax mascot asset as the hero figure", async () => {
-    const { MASCOT_ASSET } = await import("../src/app/_landing/MascotHero");
-    const { TENAX_AGENT_ASSET } = await import("../src/app/app/_components/living");
-    expect(MASCOT_ASSET).toBe("/brand/tenax-agent.png");
-    expect(MASCOT_ASSET).toBe(TENAX_AGENT_ASSET);
-    expect(existsSync(resolve(process.cwd(), "public/brand/tenax-agent.png"))).toBe(true);
-    expect(landingSource).toContain("<MascotHero data={devices} />");
-    expect(landingSource).not.toContain("HeroDevices");
-  });
-
-  it("holds the Event Intelligence and Final Tenax Decision screens", () => {
-    expect(mascotSource).toContain("<EventScreen data={data} />");
-    expect(mascotSource).toContain("<DecisionScreen data={data} compact />");
-    expect(mascotSource).toContain('role="img"');
-    expect(mascotSource).toContain('aria-hidden="true"');
-  });
-
-  it("serves the asset through optimized next/image and keeps finger clips inside the render", async () => {
-    expect(mascotSource).toContain('from "next/image"');
-    expect(mascotSource).not.toContain("unoptimized");
-    const { clipPolygon } = await import("../src/app/_landing/MascotHero");
-    const poly = clipPolygon([
-      [0, 0],
-      [1254, 1254],
-    ]);
-    expect(poly).toBe("polygon(0.00% 0.00%, 100.00% 100.00%)");
-    for (const match of mascotSource.matchAll(/\[(\d+), (\d+)\]/g)) {
-      expect(Number(match[1])).toBeLessThanOrEqual(1254);
-      expect(Number(match[2])).toBeLessThanOrEqual(1254);
-    }
-  });
-});
-
 describe("Dedicated hero art", () => {
   const artSource = read("src/app/_landing/HeroArt.tsx");
 
@@ -147,12 +111,26 @@ describe("Dedicated hero art", () => {
     expect(file.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
     expect(file.readUInt32BE(16)).toBe(HERO_ART.width);
     expect(file.readUInt32BE(20)).toBe(HERO_ART.height);
-    expect(file[25]).toBe(6); // RGBA colour type: real alpha channel
+    // RGBA renders sit on the field directly; RGB renders must declare
+    // alpha:false so the opaque-ground compositing fallback is applied.
+    expect([2, 6]).toContain(file[25]);
+    expect(HERO_ART.alpha).toBe(file[25] === 6);
   });
 
-  it("goes live only behind the owner approval gate", () => {
+  it("is live behind the owner approval gate and replaces the old composition", async () => {
+    const { HERO_ART } = await import("../src/app/_landing/hero-art");
+    expect(HERO_ART.approved).toBe(true);
     expect(landingSource).toContain("HERO_ART.approved ? (");
     expect(landingSource).toContain("<HeroArt />");
+    expect(landingSource).not.toContain("MascotHero");
+    expect(landingSource).not.toContain("HeroDevices");
+    expect(existsSync(resolve(process.cwd(), "src/app/_landing/MascotHero.tsx"))).toBe(false);
+  });
+
+  it("composites an opaque render away instead of showing a box", () => {
+    expect(artSource).toContain('HERO_ART.alpha ? "" : " tx-hero-art-opaque"');
+    const css = read("src/app/_landing/landing.css");
+    expect(css).toMatch(/\.tx-hero-art-opaque \.tx-hero-art-img \{\s*mix-blend-mode: lighten;/);
   });
 
   it("is the whole visual: no HTML phones layered over the render", () => {

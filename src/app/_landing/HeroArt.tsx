@@ -8,9 +8,16 @@ import { HERO_ART } from "./hero-art";
 
 export default function HeroArt() {
   return (
-    <figure className="tx-hero-art">
+    <figure className={`tx-hero-art${HERO_ART.alpha ? "" : " tx-hero-art-opaque"}`}>
       <span className="tx-hero-art-glow" aria-hidden="true" />
-      <span className="tx-hero-art-ground" aria-hidden="true" />
+      {HERO_ART.alpha ? (
+        <span className="tx-hero-art-ground" aria-hidden="true" />
+      ) : (
+        <>
+          <span className="tx-hero-art-occluder" aria-hidden="true" />
+          <span className="tx-hero-art-occluder tx-hero-art-occluder-band" aria-hidden="true" />
+        </>
+      )}
       <Image
         src={HERO_ART.src}
         width={HERO_ART.width}

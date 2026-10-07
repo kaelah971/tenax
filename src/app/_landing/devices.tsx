@@ -26,7 +26,7 @@ const CHECK_LABEL: Partial<Record<MandateCheck["id"], string>> = {
   max_leverage: "LEVERAGE",
 };
 
-export function Phone({
+function Phone({
   children,
   className = "",
   style,
@@ -86,7 +86,7 @@ export function EventScreen({ data }: { data: DeviceData }) {
   );
 }
 
-export function DecisionScreen({ data, compact = false }: { data: DeviceData; compact?: boolean }) {
+export function DecisionScreen({ data }: { data: DeviceData }) {
   const refused = data.decision.verdict === "REFUSE";
   const checks = data.decision.checks.filter((c) => CHECK_LABEL[c.id]);
   return (
@@ -101,7 +101,7 @@ export function DecisionScreen({ data, compact = false }: { data: DeviceData; co
       <div className={`tx-ps-authority${refused ? " tx-ps-authority-refused" : ""}`}>
         <p className="tx-ps-tag tx-ps-tag-authority">FINAL TENAX DECISION</p>
         <p className={`tx-ps-verdict ${refused ? "tx-ps-clay" : "tx-ps-signal"}`}>{data.decision.verdict}</p>
-        {compact ? null : <div className="tx-ps-checks">
+        <div className="tx-ps-checks">
           {checks.map((check) => (
             <div key={check.id} className="tx-ps-row">
               <span className="tx-ps-k">{CHECK_LABEL[check.id]}</span>
@@ -117,16 +117,16 @@ export function DecisionScreen({ data, compact = false }: { data: DeviceData; co
               <span className={check.pass ? "tx-ps-ok" : "tx-ps-no"}>{check.pass ? "✓" : "✕"}</span>
             </div>
           ))}
-        </div>}
+        </div>
       </div>
-      {compact ? null : <ol className="tx-ps-rail" aria-hidden="true">
+      <ol className="tx-ps-rail" aria-hidden="true">
         {signalRailForAnalysis(refused ? "REFUSED" : "AUTHORIZED", data.decision.failedRules.length === 0).map((node) => (
           <li key={node.stage} className={`tx-rail-${node.state}`}>
             <span className="tx-signal-node" />
             {node.stage}
           </li>
         ))}
-      </ol>}
+      </ol>
       <div className="tx-ps-panel">
         <p className="tx-ps-label">{refused ? "WHY IT STOPPED" : "NEXT AUTHORITY STEP"}</p>
         {data.decision.failedRules.map((rule) => (
@@ -175,53 +175,6 @@ export function ProofScreen({ data }: { data: DeviceData }) {
 
 const SCENE_LABEL =
   "Illustrative Tenax screens built from demo fixtures: Event Intelligence for NVIDIA earnings with an unverified date, the Final Tenax Decision refusing an AI proposal that exceeds the mandate, and the resulting Decision Proof.";
-
-/** Faint authority traces behind the devices: violet AI territory on the
- * left resolving into green deterministic authority on the right. Thin
- * trajectories, small nodes and a dot field — not a flowchart. */
-export function SignalTraces() {
-  return (
-    <svg className="tx-scene-traces" viewBox="0 0 640 640" preserveAspectRatio="none" focusable="false">
-      <defs>
-        <linearGradient id="trace-boundary" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#8b7cff" stopOpacity="0" />
-          <stop offset="0.28" stopColor="#8b7cff" stopOpacity="0.55" />
-          <stop offset="0.52" stopColor="#63ff2a" stopOpacity="0.75" />
-          <stop offset="1" stopColor="#4cc9ff" stopOpacity="0" />
-        </linearGradient>
-        <pattern id="trace-dots" width="12" height="12" patternUnits="userSpaceOnUse">
-          <circle cx="6" cy="6" r="0.9" fill="#c9d3cc" />
-        </pattern>
-        <radialGradient id="trace-fade" cx="55%" cy="45%" r="55%">
-          <stop offset="0" stopColor="#fff" stopOpacity="0.9" />
-          <stop offset="1" stopColor="#fff" stopOpacity="0" />
-        </radialGradient>
-        <mask id="trace-mask">
-          <rect width="640" height="640" fill="url(#trace-fade)" />
-        </mask>
-      </defs>
-      <rect width="640" height="640" fill="url(#trace-dots)" opacity="0.18" mask="url(#trace-mask)" />
-      <path d="M-10 420 C 120 380 180 250 300 260 S 470 170 650 120" fill="none" stroke="url(#trace-boundary)" strokeWidth="1" />
-      <path d="M-10 500 C 140 470 230 360 340 380 S 520 300 650 270" fill="none" stroke="url(#trace-boundary)" strokeWidth="0.8" opacity="0.6" />
-      <path d="M-10 300 C 110 300 200 170 320 160 S 500 90 650 40" fill="none" stroke="url(#trace-boundary)" strokeWidth="0.7" opacity="0.45" />
-      <path d="M-10 420 C 120 380 180 250 300 260 S 470 170 650 120" fill="none" stroke="#87ff4d" strokeWidth="1.6" className="tx-trace-pulse" opacity="0.8" />
-      <line x1="318" y1="40" x2="318" y2="600" stroke="#63ff2a" strokeOpacity="0.22" strokeDasharray="2 7" />
-      {[
-        [92, 372, "#8b7cff"],
-        [196, 286, "#8b7cff"],
-        [300, 260, "#63ff2a"],
-        [430, 196, "#ffb454"],
-        [540, 152, "#4cc9ff"],
-        [610, 132, "#63ff2a"],
-      ].map(([x, y, c]) => (
-        <g key={`${x}-${y}`}>
-          <circle cx={x} cy={y} r="7" fill={c as string} opacity="0.16" />
-          <circle cx={x} cy={y} r="2.4" fill="#050706" stroke={c as string} strokeWidth="1.2" />
-        </g>
-      ))}
-    </svg>
-  );
-}
 
 /** Closing CTA composition: decision + proof, rising out of the band. */
 export function CtaDevices({ data }: { data: DeviceData }) {
