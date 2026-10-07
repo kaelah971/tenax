@@ -41,7 +41,7 @@ function EvidenceSection({ title, source, children }: { title: string; source: s
   return (
     <section className="tx-material-editorial border-t-2 border-ink p-5 sm:p-7">
       <div className="flex flex-wrap items-baseline justify-between gap-3">
-        <h2 className="text-[26px] font-extrabold tracking-[-0.03em]">{title}</h2>
+        <h2 className="font-display text-[26px] font-bold tracking-[-0.01em]">{title}</h2>
         <p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">SOURCE · {source}</p>
       </div>
       <div className="mt-5">{children}</div>
@@ -83,7 +83,7 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
             <div className="flex flex-wrap items-end justify-between gap-5">
               <div>
                 <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">CANONICAL RUN · {run.symbol}</p>
-                <h1 className="mt-3 text-[48px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[82px]">Evidence</h1>
+                <h1 className="mt-3 font-display text-[48px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[82px]">Evidence</h1>
               </div>
               <span className={`inline-flex rounded-full px-3 py-2 font-syslabel text-[11px] font-bold uppercase tracking-[0.08em] ${statusClass(run.status)}`}>{run.authority.outcome}</span>
             </div>

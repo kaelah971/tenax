@@ -48,7 +48,7 @@ function TickerHeader({ ticker }: { ticker: TickerSnapshot }) {
           NVDAUSDT · PERPETUAL <span className="ml-2 border border-ink/25 px-1.5 py-px">BITGET</span>
         </p>
         <div className="mt-1.5 flex flex-wrap items-baseline gap-x-4 gap-y-1">
-          <p className="text-[40px] font-extrabold leading-none tracking-[-0.03em] sm:text-[48px]">
+          <p className="font-syslabel text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[48px]">
             {formatPrice(ticker?.lastPrice ?? null)}
           </p>
           {change ? (

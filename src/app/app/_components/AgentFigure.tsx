@@ -24,7 +24,7 @@ export default function AgentFigure({
       <span
         data-agent-fallback="true"
         aria-hidden="true"
-        className="flex items-center justify-center rounded-[28%] border border-white/60 bg-softwhite/50 shadow-[inset_0_1px_0_rgba(255,255,255,0.7),0_18px_36px_-18px_rgba(17,17,17,0.4)] backdrop-blur-md"
+        className="flex items-center justify-center rounded-[28%] border border-line bg-softwhite/70 shadow-[inset_0_1px_0_rgba(255,255,255,0.06),0_18px_36px_-18px_rgba(0,0,0,0.8)] backdrop-blur-md"
         style={{ width: size, height: size }}
       >
         <span

@@ -96,7 +96,7 @@ export function CoverageBar({
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           PROTECTION COVERAGE
         </p>
-        <p className="text-[36px] font-extrabold leading-none tracking-[-0.03em] sm:text-[44px]">
+        <p className="font-syslabel text-[36px] font-semibold leading-none tracking-[-0.02em] sm:text-[44px]">
           {coverage === null ? "—" : `${coverage.toFixed(2)}%`}
         </p>
       </div>
@@ -233,11 +233,11 @@ export function CandleChart({
               x2={g.padL + g.plotW}
               y1={g.y(v)}
               y2={g.y(v)}
-              stroke="#111111"
-              strokeOpacity="0.12"
+              stroke="#A0B6D4"
+              strokeOpacity="0.1"
               strokeWidth="1"
             />
-            <text x={g.W - 4} y={g.y(v) + 4} textAnchor="end" fontSize="10.5" fill="#111111" opacity="0.6">
+            <text x={g.W - 4} y={g.y(v) + 4} textAnchor="end" fontSize="10.5" fill="#8B97A8">
               {v.toFixed(2)}
             </text>
           </g>
@@ -254,8 +254,8 @@ export function CandleChart({
                 x2={cx}
                 y1={g.y(c.h)}
                 y2={g.y(c.l)}
-                stroke="#111111"
-                strokeOpacity="0.7"
+                stroke={up ? "#45E0CF" : "#C3CEDC"}
+                strokeOpacity="0.75"
                 strokeWidth="1.25"
               />
               <rect
@@ -263,8 +263,8 @@ export function CandleChart({
                 y={top}
                 width={bodyW}
                 height={height}
-                fill={up ? "#F5FF3B" : "#111111"}
-                stroke="#111111"
+                fill={up ? "#45E0CF" : "#0C1118"}
+                stroke={up ? "#45E0CF" : "#C3CEDC"}
                 strokeWidth="1.25"
               />
             </g>
@@ -277,8 +277,7 @@ export function CandleChart({
             y={g.H - 6}
             textAnchor="middle"
             fontSize="10.5"
-            fill="#111111"
-            opacity="0.6"
+            fill="#8B97A8"
           >
             {formatCandleTime(candles[i]?.t ?? 0, interval)}
           </text>
@@ -290,18 +289,19 @@ export function CandleChart({
               x2={g.padL + g.plotW}
               y1={actionY}
               y2={actionY}
-              stroke="#111111"
+              stroke="#E6ECF4"
+              strokeOpacity="0.7"
               strokeDasharray="6 4"
               strokeWidth="1.5"
             />
             {dotX !== null ? (
-              <circle cx={dotX} cy={actionY} r="6" fill="#F5FF3B" stroke="#111111" strokeWidth="2.5" />
+              <circle cx={dotX} cy={actionY} r="6" fill="#45E0CF" stroke="#05070B" strokeWidth="2.5" />
             ) : null}
-            <rect x={labelX} y={labelY} width="192" height="52" rx="8" fill="#111111" />
-            <text x={labelX + 12} y={labelY + 21} fill="#F5FF3B" fontSize="11" fontWeight="800" letterSpacing="1">
+            <rect x={labelX} y={labelY} width="192" height="52" rx="8" fill="#0A0F15" stroke="#45E0CF" strokeOpacity="0.45" />
+            <text x={labelX + 12} y={labelY + 21} fill="#45E0CF" fontSize="11" fontWeight="800" letterSpacing="1">
               TENAX PROTECTION
             </text>
-            <text x={labelX + 12} y={labelY + 39} fill="#F3EFE6" fontSize="12.5" fontWeight="700">
+            <text x={labelX + 12} y={labelY + 39} fill="#E6ECF4" fontSize="12.5" fontWeight="700">
               SHORT {action.qty} ENTRY {action.avgPrice}
             </text>
           </g>
@@ -346,8 +346,8 @@ export function MandateRows({ rows }: { rows: readonly MandateVisualRow[] }) {
               row.pass === null
                 ? "border border-ink/30 text-ink"
                 : row.pass
-                  ? "bg-pass text-white"
-                  : "bg-clay text-white"
+                  ? "bg-pass text-ink"
+                  : "bg-clay text-ivory"
             }`}
           >
             {row.pass === null ? "—" : row.pass ? "PASS" : "REFUSED"}
@@ -376,8 +376,8 @@ export function RefusalBanner({
     <div className="flex flex-col gap-3 rounded-[14px] border-2 border-clay p-4 sm:flex-row sm:items-center sm:gap-8 sm:p-5">
       <div className="flex items-center gap-4 sm:gap-5">
         <p className="state-mark bg-clay text-softwhite">✕ REFUSED</p>
-        <p className="text-[34px] font-extrabold leading-none tracking-[-0.02em] sm:text-[44px]">
-          ${value} <span className="text-[18px] font-bold tracking-normal">· {pct}%</span>
+        <p className="font-syslabel text-[34px] font-semibold leading-none tracking-[-0.02em] sm:text-[44px]">
+          ${value} <span className="text-[18px] font-semibold tracking-normal">· {pct}%</span>
         </p>
       </div>
       <div className="min-w-0 flex-1 sm:border-l sm:border-ink/15 sm:pl-8">

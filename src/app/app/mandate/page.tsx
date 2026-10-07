@@ -60,7 +60,7 @@ export default function MandatePage() {
         current="MANDATE"
         links={{ EXPOSURE: "/app/exposure/nvidia", INTENT: "/app/protect/nvidia" }}
       />
-      <div className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">MANDATE_001 · PERMISSION</p><h1 className="mt-3 text-[52px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[92px]">Mandate</h1></div>
+      <div className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">MANDATE_001 · PERMISSION</p><h1 className="mt-3 font-display text-[52px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[92px]">Mandate</h1></div>
       <AuthorityInstrument as="section" className="rounded-[18px] p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-center justify-between gap-4"><div><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">CURRENT AUTHORITY</p><p className="mt-2 text-[22px] font-extrabold leading-none">The only permission the agent holds.</p></div><span className="state-mark text-signal">{activeMandate ? "USER DEFINED" : "◇ DEV · FIXTURE"}</span></div>
         <dl className="mt-7 grid grid-cols-1 gap-0 sm:grid-cols-2">{rows.map(([term, value]) => <div key={term} className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-6 gap-y-1 border-t border-softwhite/15 py-4"><dt className="text-[14px] leading-[20px] text-softwhite/60">{term}</dt><dd className="break-words text-right text-[20px] font-bold leading-[24px]">{value}</dd></div>)}</dl>

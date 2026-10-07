@@ -119,7 +119,7 @@ export default function ApproveExecutePanel({
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
               ACTION_01 · {verified ? "VERIFIED · FILLED" : `STATUS ${String(submitted.orderStatus ?? "UNKNOWN").toUpperCase()}`}
             </p>
-            <p className="value-live mt-3 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[88px]">
+            <p className="value-live mt-3 font-syslabel text-[56px] font-semibold leading-none tracking-[-0.02em] sm:text-[88px]">
               ${tradeValueUsdt}
             </p>
             <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
@@ -172,7 +172,7 @@ export default function ApproveExecutePanel({
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
               ACTION_01 · PREVIEW CREATED
             </p>
-            <p className="value-live mt-3 text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[88px]">
+            <p className="value-live mt-3 font-syslabel text-[56px] font-semibold leading-none tracking-[-0.02em] sm:text-[88px]">
               ${tradeValueUsdt}
             </p>
             <p className="font-syslabel mt-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
@@ -232,7 +232,7 @@ export default function ApproveExecutePanel({
               <span className="font-syslabel w-20 shrink-0 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                 {label}
               </span>
-              <span className={`anim-rise text-[20px] font-extrabold leading-none ${color}`}>
+              <span className={`anim-rise font-syslabel text-[20px] font-semibold leading-none ${color}`}>
                 {state}
               </span>
               {label === "ACTION" ? (

@@ -143,7 +143,7 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
         <div className="flex flex-wrap items-start justify-between gap-5">
           <div>
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PAPER TRADING EVIDENCE</p>
-            <h1 className="mt-3 text-[48px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[82px]">Event → Decision → Execution</h1>
+            <h1 className="mt-3 font-display text-[48px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[82px]">Event → Decision → Execution</h1>
             <p className="mt-4 max-w-2xl text-[16px] leading-[24px] text-mutedink">Durable record of Tenax agent cycles. This is a verifiable run log, not a backtest.</p>
           </div>
           <div className="grid min-w-[220px] gap-3 rounded-[12px] border border-ink/15 bg-softwhite/60 p-4">
@@ -247,7 +247,7 @@ function Fact({ label, value }: { label: string; value: string }) {
 }
 
 function Summary({ label, value }: { label: string; value: number }) {
-  return <div className="tx-material-editorial border-t-2 border-ink p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">{label}</p><p className="mt-2 text-[32px] font-extrabold leading-none tabular-nums">{value}</p></div>;
+  return <div className="tx-material-editorial border-t-2 border-ink p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">{label}</p><p className="mt-2 font-syslabel text-[32px] font-semibold leading-none tabular-nums">{value}</p></div>;
 }
 
 function MetricPanel({ title, rows }: { title: string; rows: ReadonlyArray<readonly [string, string]> }) {

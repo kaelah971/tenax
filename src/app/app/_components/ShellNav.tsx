@@ -23,8 +23,8 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
   const pathname = usePathname();
   if (mobile) {
     return (
-    <nav
-        className="tx-authority-dock absolute right-0 z-20 mt-2 flex min-w-48 flex-col gap-1 rounded-[14px] p-2"
+      <nav
+        className="tx-authority-dock absolute right-4 z-20 mt-2 flex min-w-56 flex-col gap-1 rounded-[14px] p-2"
         aria-label="Primary mobile"
       >
         {NAV.map((item) => {
@@ -33,10 +33,11 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
             <Link
               key={item.href}
               href={item.href}
-                className={`font-syslabel min-h-11 px-4 py-3 text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
+              aria-current={active ? "page" : undefined}
+              className={`font-syslabel min-h-11 rounded-[8px] px-4 py-3 text-[11px] uppercase leading-[20px] tracking-[0.1em] ${
                 active
-                  ? "rounded-[7px] bg-signal font-bold text-ink shadow-[inset_0_1px_0_rgba(255,255,255,0.6),0_6px_12px_-8px_rgba(17,17,17,0.65)]"
-                  : "rounded-[7px] text-softwhite hover:bg-softwhite/10"
+                  ? "bg-signal/10 font-semibold text-signal shadow-[inset_2px_0_0_var(--color-signal)]"
+                  : "text-softwhite/75 hover:bg-softwhite/[0.06] hover:text-softwhite"
               }`}
             >
               {item.label}
@@ -47,17 +48,18 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
     );
   }
   return (
-    <nav className="hidden items-center gap-1 rounded-[11px] border border-softwhite/10 bg-softwhite/[0.035] p-1 md:flex" aria-label="Primary">
+    <nav className="hidden items-center gap-0.5 md:flex" aria-label="Primary">
       {NAV.map((item) => {
         const active = isActive(pathname, item.href);
         return (
           <Link
             key={item.href}
             href={item.href}
-            className={`font-syslabel text-[11px] uppercase leading-[20px] tracking-[0.08em] ${
+            aria-current={active ? "page" : undefined}
+            className={`font-syslabel rounded-[7px] px-2.5 py-2 text-[11px] uppercase leading-[16px] tracking-[0.1em] transition-colors lg:px-3 ${
               active
-                ? "tx-nav-active rounded-[7px] bg-signal font-bold text-ink"
-                : "rounded-[7px] text-softwhite/65 hover:bg-softwhite/[0.08] hover:text-softwhite"
+                ? "tx-nav-active font-semibold text-signal"
+                : "text-ink/55 hover:bg-ink/[0.04] hover:text-ink"
             }`}
           >
             {item.label}

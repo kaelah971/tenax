@@ -472,7 +472,7 @@ function Glyph({ d }: { d: string }) {
       height="20"
       viewBox="0 0 20 20"
       fill="none"
-      stroke="#111111"
+      stroke="currentColor"
       strokeWidth="1.5"
       strokeLinecap="round"
       strokeLinejoin="round"
@@ -644,8 +644,15 @@ export function GateCore({ state }: { state: "PASS" | "REFUSED" | null }) {
         </div>
         <div className="text-center sm:text-left">
           <p
-            className="text-[56px] font-extrabold leading-none tracking-[-0.03em] sm:text-[72px]"
-            style={{ color: state === null ? "#6E6D66" : state === "PASS" ? "#F5FF3B" : "#C74B3B" }}
+            className="font-display text-[56px] font-bold leading-none tracking-[0.02em] sm:text-[72px]"
+            style={{
+              color:
+                state === null
+                  ? "var(--color-mutedink)"
+                  : state === "PASS"
+                    ? "var(--tx-signal)"
+                    : "var(--tx-clay)",
+            }}
           >
             {state ?? "GATE"}
           </p>

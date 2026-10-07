@@ -46,7 +46,7 @@ export default async function NotificationsPage({
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             NOTIFICATIONS · {unreadOnly ? "UNREAD" : "ALL"}
           </p>
-          <h1 className="mt-3 text-[52px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[92px]">
+          <h1 className="mt-3 font-display text-[52px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[92px]">
             Inbox
           </h1>
         </div>

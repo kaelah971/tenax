@@ -137,7 +137,7 @@ export default async function ProofPage({
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             VERIFIED DECISION HISTORY
           </p>
-          <h1 className="mt-3 text-[52px] font-extrabold leading-[0.9] tracking-[-0.05em] sm:text-[92px]">
+          <h1 className="mt-3 font-display text-[52px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[92px]">
             Proof
           </h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-[22px] text-mutedink">

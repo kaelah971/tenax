@@ -1,20 +1,79 @@
 @import "tailwindcss";
 
-/* Tenax signal system (DESIGN.md beta-signal): Signal Yellow dominance,
-   Ink authority, warm ivory field, mono system labels, tabular figures. */
+/* Tenax authority system — dark institutional field.
+   One visual language for the public landing page and the application:
+   near-black field, graphite panels, thin technical hairlines, navy/teal
+   atmosphere, restrained violet for AI reasoning, teal for deterministic
+   authority, coral for refusal.
+
+   Token polarity: the historical token names are kept so every surface
+   converts centrally —
+     ivory     → field (page background)
+     softwhite → raised surface
+     ink       → foreground (text + hairlines)
+     signal    → authority teal (actions, live state, PASS illumination)
+   Dark authority surfaces (bg-ink, authority/critical materials, docks)
+   and solid signal surfaces flip ink/softwhite back locally, see
+   "Polarity scopes" below.
+
+   Typography stays locked: Barlow Condensed display + IBM Plex Mono
+   interface voice, centralized here — components consume the
+   font-display / font-syslabel utilities, never raw font-family. */
 @theme {
-  --color-signal: #f5ff3b;
-  --color-ink: #111111;
-  --color-graphite: #242424;
-  --color-ivory: #f3efe6;
-  --color-softwhite: #fffdf8;
-  --color-mutedink: #6e6d66;
-  --color-pass: #177a50;
-  --color-clay: #c74b3b;
+  --color-signal: #45e0cf;
+  --color-ink: #e6ecf4;
+  --color-graphite: #141b24;
+  --color-ivory: #05070b;
+  --color-softwhite: #0c1118;
+  --color-mutedink: #8b97a8;
+  --color-pass: #5fe08f;
+  --color-clay: #ff6f61;
+  --color-ai: #a397ff;
+  --color-cyan: #62d6ff;
+  --color-navy: #0e2648;
+  --color-line: rgba(160, 182, 212, 0.14);
   --font-sans: "Inter Tight", "General Sans", Inter, ui-sans-serif, sans-serif;
   --font-body: var(--font-georama), ui-sans-serif, sans-serif;
-  --font-display: var(--font-rajdhani), "Arial Narrow", ui-sans-serif, sans-serif;
-  --font-syslabel: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --font-display: var(--font-barlow-condensed), "Arial Narrow", ui-sans-serif, sans-serif;
+  --font-syslabel: var(--font-ibm-plex-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+
+/* ---- Polarity scopes ---------------------------------------------------------
+   Authority surfaces were authored as "dark panel + softwhite text". In the
+   dark field they stay dark: ink resolves dark (surface) and softwhite
+   resolves light (text) inside them. Solid signal/teal surfaces carry dark
+   ink text. Base layer so utilities on the same element still win. */
+@layer base {
+  [class~="bg-ink"],
+  [class~="bg-ink/95"],
+  .tx-material-authority,
+  .tx-material-critical,
+  .material-authority,
+  .material-critical,
+  .glass-dark,
+  .float-module-dark,
+  .tx-authority-dock,
+  .tx-preview-sheet,
+  .tx-technical-drawer,
+  .technical-inset {
+    --color-ink: #070a0f;
+    --color-softwhite: #edf2f8;
+    color: var(--color-softwhite);
+  }
+
+  [class~="bg-ink"],
+  [class~="bg-ink/95"] {
+    --color-ink: #0a0f15;
+  }
+
+  [class~="bg-signal"],
+  [class~="bg-pass"],
+  .glass-signal,
+  .tx-rail-stage-active,
+  .tx-gate-aperture {
+    --color-ink: #041513;
+    --color-mutedink: #0d3a35;
+  }
 }
 
 /* Lightweight purposeful motion only; fully static under reduced motion. */
@@ -29,10 +88,10 @@
 
 @keyframes gate-illuminate {
   0% {
-    box-shadow: 0 0 0 0 rgba(245, 255, 59, 0.55);
+    box-shadow: 0 0 0 0 rgba(69, 224, 207, 0.5);
   }
   100% {
-    box-shadow: 0 0 0 26px rgba(245, 255, 59, 0);
+    box-shadow: 0 0 0 26px rgba(69, 224, 207, 0);
   }
 }
 
@@ -71,19 +130,25 @@
   }
 }
 
-/* ---- Tenax Phase 1E-C — premium living interface system -------------------
-   Selective glass + depth + environment. Yellow still means signal, ink
-   still means authority. All motion is CSS-only and dies under
-   prefers-reduced-motion via the global kill-switch above. */
-
 :root {
-  --tx-signal: #f5ff3b;
-  --tx-ink: #111111;
-  --tx-graphite: #242424;
-  --tx-ivory: #f3efe6;
-  --tx-softwhite: #fffdf8;
-  --tx-pass: #177a50;
-  --tx-clay: #c74b3b;
+  --tx-signal: #45e0cf;
+  --tx-signal-rgb: 69, 224, 207;
+  --tx-ai-rgb: 163, 151, 255;
+  --tx-cyan-rgb: 98, 214, 255;
+  --tx-fg: #e6ecf4;
+  --tx-fg-soft: rgba(230, 236, 244, 0.72);
+  --tx-ink: #e6ecf4;
+  --tx-graphite: #141b24;
+  --tx-ivory: #05070b;
+  --tx-softwhite: #0c1118;
+  --tx-pass: #5fe08f;
+  --tx-clay: #ff6f61;
+  --tx-line: rgba(160, 182, 212, 0.14);
+  --tx-line-strong: rgba(160, 182, 212, 0.24);
+  --tx-panel: linear-gradient(180deg, rgba(20, 28, 39, 0.78), rgba(10, 14, 20, 0.78));
+  --tx-panel-flat: rgba(12, 17, 24, 0.72);
+  --tx-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --tx-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.85);
   --tx-ease: cubic-bezier(0.22, 0.8, 0.28, 1);
 }
 
@@ -111,10 +176,10 @@
 @keyframes tx-live-dot {
   0%,
   100% {
-    box-shadow: 0 0 0 0 rgba(245, 255, 59, 0.65);
+    box-shadow: 0 0 0 0 rgba(69, 224, 207, 0.6);
   }
   60% {
-    box-shadow: 0 0 0 7px rgba(245, 255, 59, 0);
+    box-shadow: 0 0 0 7px rgba(69, 224, 207, 0);
   }
 }
 
@@ -213,37 +278,39 @@
   }
 }
 
-/* Environment (LEVEL 0): fixed backdrop behind the app shell. */
+/* Environment (LEVEL 0): fixed atmospheric backdrop — near-black field with
+   navy depth, a teal authority glow and a restrained violet AI glow. */
 .tx-env {
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background: var(--tx-ivory);
+  background:
+    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(14, 38, 72, 0.75), transparent 70%),
+    var(--tx-ivory);
   pointer-events: none;
 }
 
 .tx-env-bloom {
   position: absolute;
-  top: -320px;
+  top: -340px;
   left: 50%;
   width: min(1100px, 130vw);
   height: 640px;
   transform: translateX(-50%);
   background: radial-gradient(
     ellipse 52% 46% at 50% 42%,
-    rgba(245, 255, 59, 0.5),
-    rgba(245, 255, 59, 0.12) 55%,
+    rgba(31, 92, 140, 0.32),
+    rgba(31, 92, 140, 0.08) 55%,
     transparent 72%
   );
-  animation: none;
 }
 
 .tx-env-bloom-pass {
   background: radial-gradient(
     ellipse 60% 52% at 50% 46%,
-    rgba(245, 255, 59, 0.72),
-    rgba(245, 255, 59, 0.2) 58%,
+    rgba(69, 224, 207, 0.22),
+    rgba(69, 224, 207, 0.06) 58%,
     transparent 75%
   );
 }
@@ -252,10 +319,10 @@
   position: absolute;
   inset: 0;
   background-image:
-    linear-gradient(rgba(17, 17, 17, 0.05) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(17, 17, 17, 0.05) 1px, transparent 1px);
-  background-size: 44px 44px;
-  mask-image: radial-gradient(ellipse 90% 70% at 50% 0%, black 30%, transparent 78%);
+    linear-gradient(rgba(160, 182, 212, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(160, 182, 212, 0.045) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 20%, transparent 75%);
 }
 
 .tx-env-path {
@@ -264,7 +331,7 @@
   bottom: -10%;
   left: 12%;
   width: 1px;
-  background: linear-gradient(transparent, rgba(17, 17, 17, 0.16) 30%, rgba(17, 17, 17, 0.16) 70%, transparent);
+  background: linear-gradient(transparent, rgba(160, 182, 212, 0.08) 30%, rgba(160, 182, 212, 0.08) 70%, transparent);
   transform: rotate(14deg);
 }
 
@@ -277,190 +344,176 @@
 .tx-env-blob {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(70px);
-  animation: none;
+  filter: blur(80px);
 }
 
 .tx-env-blob-a {
-  width: 480px;
-  height: 480px;
-  left: -160px;
-  top: 22%;
-  background: radial-gradient(circle, rgba(245, 255, 59, 0.28), transparent 68%);
+  width: 520px;
+  height: 520px;
+  left: -220px;
+  top: 30%;
+  background: radial-gradient(circle, rgba(69, 224, 207, 0.12), transparent 68%);
 }
 
 .tx-env-blob-b {
-  width: 560px;
-  height: 560px;
-  right: -200px;
-  top: 48%;
-  background: radial-gradient(circle, rgba(17, 17, 17, 0.1), transparent 68%);
-  animation: none;
+  width: 600px;
+  height: 600px;
+  right: -240px;
+  top: 52%;
+  background: radial-gradient(circle, rgba(143, 128, 255, 0.1), transparent 68%);
 }
 
 .tx-env-glow {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(60px);
+  filter: blur(70px);
 }
 
 .tx-env-glow-l {
-  width: 420px;
-  height: 300px;
-  left: -140px;
-  top: 6%;
-  background: radial-gradient(ellipse, rgba(245, 255, 59, 0.22), transparent 70%);
+  width: 460px;
+  height: 320px;
+  left: -160px;
+  top: 4%;
+  background: radial-gradient(ellipse, rgba(31, 92, 140, 0.28), transparent 70%);
 }
 
 .tx-env-glow-r {
-  width: 460px;
-  height: 320px;
-  right: -150px;
-  top: 30%;
-  background: radial-gradient(ellipse, rgba(245, 255, 59, 0.16), transparent 70%);
+  width: 480px;
+  height: 340px;
+  right: -170px;
+  top: 22%;
+  background: radial-gradient(ellipse, rgba(69, 224, 207, 0.1), transparent 70%);
 }
 
 .tx-env-shape {
   position: absolute;
-  width: 720px;
-  height: 720px;
+  width: 820px;
+  height: 820px;
   left: 50%;
-  top: 58%;
+  top: 70%;
   transform: translateX(-50%);
   border-radius: 9999px;
-  background: radial-gradient(circle, rgba(255, 253, 248, 0.7), rgba(243, 239, 230, 0) 65%);
-  filter: blur(30px);
+  background: radial-gradient(circle, rgba(14, 38, 72, 0.35), transparent 65%);
+  filter: blur(40px);
 }
 
 .tx-env-grain {
   position: absolute;
   inset: -40px;
-  opacity: 0.05;
+  opacity: 0.035;
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
 }
 
-/* Glass + depth system: three elevation levels above the environment. */
+/* Glass + depth system: low-contrast graphite panels with hairlines. */
 .glass-surface {
   position: relative;
-  background: rgba(255, 253, 248, 0.72);
-  backdrop-filter: blur(10px) saturate(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  border: 1px solid rgba(17, 17, 17, 0.1);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.65),
-    0 18px 44px -20px rgba(17, 17, 17, 0.28);
+  background: var(--tx-panel);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--tx-line);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 .glass-dark {
   position: relative;
-  background: linear-gradient(158deg, rgba(42, 42, 42, 0.9), rgba(17, 17, 17, 0.94));
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(245, 255, 59, 0.16);
+  background: linear-gradient(160deg, rgba(16, 24, 33, 0.92), rgba(7, 10, 15, 0.94));
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(69, 224, 207, 0.16);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.09),
-    inset 0 -18px 40px -30px rgba(245, 255, 59, 0.25),
-    0 26px 60px -24px rgba(17, 17, 17, 0.55);
+    var(--tx-highlight),
+    inset 0 -18px 40px -30px rgba(69, 224, 207, 0.22),
+    var(--tx-shadow);
 }
 
 .glass-signal {
   position: relative;
-  background: linear-gradient(150deg, rgba(245, 255, 59, 0.92), rgba(240, 244, 120, 0.86));
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(17, 17, 17, 0.85);
+  background: linear-gradient(150deg, rgba(69, 224, 207, 0.95), rgba(98, 214, 255, 0.85));
+  border: 1px solid rgba(69, 224, 207, 0.6);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.55),
-    0 16px 40px -16px rgba(150, 150, 20, 0.55);
+    inset 0 1px 0 rgba(255, 255, 255, 0.4),
+    0 16px 40px -16px rgba(69, 224, 207, 0.45);
 }
 
 .depth-panel {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.6),
-    0 14px 34px -18px rgba(17, 17, 17, 0.3);
+  box-shadow: var(--tx-highlight), 0 14px 34px -18px rgba(0, 0, 0, 0.8);
 }
 
 .depth-control {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.1),
-    0 20px 48px -20px rgba(17, 17, 17, 0.5);
+  box-shadow: var(--tx-highlight), 0 20px 48px -20px rgba(0, 0, 0, 0.85);
   transform: translateZ(0);
 }
 
 .depth-critical {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    inset 14px 0 32px -22px rgba(255, 255, 255, 0.4),
-    inset 0 0 70px -30px rgba(245, 255, 59, 0.45),
-    0 8px 24px -12px rgba(17, 17, 17, 0.28),
-    0 44px 90px -36px rgba(17, 17, 17, 0.6),
-    0 0 0 1px rgba(245, 255, 59, 0.1),
-    0 0 48px -22px rgba(245, 255, 59, 0.38);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    inset 0 0 70px -30px rgba(69, 224, 207, 0.32),
+    0 44px 90px -36px rgba(0, 0, 0, 0.9),
+    0 0 0 1px rgba(69, 224, 207, 0.12),
+    0 0 48px -22px rgba(69, 224, 207, 0.3);
 }
 
-/* Material hierarchy: editorial field first, then only the depth the object
+/* Material hierarchy: open field first, then only the depth the object
    earns. These are deliberately not interchangeable card skins. */
 .material-flat {
   background: transparent;
-  border-top: 2px solid rgba(17, 17, 17, 0.9);
+  border-top: 1px solid var(--tx-line-strong);
 }
 
 .material-flat.border-t-clay {
   border-top-color: var(--tx-clay);
-  border-top-width: 4px;
+  border-top-width: 3px;
 }
 
 .material-instrument {
   position: relative;
   border-radius: 16px;
-  background: rgba(255, 253, 248, 0.66);
-  backdrop-filter: blur(10px) saturate(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  border: 1px solid rgba(17, 17, 17, 0.11);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.72),
-    0 18px 42px -24px rgba(17, 17, 17, 0.3);
+  background: var(--tx-panel);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--tx-line);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 .material-authority {
   position: relative;
   border-radius: 16px;
-  background: linear-gradient(155deg, rgba(52, 52, 52, 0.88), rgba(17, 17, 17, 0.95));
-  backdrop-filter: blur(12px) saturate(1.08);
-  -webkit-backdrop-filter: blur(12px) saturate(1.08);
-  border: 1px solid rgba(245, 255, 59, 0.16);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 26px 58px -30px rgba(17, 17, 17, 0.6);
+  background:
+    radial-gradient(120% 140% at 0% 0%, rgba(69, 224, 207, 0.09), transparent 50%),
+    linear-gradient(160deg, #0d151d, #070a0f);
+  border: 1px solid rgba(69, 224, 207, 0.18);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 .event-evidence {
-  border: 1px solid rgba(255, 253, 248, 0.14);
+  border: 1px solid rgba(237, 242, 248, 0.12);
   border-radius: 10px;
-  background: rgba(255, 253, 248, 0.05);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  background: rgba(237, 242, 248, 0.04);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
 }
 
 .material-critical {
   position: relative;
   overflow: hidden;
   border-radius: 20px;
-  background: #111111;
-  border: 1px solid rgba(255, 253, 248, 0.16);
+  background:
+    radial-gradient(90% 120% at 50% 0%, rgba(69, 224, 207, 0.12), transparent 60%),
+    #060a0e;
+  border: 1px solid rgba(69, 224, 207, 0.2);
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.18),
-    inset 0 0 52px -24px rgba(245, 255, 59, 0.36),
-    0 38px 78px -36px rgba(17, 17, 17, 0.72);
+    inset 0 1px 0 rgba(255, 255, 255, 0.08),
+    0 38px 78px -36px rgba(0, 0, 0, 0.95);
 }
 
 .material-critical.gate-refused {
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.12),
-    0 28px 62px -32px rgba(17, 17, 17, 0.66);
+  background:
+    radial-gradient(90% 120% at 50% 0%, rgba(255, 111, 97, 0.1), transparent 60%),
+    #0a0708;
+  border-color: rgba(255, 111, 97, 0.28);
 }
 
 .signal-glow {
-  text-shadow: 0 0 26px rgba(245, 255, 59, 0.55);
+  text-shadow: 0 0 26px rgba(69, 224, 207, 0.5);
 }
 
 /* Live indicator: pulsing signal dot + mono label. */
@@ -476,6 +529,10 @@
   border-radius: 9999px;
   background: var(--tx-signal);
   animation: tx-live-dot 2.2s ease-out infinite;
+}
+
+[class~="bg-signal"] .live-indicator-dot {
+  background: #041513;
 }
 
 .live-indicator-dot-quiet {
@@ -496,24 +553,21 @@
   transition:
     transform 0.18s var(--tx-ease),
     box-shadow 0.22s var(--tx-ease),
+    background-color 0.18s var(--tx-ease),
+    border-color 0.18s var(--tx-ease),
+    color 0.18s var(--tx-ease),
     filter 0.18s var(--tx-ease);
 }
 
 .btn-living:hover:not(:disabled) {
-  transform: translateY(-2px);
-  filter: brightness(1.02);
+  transform: translateY(-1px);
   box-shadow:
-    0 14px 30px -12px rgba(17, 17, 17, 0.45),
-    0 0 28px -6px rgba(245, 255, 59, 0.7);
+    0 14px 30px -14px rgba(0, 0, 0, 0.8),
+    0 0 26px -8px rgba(69, 224, 207, 0.55);
 }
 
 .btn-living:active:not(:disabled) {
   transform: translateY(0);
-}
-
-.btn-living:focus-visible {
-  outline: 2px solid var(--tx-ink);
-  outline-offset: 3px;
 }
 
 .btn-living .btn-arrow {
@@ -529,13 +583,23 @@
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.45) 50%, transparent 70%);
+  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
   transform: translateX(-100%);
   pointer-events: none;
 }
 
 .btn-living:hover:not(:disabled)::after {
   animation: tx-glow-sweep 0.7s var(--tx-ease);
+}
+
+/* Solid signal actions read as a lit teal instrument, not a flat block. */
+.btn-living[class~="bg-signal"] {
+  background-image: linear-gradient(135deg, #45e0cf, #4cc9f0);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px -14px rgba(69, 224, 207, 0.65);
+}
+
+.btn-living[class~="bg-signal"]:hover:not(:disabled) {
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 14px 34px -12px rgba(69, 224, 207, 0.8);
 }
 
 .row-living {
@@ -549,7 +613,7 @@
 a.row-living:hover,
 button.row-living:hover {
   transform: translateX(3px);
-  border-color: rgba(245, 255, 59, 0.6);
+  border-color: rgba(69, 224, 207, 0.5);
 }
 
 .mandate-row-living {
@@ -559,12 +623,12 @@ button.row-living:hover {
 }
 
 .mandate-row-living:hover {
-  background-color: rgba(245, 255, 59, 0.06);
+  background-color: rgba(69, 224, 207, 0.05);
   padding-left: 6px;
 }
 
 .mandate-row-living:focus-within {
-  background-color: rgba(245, 255, 59, 0.08);
+  background-color: rgba(69, 224, 207, 0.07);
 }
 
 /* Entrance choreography: stagger children with --i index. */
@@ -583,7 +647,7 @@ button.row-living:hover {
   position: relative;
   height: 2px;
   overflow: hidden;
-  background: rgba(255, 253, 248, 0.14);
+  background: rgba(237, 242, 248, 0.1);
 }
 
 .signal-track-segment {
@@ -615,11 +679,11 @@ button.row-living:hover {
 }
 
 .tx-agent-glow-pass {
-  filter: drop-shadow(0 0 14px rgba(245, 255, 59, 0.55));
+  filter: drop-shadow(0 0 16px rgba(69, 224, 207, 0.4));
 }
 
 .tx-agent-glow-dim {
-  filter: drop-shadow(0 6px 14px rgba(17, 17, 17, 0.3));
+  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
 }
 
 .tx-agent-scan {
@@ -639,21 +703,16 @@ button.row-living:hover {
 }
 
 .tx-rail-node-done {
-  box-shadow: inset 0 -2px 0 rgba(17, 17, 17, 0.85);
+  box-shadow: inset 0 -2px 0 rgba(69, 224, 207, 0.7);
 }
 
 .tx-rail-node-active {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
 }
 
 .tx-rail-pulse {
   animation: none;
 }
-
-/* ---- Tenax Phase 1E-D — premium glass refinement ---------------------------
-   Frosted floating modules, rounded instrument geometry, cinematic light.
-   Still selective: flat ivory/ink remain the base; glass marks important,
-   critical, and live surfaces only. */
 
 @keyframes tx-beam {
   0% {
@@ -672,55 +731,41 @@ button.row-living:hover {
   }
 }
 
-/* Floating frosted module: the premium surface for instruments, authority
-   panels, previews, and records. Rounded, translucent, internally lit. */
+/* Floating modules: rounded graphite instruments with hairline edges. */
 .float-module {
   position: relative;
   border-radius: 16px;
-  background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0) 38%),
-    linear-gradient(155deg, rgba(255, 253, 248, 0.78), rgba(243, 239, 230, 0.62));
-  backdrop-filter: blur(10px) saturate(1.04);
-  -webkit-backdrop-filter: blur(10px) saturate(1.04);
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  outline: 1px solid rgba(17, 17, 17, 0.08);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.85),
-    inset 12px 0 28px -20px rgba(255, 255, 255, 0.7),
-    inset 0 -14px 30px -22px rgba(17, 17, 17, 0.22),
-    0 8px 22px -12px rgba(17, 17, 17, 0.18),
-    0 30px 60px -28px rgba(17, 17, 17, 0.32);
+  background: var(--tx-panel);
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid var(--tx-line);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 .float-module-dark {
   position: relative;
   border-radius: 16px;
   background:
-    linear-gradient(115deg, rgba(255, 255, 255, 0.16), rgba(255, 255, 255, 0.03) 32%, rgba(0, 0, 0, 0.05) 72%, rgba(17, 17, 17, 0.14)),
-    linear-gradient(160deg, rgba(64, 64, 64, 0.6), rgba(22, 22, 22, 0.66));
-  backdrop-filter: blur(12px) saturate(1.08);
-  -webkit-backdrop-filter: blur(12px) saturate(1.08);
-  border: 1px solid rgba(255, 253, 248, 0.24);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.24),
-    inset 14px 0 32px -22px rgba(255, 255, 255, 0.4),
-    inset 0 -26px 52px -32px rgba(245, 255, 59, 0.32),
-    0 8px 24px -12px rgba(17, 17, 17, 0.28),
-    0 44px 90px -36px rgba(17, 17, 17, 0.55);
+    radial-gradient(120% 120% at 0% 0%, rgba(69, 224, 207, 0.08), transparent 55%),
+    linear-gradient(160deg, rgba(14, 21, 29, 0.92), rgba(6, 9, 13, 0.94));
+  backdrop-filter: blur(14px) saturate(1.1);
+  -webkit-backdrop-filter: blur(14px) saturate(1.1);
+  border: 1px solid rgba(69, 224, 207, 0.16);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 /* Gentle hover lift for floating interactive modules. */
 .float-lift {
   transition:
     transform 0.22s var(--tx-ease),
+    border-color 0.22s var(--tx-ease),
     box-shadow 0.26s var(--tx-ease);
 }
 
 .float-lift:hover {
-  transform: translateY(-3px);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.8),
-    0 38px 70px -28px rgba(17, 17, 17, 0.4);
+  transform: translateY(-2px);
+  border-color: var(--tx-line-strong);
+  box-shadow: var(--tx-highlight), 0 38px 70px -30px rgba(0, 0, 0, 0.9);
 }
 
 /* Mascot stage: soft pedestal glow so the agent feels placed, not pasted. */
@@ -732,21 +777,21 @@ button.row-living:hover {
   content: "";
   position: absolute;
   inset: 12% -8% -6% -8%;
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(138, 136, 126, 0.3), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(31, 92, 140, 0.35), transparent 70%);
   filter: blur(6px);
   z-index: -1;
 }
 
 .agent-stage.agent-halo-signal::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(245, 255, 59, 0.4), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(69, 224, 207, 0.28), transparent 70%);
 }
 
 .agent-stage.agent-halo-clay::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(199, 75, 59, 0.32), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(255, 111, 97, 0.26), transparent 70%);
 }
 
 .agent-stage.agent-halo-dim::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(138, 136, 126, 0.3), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(31, 92, 140, 0.35), transparent 70%);
 }
 
 /* State shimmer: a soft signal sweep beneath the asset for watchful states. */
@@ -757,13 +802,13 @@ button.row-living:hover {
   bottom: 2%;
   height: 3px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, rgba(245, 255, 59, 0.9), transparent);
+  background: linear-gradient(90deg, transparent, rgba(69, 224, 207, 0.85), transparent);
   filter: blur(0.5px);
   animation: tx-scan 0.9s ease-in-out 0.15s both;
 }
 
 .tx-agent-glow-clay {
-  filter: drop-shadow(0 0 14px rgba(199, 75, 59, 0.5));
+  filter: drop-shadow(0 0 14px rgba(255, 111, 97, 0.45));
 }
 
 /* Slow glass highlight drift — hero and gate only, barely-there. */
@@ -790,9 +835,8 @@ button.row-living:hover {
   position: absolute;
   inset: 0;
   border-radius: inherit;
-  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.14) 50%, transparent 65%);
+  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.05) 50%, transparent 65%);
   transform: translateX(-30%);
-  animation: none;
   pointer-events: none;
 }
 
@@ -808,13 +852,13 @@ button.row-living:hover {
   right: 8%;
   bottom: 10px;
   height: 26px;
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(245, 255, 59, 0.28), transparent 70%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(69, 224, 207, 0.26), transparent 70%);
   filter: blur(4px);
   pointer-events: none;
 }
 
 .gate-floor-refused {
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(199, 75, 59, 0.22), transparent 70%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(255, 111, 97, 0.22), transparent 70%);
 }
 
 .gate-beam {
@@ -822,7 +866,7 @@ button.row-living:hover {
   top: 0;
   bottom: 0;
   width: 34%;
-  background: linear-gradient(90deg, transparent, rgba(245, 255, 59, 0.22), transparent);
+  background: linear-gradient(90deg, transparent, rgba(69, 224, 207, 0.18), transparent);
   animation: tx-beam 1.2s var(--tx-ease) 0.15s both;
   pointer-events: none;
 }
@@ -838,8 +882,8 @@ button.row-living:hover {
   position: absolute;
   inset: 0;
   border-radius: 14px;
-  background: rgba(255, 253, 248, 0.5);
-  border: 1px solid rgba(17, 17, 17, 0.07);
+  background: rgba(12, 17, 24, 0.7);
+  border: 1px solid var(--tx-line);
   z-index: -1;
 }
 
@@ -849,7 +893,7 @@ button.row-living:hover {
 
 .record-stack::after {
   transform: translateY(15px) scale(0.97);
-  opacity: 0.7;
+  opacity: 0.6;
 }
 
 /* Stepped intelligence path: Exposure → Evidence → Proposal. */
@@ -869,27 +913,27 @@ button.row-living:hover {
 }
 
 .path-node-dot {
-  box-shadow: 0 0 14px -2px rgba(245, 255, 59, 0.9);
+  box-shadow: 0 0 14px -2px rgba(69, 224, 207, 0.9);
 }
 
 /* Instrument divider glow for dark glass panels. */
 .instrument-divider {
-  border-color: rgba(255, 253, 248, 0.14);
+  border-color: rgba(237, 242, 248, 0.12);
 }
 
 .seal-ring {
   box-shadow:
-    0 0 0 3px var(--tx-signal),
-    0 0 0 5px var(--tx-ink),
-    0 18px 40px -16px rgba(17, 17, 17, 0.38);
+    0 0 0 2px var(--tx-signal),
+    0 0 0 5px rgba(5, 7, 11, 0.9),
+    0 0 32px -6px rgba(69, 224, 207, 0.5);
 }
 
 @media (max-width: 640px) {
   .float-module,
   .float-module-dark {
     border-radius: 14px;
-    backdrop-filter: blur(12px) saturate(1.08);
-    -webkit-backdrop-filter: blur(12px) saturate(1.08);
+    backdrop-filter: blur(10px) saturate(1.06);
+    -webkit-backdrop-filter: blur(10px) saturate(1.06);
   }
   .gate-chamber {
     border-radius: 16px;
@@ -913,8 +957,9 @@ button.row-living:hover {
 }
 
 :root {
-  --background: #f3efe6;
-  --foreground: #111111;
+  --background: #05070b;
+  --foreground: #e6ecf4;
+  color-scheme: dark;
 }
 
 body {
@@ -922,6 +967,11 @@ body {
   color: var(--foreground);
   font-family: var(--font-sans);
   font-variant-numeric: tabular-nums;
+}
+
+::selection {
+  background: rgba(69, 224, 207, 0.32);
+  color: #ffffff;
 }
 
 /* Connected Mode uses a denser product type system without changing the root landing page. */
@@ -942,9 +992,9 @@ body {
   font-optical-sizing: auto;
 }
 
-/* One focus treatment across ivory, authority, and signal controls. */
+/* One focus treatment across field, authority, and signal controls. */
 :where(a, button, summary, input, select, textarea):focus-visible {
-  outline: 2px solid var(--tx-ink);
+  outline: 2px solid var(--tx-signal);
   outline-offset: 3px;
 }
 
@@ -953,19 +1003,24 @@ body {
   overflow-wrap: anywhere;
 }
 
+/* Form controls inherit the dark field instead of browser-white. */
+:where(input, select, textarea) {
+  color-scheme: dark;
+}
+
 .receipt-document {
   position: relative;
-  border: 1px solid rgba(17, 17, 17, 0.14);
+  border: 1px solid var(--tx-line);
   border-radius: 14px;
-  background: var(--tx-softwhite);
-  box-shadow: 0 22px 46px -28px rgba(17, 17, 17, 0.38);
+  background: var(--tx-panel);
+  box-shadow: var(--tx-highlight), var(--tx-shadow);
 }
 
 .technical-inset {
   border-radius: 10px;
-  background: var(--tx-graphite);
-  color: var(--tx-softwhite);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  background: #080c11;
+  border: 1px solid var(--tx-line);
+  box-shadow: var(--tx-highlight);
 }
 
 .state-mark {
@@ -982,10 +1037,58 @@ body {
   text-transform: uppercase;
 }
 
+/* ---- Authority roles ----------------------------------------------------------
+   AI CAN PROPOSE. IT CANNOT AUTHORIZE ITSELF. These role surfaces keep model
+   reasoning, deterministic authority and durable evidence visually distinct
+   inside one system: violet = AI intent (probabilistic), teal = mandate
+   authority (deterministic), graphite = evidence (record). */
+.tx-role-ai {
+  position: relative;
+  border-left: 2px solid rgba(var(--tx-ai-rgb), 0.55);
+  background: linear-gradient(90deg, rgba(var(--tx-ai-rgb), 0.06), transparent 55%);
+}
+
+.tx-role-authority {
+  position: relative;
+  border-left: 2px solid rgba(var(--tx-signal-rgb), 0.7);
+  background: linear-gradient(90deg, rgba(var(--tx-signal-rgb), 0.06), transparent 55%);
+}
+
+.tx-role-evidence {
+  position: relative;
+  border-left: 2px solid var(--tx-line-strong);
+}
+
+.tx-role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-family: var(--font-syslabel);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tx-role-tag-ai {
+  color: var(--color-ai);
+  border: 1px solid rgba(var(--tx-ai-rgb), 0.35);
+  background: rgba(var(--tx-ai-rgb), 0.08);
+}
+
+.tx-role-tag-authority {
+  color: var(--tx-signal);
+  border: 1px solid rgba(var(--tx-signal-rgb), 0.35);
+  background: rgba(var(--tx-signal-rgb), 0.08);
+}
+
 @media (max-width: 640px) {
   .tx-env-blob,
   .tx-env-shape,
   .tx-env-glow {
-    filter: blur(36px);
+    filter: blur(44px);
   }
 }

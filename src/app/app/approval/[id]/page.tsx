@@ -117,9 +117,9 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
               <span
                 className={`shrink-0 rounded-full px-2.5 py-0.5 text-[13px] font-bold leading-[18px] ${
                   row.state === "PASS"
-                    ? "bg-pass text-white"
+                    ? "bg-pass text-ink"
                     : row.state === "REFUSED"
-                      ? "bg-clay text-white"
+                      ? "bg-clay text-ivory"
                       : "border-2 border-signal text-signal"
                 }`}
               >
@@ -145,17 +145,17 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
             <div className="mt-4 grid grid-cols-1 gap-4 sm:grid-cols-2">
               <div>
                 <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">MANDATE</p>
-                <p className="mt-1 text-[32px] font-extrabold leading-none text-pass sm:text-[40px]">PASS</p>
+                <p className="mt-1 font-display text-[32px] font-bold leading-none tracking-[0.02em] text-pass sm:text-[40px]">PASS</p>
               </div>
               <div className="border-t border-softwhite/15 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
                 <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">HUMAN APPROVAL</p>
-                <p className="mt-1 text-[32px] font-extrabold leading-none text-signal sm:text-[40px]">WAITING</p>
+                <p className="mt-1 font-display text-[32px] font-bold leading-none tracking-[0.02em] text-signal sm:text-[40px]">WAITING</p>
               </div>
             </div>
           </AuthorityInstrument>
 
           <div>
-            <p className="text-[30px] font-extrabold leading-[1.0] tracking-[-0.02em] sm:text-[48px]">
+            <p className="font-display text-[30px] font-bold leading-[1.0] tracking-[0.01em] sm:text-[48px]">
               YOU ARE THE FINAL AUTHORITY.
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
@@ -179,7 +179,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
           REFUSAL TEST · REFUSAL IS A FEATURE
         </p>
         <div className="mt-3 flex flex-wrap items-baseline gap-x-8 gap-y-2">
-          <p className="text-[44px] font-extrabold leading-none tracking-[-0.02em] sm:text-[64px]">
+          <p className="font-syslabel text-[44px] font-semibold leading-none tracking-[-0.02em] sm:text-[64px]">
             ${alternative.proposal.proposedTradeValueUsdt}
           </p>
           <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">

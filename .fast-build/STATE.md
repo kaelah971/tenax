@@ -99,6 +99,19 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Typography pass (TYPOGRAPHY_READY_JUDGE_JOURNEY_EVENT_SOURCE_BLOCKED)
+- Previous system: Rajdhani/Georama loaded but headings actually rendered in fallback sans (font-display utility unused); labels already system-mono. Final: Barlow Condensed 600/700 for display + IBM Plex Mono 400/500/600 as the primary UI voice, both via next/font/google (latin), centralized through --font-display/--font-syslabel tokens; no scattered font-family, no binaries, no stroke effects.
+- Headings (h1s, NVIDIA EARNINGS, verdicts, ACTION CLEARED, gate word) on font-display at loaded 700 with eased tracking; financial/decision numerals ($500, prices, %, mandate rows, summaries) on font-syslabel (inherently tabular + global tabular-nums); 0.08em label tracking preserved; Georama/Inter body kept for long-form readability.
+- Responsive: short numeric strings only, existing wrap/truncate/flex primitives untouched; no new layout. Connected Mode inherits tokens via its existing display class (coherent, no structural change).
+- 7 new typography tests; full suite 893 pass (57 files); tsc/lint/build/diff-check clean. Fonts verified in build output. No commit.
+
+## Deployment hardening (DEPLOYMENT_READY_EVENT_SOURCE_BLOCKED)
+- No hard blockers: app boots with zero env (all integrations degrade to labeled safe states); zero NEXT_PUBLIC vars; client bundles import no secret-bearing modules (one pure format helper + type-only imports; window-guard pattern is defense-in-depth); all client fetches are same-origin relative; all judge pages force-dynamic (no build-time DB/MCP); snapshot cache 60s TTL; default Node runtime (pg-safe).
+- Added .env.example (classified contract, bare KEY= lines, no values — NOTE: .gitignore covers .env* so it needs `git add -f` at checkpoint) and GET /api/health (instant config booleans, provider/mode names only, zero secrets, zero external calls).
+- Proven live on a real production server (:3210): health true-config, summary DURABLE/POSTGRES honest-zeros, Event Room 200 with integrity copy, landing + paper-trading 200 with honest empty state. Server stopped after. MCP 503 does not block boot/build/render.
+- Fresh-deploy judge path needs DATABASE_URL for durable history (else labeled EPHEMERAL) — documented, no fake seeding.
+- 6 new deployment tests; full suite 886 pass (56 files); tsc/lint/build/diff-check clean. No commit.
+
 ## Judge-journey clarity B7 (JUDGE_JOURNEY_READY_EVENT_SOURCE_BLOCKED)
 - Core message now judge-facing: AUTHORITY_SEPARATION_LINE ("AI can propose. It cannot authorize itself — deterministic rules decide.") rendered at the analysis FINAL TENAX DECISION boundary.
 - Fixed AI/fixture labeling from seated truth: receipts derive AI ANALYSIS/AI MODEL from the flow aiAudit (was hardcoded DEV); protect strip follows server analysis mode; proof detail derives AI labeling from the linked run and maps DETERMINISTIC_MANDATE/HUMAN_APPROVAL to human words (was raw enum).
@@ -142,3 +155,8 @@
 - Owner fixed `.env.local` (single TENAX_ANALYSIS_MODE=ai; DATABASE_URL rejoined, len 128) and flattened the Demo position.
 - Verified: env single-ai + groq/openai/gpt-oss-120b + BITGET_DEMO/demo + creds present + no live-money path; Postgres DURABLE on both ledgers (runs 0, proofs 1) after one Neon cold-start retry; Demo discovery overall PASS with currentPosition NONE, pending NVDAUSDT orders 0, hedge_mode/crossed/1x, mark 239.7.
 - Fresh genuine AI inference (new pack hash, overall PASS) decided WAIT: unverified earnings date, simulated exposure only, no live ownership. No override attempted; no authority run (nothing actionable); no order preview constructed; no ledger writes. Focused tests 25/25 pass. No code changes, no commit.
+
+## Unified dark authority visual system (VISUAL_SYSTEM_READY_EVENT_SOURCE_BLOCKED)
+- Landing rebuilt to the approved dark-fintech reference (src/app/page.tsx + src/app/_landing/); app converted centrally via token remap + polarity scopes (globals.css, observatory.css), shell/nav restyled, AI/authority/evidence role tints on Analysis.
+- No logic, route, API, mandate, provider, DB, or execution changes. DESIGN.md palette now superseded (docs follow-up).
+- 893 tests; lint/tsc/build/diff-check clean; CDP layout/interaction checks clean on isolated DRY_RUN fixture server.

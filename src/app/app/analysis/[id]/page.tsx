@@ -174,17 +174,20 @@ export default async function AnalysisPage({
       />
 
       {/* Decision header — compact interpretation */}
-      <section className="tx-material-editorial border-t-2 border-ink pt-4 sm:pt-5">
+      <section className="tx-material-editorial tx-role-ai border-t-2 border-ink pb-4 pl-4 pt-4 sm:pl-6 sm:pt-5">
         <div className="flex items-start justify-between gap-4">
-          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
-            TENAX INTERPRETATION · FLOW {id}
-          </p>
-          <span className={`state-mark shrink-0 ${isModel ? "bg-signal text-ink" : "bg-ink text-signal"}`}>
+          <div className="min-w-0">
+            <span className="tx-role-tag tx-role-tag-ai">AI · PROPOSES</span>
+            <p className="mt-2 font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
+              TENAX INTERPRETATION · FLOW {id}
+            </p>
+          </div>
+          <span className={`state-mark shrink-0 ${isModel ? "bg-ai/10 text-ai" : "bg-ink text-signal"}`}>
             {isModel ? "AI ANALYSIS" : "◇ DEV · DEVELOPMENT ANALYSIS"}
           </span>
         </div>
         <div className="mt-2 grid gap-x-8 gap-y-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
-          <h1 className="max-w-3xl text-[34px] font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-[52px]">
+          <h1 className="max-w-3xl font-display text-[34px] font-bold leading-[0.95] tracking-[-0.01em] sm:text-[52px]">
             The situation, interpreted.
           </h1>
           <SceneAnchor className="tx-floating-mascot hidden shrink-0 sm:block">
@@ -196,7 +199,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               $500 NVIDIA exposure
             </dt>
-            <dd className="mt-1 truncate text-[26px] font-extrabold leading-none tracking-[-0.02em] sm:text-[34px]">
+            <dd className="mt-1 truncate font-syslabel text-[26px] font-semibold leading-none tracking-[-0.02em] sm:text-[34px]">
               $500
             </dd>
           </div>
@@ -204,7 +207,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               PROTECT {analysis.proposal.protectionPct}%
             </dt>
-            <dd className="mt-1 truncate text-[26px] font-extrabold leading-none tracking-[-0.02em] sm:text-[34px]">
+            <dd className="mt-1 truncate font-syslabel text-[26px] font-semibold leading-none tracking-[-0.02em] sm:text-[34px]">
               {analysis.proposal.protectionPct}%
             </dd>
           </div>
@@ -212,7 +215,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               Proposed action
             </dt>
-            <dd className="mt-1 truncate text-[26px] font-extrabold leading-none tracking-[-0.02em] sm:text-[34px]">
+            <dd className="mt-1 truncate font-syslabel text-[26px] font-semibold leading-none tracking-[-0.02em] sm:text-[34px]">
               ${proposedUsd}
             </dd>
           </div>
@@ -223,7 +226,7 @@ export default async function AnalysisPage({
             <li
               key={observation}
               style={staggerStyle(i)}
-              className="border-l-2 border-ink py-0.5 pl-3 text-[14px] leading-[20px]"
+              className="border-l-2 border-ai/40 py-0.5 pl-3 text-[14px] leading-[20px]"
             >
               {observation}
             </li>
@@ -272,7 +275,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               EXISTING
             </dt>
-            <dd className="mt-1 truncate text-[20px] font-extrabold leading-none">
+            <dd className="mt-1 truncate font-syslabel text-[20px] font-semibold leading-none">
               {projection.existingUsd === null
                 ? "UNKNOWN"
                 : projection.existingUsd === 0
@@ -284,7 +287,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               PROPOSED
             </dt>
-            <dd className="mt-1 truncate text-[20px] font-extrabold leading-none">
+            <dd className="mt-1 truncate font-syslabel text-[20px] font-semibold leading-none">
               ${proposedUsd} · {analysis.proposal.protectionPct}%
             </dd>
           </div>
@@ -292,7 +295,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               PROJECTED
             </dt>
-            <dd className="mt-1 truncate text-[20px] font-extrabold leading-none">
+            <dd className="mt-1 truncate font-syslabel text-[20px] font-semibold leading-none">
               {projection.projectedUsd === null || projection.projectedPct === null
                 ? "UNKNOWN"
                 : `~${formatUsd(projection.projectedUsd)} · ~${projection.projectedPct.toFixed(1)}%`}
@@ -302,7 +305,7 @@ export default async function AnalysisPage({
             <dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               MANDATE MAX
             </dt>
-            <dd className="mt-1 truncate text-[20px] font-extrabold leading-none">
+            <dd className="mt-1 truncate font-syslabel text-[20px] font-semibold leading-none">
               {projectionMaxPct}%
             </dd>
           </div>
@@ -326,8 +329,9 @@ export default async function AnalysisPage({
       {/* FINAL TENAX DECISION — one actionable state, safety-first precedence.
           AUTHORIZED renders only when every known deterministic gate is
           clear; anything later (cumulative projection) overrides it. */}
-      <section aria-label="Final Tenax decision" className="tx-material-editorial border-t-2 border-ink pt-4">
+      <section aria-label="Final Tenax decision" className="tx-material-editorial tx-role-authority border-t-2 border-ink pb-4 pl-4 pt-4 sm:pl-6">
         <div className="flex flex-wrap items-center gap-3">
+          <span className="tx-role-tag tx-role-tag-authority">DETERMINISTIC · DECIDES</span>
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             FINAL TENAX DECISION
           </p>
@@ -488,7 +492,7 @@ export default async function AnalysisPage({
       </section>
 
       {/* Evidence — meaning first, plumbing behind disclosure */}
-      <section aria-label="Evidence used" className="tx-material-editorial border-t-2 border-ink pt-4">
+      <section aria-label="Evidence used" className="tx-material-editorial tx-role-evidence border-t-2 border-ink pb-2 pl-4 pt-4 sm:pl-6">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
           EVIDENCE USED
         </p>

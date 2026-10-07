@@ -51,7 +51,7 @@ export default async function ProtectPage() {
       <DecisionRail current="INTENT" links={{ EXPOSURE: "/app/exposure/nvidia" }} />
       <section className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">INTENT · PROTECT_EVENT_RISK</p>
-        <h1 className="mt-3 max-w-4xl text-[42px] font-extrabold leading-[0.92] tracking-[-0.04em] sm:text-[78px]">{INTENT_LINE}</h1>
+        <h1 className="mt-3 max-w-4xl font-display text-[42px] font-bold leading-[0.92] tracking-[-0.01em] sm:text-[78px]">{INTENT_LINE}</h1>
         <p className="mt-5 max-w-xl text-[16px] leading-[24px] text-mutedink">State the outcome once. Tenax carries the limits forward to the authority boundary.</p>
       </section>
 
@@ -59,7 +59,7 @@ export default async function ProtectPage() {
         <AuthorityInstrument as="div" className="rounded-[18px] p-5 text-softwhite sm:p-8">
           <div className="flex flex-wrap items-center gap-3"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">MANDATE_001 · AUTHORITY CONSOLE</p>{activeMandate ? (<span className="state-mark ml-auto text-signal"><LiveDot label={`AUTHORITY ACTIVE · ${activeMandate.policy.authorityMode.replaceAll("_", " ")}`} /></span>) : (<span className="state-mark ml-auto text-softwhite/70">NO ACTIVE AUTHORITY</span>)}</div>
           <dl className="mt-5 grid grid-cols-2 gap-x-5 gap-y-0 md:grid-cols-5">
-            {MANDATE_ROWS.map(([term, value]) => <div key={term} className="border-t border-softwhite/15 px-2 py-4 first:border-t-0 sm:border-t sm:first:border-t"><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">{term}</dt><dd className="mt-2 text-[26px] font-extrabold leading-none tracking-[-0.03em]">{value}</dd></div>)}
+            {MANDATE_ROWS.map(([term, value]) => <div key={term} className="border-t border-softwhite/15 px-2 py-4 first:border-t-0 sm:border-t sm:first:border-t"><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">{term}</dt><dd className="mt-2 font-syslabel text-[26px] font-semibold leading-none tracking-[-0.02em]">{value}</dd></div>)}
           </dl>
           <div className="mt-3 h-px bg-softwhite/15" />
           {activeMandate ? (

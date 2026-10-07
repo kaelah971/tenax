@@ -27,7 +27,7 @@ export default async function EventsPage() {
       <DecisionRail current="INTELLIGENCE" />
       <div className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EVENT ROOM · INTELLIGENCE</p>
-        <h1 className="mt-3 max-w-3xl text-[42px] font-extrabold leading-[0.95] tracking-[-0.04em] sm:text-[72px]">Events affecting your capital.</h1>
+        <h1 className="mt-3 max-w-3xl font-display text-[42px] font-bold leading-[0.95] tracking-[-0.01em] sm:text-[72px]">Events affecting your capital.</h1>
       </div>
 
       <AuthorityInstrument as="section" className={`relative overflow-hidden rounded-[18px] p-5 sm:p-8 ${!live ? "opacity-90" : ""}`}>
@@ -35,7 +35,7 @@ export default async function EventsPage() {
         <div className="grid gap-8 pl-3 sm:grid-cols-[minmax(0,0.78fr)_minmax(360px,1.22fr)] sm:gap-12 sm:pl-5">
           <div>
             <div className="flex flex-wrap items-center gap-3"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">EVENT_01</p>{live ? <span className="state-mark bg-signal text-ink"><LiveDot label="WATCHING" /></span> : <span className="state-mark border-clay text-clay">UNAVAILABLE</span>}</div>
-            <h2 className="mt-3 text-[38px] font-extrabold leading-[0.92] tracking-[-0.04em] sm:text-[62px]">NVIDIA EARNINGS</h2>
+            <h2 className="mt-3 font-display text-[38px] font-bold leading-[0.92] tracking-[-0.01em] sm:text-[62px]">NVIDIA EARNINGS</h2>
             <p className="font-syslabel mt-5 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-softwhite/60">AFFECTED EXPOSURE · $500 rNVDA</p>
             <div className="mt-8 grid gap-4 sm:grid-cols-2">
               <div className="border-t border-softwhite/15 pt-3"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">DATE</p><p className="mt-1 text-[24px] font-extrabold leading-none">UNVERIFIED</p><p className="mt-1 max-w-[180px] text-[11px] leading-[14px] text-softwhite/55">{DATE_UNAVAILABLE_LINE}</p></div>

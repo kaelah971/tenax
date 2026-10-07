@@ -136,10 +136,10 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               DECISION · {receipt.receiptId} · {receipt.timestamp}
             </p>
-            <p className="mt-4 text-[20px] font-extrabold leading-none tracking-[-0.02em] text-ink sm:text-[28px]">
+            <p className="mt-4 font-display text-[20px] font-bold leading-none tracking-[0.02em] text-ink sm:text-[28px]">
               ACTION CLEARED
             </p>
-            <p className="value-live mt-4 text-[72px] font-extrabold leading-none tracking-[-0.03em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[120px]">
+            <p className="value-live mt-4 font-syslabel text-[72px] font-semibold leading-none tracking-[-0.02em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[120px]">
               ${receipt.proposedTradeValueUsdt}
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
@@ -196,7 +196,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         </p>
         {alternative ? (
           <div className="mt-3 flex flex-wrap items-baseline gap-x-8 gap-y-2">
-            <p className="text-[44px] font-extrabold leading-none tracking-[-0.02em] sm:text-[64px]">
+            <p className="font-syslabel text-[44px] font-semibold leading-none tracking-[-0.02em] sm:text-[64px]">
               ${alternative.proposedTradeValueUsdt}
             </p>
             <p className="state-mark bg-clay text-softwhite">

@@ -83,7 +83,7 @@ export function TenaxAgent({
 }) {
   const presence = agentPresence(state);
   const glowColor =
-    presence.glow === "signal" ? "#F5FF3B" : presence.glow === "clay" ? "#C74B3B" : "#8a887e";
+    presence.glow === "signal" ? "#45E0CF" : presence.glow === "clay" ? "#FF6F61" : "#5B6B80";
   const glowClass =
     presence.glow === "signal"
       ? "tx-agent-glow-pass"
@@ -172,17 +172,17 @@ export function Sparkline({ className = "" }: { className?: string }) {
     >
       <defs>
         <linearGradient id="txs-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#F5FF3B" stopOpacity="0.55" />
-          <stop offset="0.7" stopColor="#F5FF3B" stopOpacity="0.08" />
-          <stop offset="1" stopColor="#F5FF3B" stopOpacity="0" />
+          <stop offset="0" stopColor="#45E0CF" stopOpacity="0.32" />
+          <stop offset="0.7" stopColor="#45E0CF" stopOpacity="0.05" />
+          <stop offset="1" stopColor="#45E0CF" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="txs-line" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#111111" stopOpacity="0.45" />
-          <stop offset="0.6" stopColor="#111111" />
-          <stop offset="1" stopColor="#111111" />
+          <stop offset="0" stopColor="#62D6FF" stopOpacity="0.2" />
+          <stop offset="0.6" stopColor="#45E0CF" stopOpacity="0.85" />
+          <stop offset="1" stopColor="#45E0CF" />
         </linearGradient>
       </defs>
-      <g fill="#111111" opacity="0.14">
+      <g fill="#A0B6D4" opacity="0.16">
         {Array.from({ length: 12 }, (_, c) =>
           Array.from({ length: 3 }, (_, r) => (
             <circle key={`${c}-${r}`} cx={14 + c * 24} cy={16 + r * 26} r="1" />
@@ -202,8 +202,8 @@ export function Sparkline({ className = "" }: { className?: string }) {
         strokeLinejoin="round"
         className="spark-draw"
       />
-      <circle cx="255" cy="22" r="7" fill="#F5FF3B" opacity="0.25" className="spark-end" />
-      <circle cx="255" cy="22" r="4" fill="#F5FF3B" stroke="#111111" strokeWidth="2" />
+      <circle cx="255" cy="22" r="7" fill="#45E0CF" opacity="0.25" className="spark-end" />
+      <circle cx="255" cy="22" r="4" fill="#45E0CF" stroke="#05070B" strokeWidth="2" />
     </svg>
   );
 }

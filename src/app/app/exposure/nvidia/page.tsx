@@ -160,10 +160,10 @@ export default async function ExposurePage({
           {graph.representations.length === 1 ? "" : "S"}
         </p>
         <div className="mt-1.5 flex flex-wrap items-end gap-x-8 gap-y-2">
-          <h1 className="text-[44px] font-extrabold leading-[0.95] tracking-[-0.03em] sm:text-[56px]">
+          <h1 className="font-display text-[44px] font-bold leading-[0.95] tracking-[-0.01em] sm:text-[56px]">
             NVIDIA
           </h1>
-          <p className="value-live text-[40px] font-extrabold leading-none tracking-[-0.03em] sm:text-[52px]">
+          <p className="value-live font-syslabel text-[40px] font-semibold leading-none tracking-[-0.02em] sm:text-[52px]">
             $500
           </p>
           <p className="pb-1">
