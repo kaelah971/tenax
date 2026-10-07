@@ -26,7 +26,7 @@ const CHECK_LABEL: Partial<Record<MandateCheck["id"], string>> = {
   max_leverage: "LEVERAGE",
 };
 
-function Phone({
+export function Phone({
   children,
   className = "",
   style,
@@ -86,7 +86,7 @@ export function EventScreen({ data }: { data: DeviceData }) {
   );
 }
 
-export function DecisionScreen({ data }: { data: DeviceData }) {
+export function DecisionScreen({ data, compact = false }: { data: DeviceData; compact?: boolean }) {
   const refused = data.decision.verdict === "REFUSE";
   const checks = data.decision.checks.filter((c) => CHECK_LABEL[c.id]);
   return (
@@ -101,7 +101,7 @@ export function DecisionScreen({ data }: { data: DeviceData }) {
       <div className={`tx-ps-authority${refused ? " tx-ps-authority-refused" : ""}`}>
         <p className="tx-ps-tag tx-ps-tag-authority">FINAL TENAX DECISION</p>
         <p className={`tx-ps-verdict ${refused ? "tx-ps-clay" : "tx-ps-signal"}`}>{data.decision.verdict}</p>
-        <div className="tx-ps-checks">
+        {compact ? null : <div className="tx-ps-checks">
           {checks.map((check) => (
             <div key={check.id} className="tx-ps-row">
               <span className="tx-ps-k">{CHECK_LABEL[check.id]}</span>
@@ -117,16 +117,16 @@ export function DecisionScreen({ data }: { data: DeviceData }) {
               <span className={check.pass ? "tx-ps-ok" : "tx-ps-no"}>{check.pass ? "✓" : "✕"}</span>
             </div>
           ))}
-        </div>
+        </div>}
       </div>
-      <ol className="tx-ps-rail" aria-hidden="true">
+      {compact ? null : <ol className="tx-ps-rail" aria-hidden="true">
         {signalRailForAnalysis(refused ? "REFUSED" : "AUTHORIZED", data.decision.failedRules.length === 0).map((node) => (
           <li key={node.stage} className={`tx-rail-${node.state}`}>
             <span className="tx-signal-node" />
             {node.stage}
           </li>
         ))}
-      </ol>
+      </ol>}
       <div className="tx-ps-panel">
         <p className="tx-ps-label">{refused ? "WHY IT STOPPED" : "NEXT AUTHORITY STEP"}</p>
         {data.decision.failedRules.map((rule) => (
@@ -179,7 +179,7 @@ const SCENE_LABEL =
 /** Faint authority traces behind the devices: violet AI territory on the
  * left resolving into green deterministic authority on the right. Thin
  * trajectories, small nodes and a dot field — not a flowchart. */
-function SignalTraces() {
+export function SignalTraces() {
   return (
     <svg className="tx-scene-traces" viewBox="0 0 640 640" preserveAspectRatio="none" focusable="false">
       <defs>
@@ -220,30 +220,6 @@ function SignalTraces() {
         </g>
       ))}
     </svg>
-  );
-}
-
-/** Hero composition: one dominant device, two receding behind it, a
- * signal ribbon loop passing through the group, green under-light. */
-export function HeroDevices({ data }: { data: DeviceData }) {
-  return (
-    <div className="tx-device-stage" role="img" aria-label={SCENE_LABEL}>
-      <div className="tx-device-scene tx-device-scene-hero" aria-hidden="true">
-        <SignalTraces />
-        <span className="tx-scene-floor" />
-        <span className="tx-orbit tx-orbit-back" />
-        <Phone className="tx-phone-a">
-          <EventScreen data={data} />
-        </Phone>
-        <Phone className="tx-phone-c">
-          <ProofScreen data={data} />
-        </Phone>
-        <Phone className="tx-phone-b">
-          <DecisionScreen data={data} />
-        </Phone>
-        <span className="tx-orbit tx-orbit-front" />
-      </div>
-    </div>
   );
 }
 

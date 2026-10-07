@@ -94,6 +94,42 @@ describe("Device mockups", () => {
   });
 });
 
+describe("Mascot hero", () => {
+  const mascotSource = read("src/app/_landing/MascotHero.tsx");
+
+  it("uses the exact existing Tenax mascot asset as the hero figure", async () => {
+    const { MASCOT_ASSET } = await import("../src/app/_landing/MascotHero");
+    const { TENAX_AGENT_ASSET } = await import("../src/app/app/_components/living");
+    expect(MASCOT_ASSET).toBe("/brand/tenax-agent.png");
+    expect(MASCOT_ASSET).toBe(TENAX_AGENT_ASSET);
+    expect(existsSync(resolve(process.cwd(), "public/brand/tenax-agent.png"))).toBe(true);
+    expect(landingSource).toContain("<MascotHero data={devices} />");
+    expect(landingSource).not.toContain("HeroDevices");
+  });
+
+  it("holds the Event Intelligence and Final Tenax Decision screens", () => {
+    expect(mascotSource).toContain("<EventScreen data={data} />");
+    expect(mascotSource).toContain("<DecisionScreen data={data} compact />");
+    expect(mascotSource).toContain('role="img"');
+    expect(mascotSource).toContain('aria-hidden="true"');
+  });
+
+  it("serves the asset through optimized next/image and keeps finger clips inside the render", async () => {
+    expect(mascotSource).toContain('from "next/image"');
+    expect(mascotSource).not.toContain("unoptimized");
+    const { clipPolygon } = await import("../src/app/_landing/MascotHero");
+    const poly = clipPolygon([
+      [0, 0],
+      [1254, 1254],
+    ]);
+    expect(poly).toBe("polygon(0.00% 0.00%, 100.00% 100.00%)");
+    for (const match of mascotSource.matchAll(/\[(\d+), (\d+)\]/g)) {
+      expect(Number(match[1])).toBeLessThanOrEqual(1254);
+      expect(Number(match[2])).toBeLessThanOrEqual(1254);
+    }
+  });
+});
+
 describe("Storytelling section", () => {
   it("states the authority thesis and truthful system facts only", () => {
     expect(landingSource).toContain("AI can suggest the trade.");
