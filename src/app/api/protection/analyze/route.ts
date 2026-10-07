@@ -16,11 +16,14 @@ import { BITGET_BASE_URL, createDefaultPublicClient } from "@/lib/bitget/reality
 import { getDemoBundle } from "@/lib/bitget/snapshot-cache";
 import { normalizeNvidiaSnapshot } from "@/lib/intelligence/snapshot";
 import { resolveAnalysisMode } from "@/lib/ai/provider.ts";
+import { fetchDemoAccountEvidence } from "@/lib/ai/demo-account.ts";
+import { fetchTrustedNvidiaEvent } from "@/lib/intelligence/nvidia-events.ts";
 import {
   analyzeInputSchema,
   analyzeProtectionIntent,
   analyzeProtectionIntentWithAi,
   createProtectionIntent,
+  readDemoCredentials,
 } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import {
@@ -52,17 +55,29 @@ export async function POST(request: Request) {
     const { flowId } = createProtectionIntent(store, analyzeInputSchema.parse(body));
     const snapshot = normalizeNvidiaSnapshot(await getDemoBundle());
     if (resolveAnalysisMode(process.env) === "ai") {
-      const [ticker, candles, nvdax, instrument] = await Promise.all([
+      // Read-only Demo account context is best-effort: absent credentials
+      // or any failed read yields null (honestly unknown), never a block.
+      // No writes occur on this path — fetchDemoReadOnly is GET-only.
+      const demoCreds = readDemoCredentials(process.env);
+      const demoBaseUrl = ((process.env.BITGET_API_BASE_URL ?? "").trim() ||
+        "https://api.bitget.com");
+      const [ticker, candles, nvdax, instrument, demoAccount, nvidiaEvent] = await Promise.all([
         fetchNvdaFuturesTicker().catch(() => null),
         fetchNvdaCandles(undefined, "5m").catch(() => null).then((s) => s?.candles ?? null),
         fetchNvdaxDiscovery(createDefaultXstocksClient(8000), { gapMs: 300 }).catch(() => null),
         fetchNvdaInstrumentRules().catch(() => null),
+        demoCreds
+          ? fetchDemoAccountEvidence({ credentials: demoCreds, baseUrl: demoBaseUrl }).catch(() => null)
+          : Promise.resolve(null),
+        fetchTrustedNvidiaEvent().catch(() => null),
       ]);
       const result = await analyzeProtectionIntentWithAi(store, flowId, snapshot, {
         futuresTicker: ticker?.ticker ?? null,
         candles,
         nvdax,
         instrument,
+        demoAccount,
+        nvidiaEvent,
       });
       return Response.json({ ok: true, ...result });
     }

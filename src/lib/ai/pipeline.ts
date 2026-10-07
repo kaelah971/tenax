@@ -22,6 +22,10 @@ import type { NvidiaMarketSnapshot } from "../intelligence/snapshot.ts";
 import type { FuturesTicker, OhlcCandle } from "../bitget/market-series.ts";
 import type { NvdaInstrument } from "../bitget/nvda-hedge.ts";
 import type { NvdaxDiscovery } from "../xstocks/public.ts";
+import type {
+  DemoAccountEvidence,
+  TrustedNvidiaEvent,
+} from "./evidence-pack.ts";
 import {
   buildEvidencePack,
   hashEvidencePack,
@@ -51,6 +55,10 @@ export interface AiPipelineMarket {
   readonly candles: readonly OhlcCandle[] | null;
   readonly nvdax: NvdaxDiscovery | null;
   readonly instrument: NvdaInstrument | null;
+  /** Read-only Demo account context; omitted/null when not probed. */
+  readonly demoAccount?: DemoAccountEvidence | null;
+  /** Trusted event evidence; omitted/null until a verified source exists. */
+  readonly nvidiaEvent?: TrustedNvidiaEvent | null;
 }
 
 export interface AiPipelineInput {
@@ -243,6 +251,8 @@ export async function runAiAnalysis(input: AiPipelineInput): Promise<AiPipelineR
     candles: input.market.candles,
     nvdax: input.market.nvdax,
     instrument: input.market.instrument,
+    demoAccount: input.market.demoAccount ?? null,
+    nvidiaEvent: input.market.nvidiaEvent ?? null,
   });
   const serialized = serializeEvidencePack(pack);
   const packHash = hashEvidencePack(serialized);

@@ -32,6 +32,8 @@ import { MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE } from "../src/lib/tenax/fixture
 import { createProtectEventRiskIntent } from "../src/lib/tenax/intent.ts";
 import { resolveAiConfig } from "../src/lib/ai/provider.ts";
 import { runAiAnalysis } from "../src/lib/ai/pipeline.ts";
+import { fetchDemoAccountEvidence } from "../src/lib/ai/demo-account.ts";
+import { fetchTrustedNvidiaEvent } from "../src/lib/intelligence/nvidia-events.ts";
 import {
   createDefaultXstocksClient,
   fetchNvdaxDiscovery,
@@ -74,6 +76,10 @@ function loadEnv(): Record<string, string | undefined> {
     TENAX_AI_MODEL: get("TENAX_AI_MODEL"),
     OPENAI_API_KEY: get("OPENAI_API_KEY"),
     GROQ_API_KEY: get("GROQ_API_KEY"),
+    BITGET_API_KEY: get("BITGET_API_KEY"),
+    BITGET_SECRET_KEY: get("BITGET_SECRET_KEY"),
+    BITGET_PASSPHRASE: get("BITGET_PASSPHRASE"),
+    BITGET_API_BASE_URL: get("BITGET_API_BASE_URL"),
   };
 }
 
@@ -101,13 +107,33 @@ async function main(): Promise<number> {
   ]);
   const intent = createProtectEventRiskIntent(NVDA_EXPOSURE_FIXTURE, RAW_TEXT);
 
+  // 2b. Read-only Demo account context (best-effort, GET-only, never a write).
+  // Absent credentials or any failed read yields null: honestly unknown.
+  const demoCreds =
+    (env.BITGET_API_KEY ?? "").trim() !== "" &&
+    (env.BITGET_SECRET_KEY ?? "").trim() !== "" &&
+    (env.BITGET_PASSPHRASE ?? "").trim() !== ""
+      ? {
+          apiKey: (env.BITGET_API_KEY ?? "").trim(),
+          secretKey: (env.BITGET_SECRET_KEY ?? "").trim(),
+          passphrase: (env.BITGET_PASSPHRASE ?? "").trim(),
+        }
+      : null;
+  const demoAccount = demoCreds
+    ? await fetchDemoAccountEvidence({
+        credentials: demoCreds,
+        baseUrl: (env.BITGET_API_BASE_URL ?? "").trim() || "https://api.bitget.com",
+      }).catch(() => null)
+    : null;
+  const nvidiaEvent = await fetchTrustedNvidiaEvent().catch(() => null);
+
   // 3-6. ONE model request, validate, derive, mandate-preview. No approve/execute.
   const result = await runAiAnalysis({
     exposure: NVDA_EXPOSURE_FIXTURE,
     intent,
     mandate: MANDATE_FIXTURE,
     snapshot,
-    market: { futuresTicker: ticker?.ticker ?? null, candles, nvdax, instrument },
+    market: { futuresTicker: ticker?.ticker ?? null, candles, nvdax, instrument, demoAccount, nvidiaEvent },
     config,
   });
   if (!result.ok) {
@@ -131,6 +157,11 @@ async function main(): Promise<number> {
   console.log(`risks: ${result.analysis.risks.join(" · ") || "(none)"}`);
   console.log(`missingEvidence: ${result.analysis.missingEvidence.join(" · ") || "(none)"}`);
   console.log(`instrument: ${instrument ? `ONLINE (${instrument.symbol})` : "UNAVAILABLE"}`);
+  console.log(`exposureMode: SIMULATED_PAPER (ownedAssetClaim NONE)`);
+  console.log(
+    `demoAccount: ${demoAccount === null ? "UNKNOWN (not probed)" : `position=${demoAccount.position} pending=${demoAccount.pendingOrders} margin=${demoAccount.marginMode ?? "?"}/${demoAccount.holdMode ?? "?"} lev=${demoAccount.configuredLeverage ?? "?"}`}`,
+  );
+  console.log(`nvidiaEvent: ${nvidiaEvent === null ? "UNAVAILABLE (no trusted source)" : `${nvidiaEvent.eventType} via ${nvidiaEvent.source}`}`);
   console.log(`evidencePackHash: ${result.packHash}`);
   console.log(`outputHash: ${result.outputHash}`);
   console.log(`overall: PASS`);

@@ -33,6 +33,15 @@ export interface EvidenceSubject {
 }
 
 export interface EvidenceExposure {
+  /**
+   * SIMULATED_PAPER = this $500 exposure is an intentional paper-trading
+   * scenario (ownedAssetClaim NONE). It is valid decision context — never
+   * a failed ownership verification and never live holdings. Derived from
+   * the canonical exposure valueSource; UNKNOWN unless fixture-proven.
+   */
+  readonly exposureMode: "SIMULATED_PAPER" | "UNKNOWN";
+  /** No wallet, holding, or balance is ever claimed. */
+  readonly ownedAssetClaim: "NONE" | "UNKNOWN";
   readonly valueUsd: number;
   readonly representation: string;
   readonly provenance: "SIMULATED";
@@ -78,6 +87,8 @@ export interface EvidenceLiveMarket {
   readonly bid: string | null;
   readonly ask: string | null;
   readonly candleSummary: EvidenceCandleSummary | null;
+  /** When the public market bundle was fetched (freshness anchor). */
+  readonly observedAt: string | null;
   readonly meta: EvidenceMeta;
 }
 
@@ -101,6 +112,46 @@ export interface EvidenceRepresentations {
   } | null;
 }
 
+/**
+ * Read-only Bitget Demo execution context for reasoning only. Safe
+ * normalized facts (position/margin state) — never credentials, never raw
+ * bodies, never authority. Null when not probed; the model must treat
+ * null as unknown, not as empty.
+ */
+export type DemoPositionState = "NONE" | "PRESENT" | "UNKNOWN";
+export type DemoPendingOrderState = "NONE" | "PRESENT" | "UNKNOWN";
+
+export interface DemoAccountEvidence {
+  readonly position: DemoPositionState;
+  readonly positionSide: string | null;
+  readonly positionSize: string | null;
+  readonly positionLeverage: string | null;
+  readonly pendingOrders: DemoPendingOrderState;
+  readonly marginMode: string | null;
+  readonly holdMode: string | null;
+  readonly configuredLeverage: string | null;
+  readonly observedAt: string;
+}
+
+export interface EvidenceDemoAccount extends DemoAccountEvidence {
+  readonly meta: EvidenceMeta;
+}
+
+/**
+ * Genuinely trusted NVIDIA event evidence (verified earnings date or
+ * relevant company event). Null until a verified read-only source is
+ * integrated — null means timing unknown, never an implicit date.
+ */
+export interface TrustedNvidiaEvent {
+  readonly eventType: "EARNINGS" | "COMPANY_NEWS";
+  /** Verified calendar date, or null when the event has no date. */
+  readonly eventDate: string | null;
+  readonly status: "VERIFIED";
+  readonly source: string;
+  readonly retrievedAt: string;
+  readonly meta: EvidenceMeta;
+}
+
 export interface AiEvidencePack {
   readonly version: 1;
   readonly subject: EvidenceSubject;
@@ -109,6 +160,8 @@ export interface AiEvidencePack {
   readonly liveMarket: EvidenceLiveMarket;
   readonly representations: EvidenceRepresentations;
   readonly protectionInstrument: EvidenceProtectionInstrument | null;
+  readonly demoAccount: EvidenceDemoAccount | null;
+  readonly nvidiaEvent: TrustedNvidiaEvent | null;
 }
 
 /**
@@ -142,7 +195,7 @@ export interface EvidenceProtectionInstrument {
     readonly venue: "Bitget Demo";
     readonly action: "SHORT NVDAUSDT hedge via guarded executor";
     readonly requires: readonly string[];
-    readonly accountState: "UNKNOWN — not probed in this evidence";
+    readonly accountState: "UNKNOWN — not probed in this evidence" | "PROBED — see demoAccount group";
   };
   readonly meta: EvidenceMeta;
 }
@@ -157,6 +210,10 @@ export interface BuildEvidencePackInput {
   readonly nvdax: NvdaxDiscovery | null;
   /** Normalized NVDAUSDT instrument rules; null when unverified. */
   readonly instrument: NvdaInstrument | null;
+  /** Read-only Demo account context; null/omitted when not probed. */
+  readonly demoAccount?: DemoAccountEvidence | null;
+  /** Trusted event evidence; null/omitted until a verified source exists. */
+  readonly nvidiaEvent?: TrustedNvidiaEvent | null;
 }
 
 /**
@@ -205,6 +262,8 @@ export function buildEvidencePack(input: BuildEvidencePackInput): AiEvidencePack
       meta: { source: "tenax:domain", provenance: "DEV" },
     },
     exposure: {
+      exposureMode: exposure.valueSource === "fixture" ? "SIMULATED_PAPER" : "UNKNOWN",
+      ownedAssetClaim: exposure.valueSource === "fixture" ? "NONE" : "UNKNOWN",
       valueUsd: exposure.exposureValueUsdt,
       representation: exposure.representation.baseCoin,
       provenance: "SIMULATED",
@@ -235,6 +294,7 @@ export function buildEvidencePack(input: BuildEvidencePackInput): AiEvidencePack
       bid: input.futuresTicker?.bidPrice ?? ticker?.bidPrice ?? null,
       ask: input.futuresTicker?.askPrice ?? ticker?.askPrice ?? null,
       candleSummary: summarizeCandles(input.candles),
+      observedAt: snapshot.fetchedAt ?? null,
       meta: REAL_BITGET,
     },
     representations: {
@@ -266,7 +326,16 @@ export function buildEvidencePack(input: BuildEvidencePackInput): AiEvidencePack
       input.instrument,
       input.futuresTicker,
       input.candles,
+      input.demoAccount ?? null,
     ),
+    demoAccount:
+      input.demoAccount === null || input.demoAccount === undefined
+        ? null
+        : {
+            ...input.demoAccount,
+            meta: { source: "bitget:demo-private", provenance: "DEMO" as const },
+          },
+    nvidiaEvent: input.nvidiaEvent ?? null,
   };
 }
 
@@ -274,6 +343,7 @@ function buildProtectionInstrument(
   instrument: NvdaInstrument | null,
   ticker: FuturesTicker | null,
   candles: readonly OhlcCandle[] | null,
+  demoAccount: DemoAccountEvidence | null,
 ): EvidenceProtectionInstrument | null {
   if (!instrument && !ticker && (!candles || candles.length === 0)) return null;
   const bid = ticker?.bidPrice ?? null;
@@ -299,7 +369,10 @@ function buildProtectionInstrument(
       venue: "Bitget Demo",
       action: "SHORT NVDAUSDT hedge via guarded executor",
       requires: ["mandate PASS", "human approval"],
-      accountState: "UNKNOWN — not probed in this evidence",
+      accountState:
+        demoAccount === null
+          ? "UNKNOWN — not probed in this evidence"
+          : "PROBED — see demoAccount group",
     },
     meta: REAL_BITGET,
   };

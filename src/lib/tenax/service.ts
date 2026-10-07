@@ -72,6 +72,7 @@ import {
 } from "../ai/pipeline.ts";
 import type { AiAnalysisAudit } from "../ai/schemas.ts";
 import type { AiDecision } from "../ai/schemas.ts";
+import type { DemoAccountEvidence, TrustedNvidiaEvent } from "../ai/evidence-pack.ts";
 import type {
   FuturesTicker,
   OhlcCandle,
@@ -308,6 +309,8 @@ export interface AiAnalyzeDeps {
   readonly candles?: readonly OhlcCandle[] | null;
   readonly nvdax?: NvdaxDiscovery | null;
   readonly instrument?: NvdaInstrument | null;
+  readonly demoAccount?: DemoAccountEvidence | null;
+  readonly nvidiaEvent?: TrustedNvidiaEvent | null;
   readonly config?: AiProviderConfig | null;
   readonly fetchImpl?: AiFetchImpl;
   readonly nowMs?: number;
@@ -342,6 +345,8 @@ export async function analyzeProtectionIntentWithAi(
     candles: deps.candles ?? null,
     nvdax: deps.nvdax ?? null,
     instrument: deps.instrument ?? null,
+    demoAccount: deps.demoAccount ?? null,
+    nvidiaEvent: deps.nvidiaEvent ?? null,
   };
   const result = await runAiAnalysis({
     exposure,

@@ -99,6 +99,11 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Evidence-contract fix 2026-10-06 (no write, READY_FOR_OWNER_AUTHORIZATION)
+- Pack now carries exposureMode SIMULATED_PAPER + ownedAssetClaim NONE, read-only demoAccount group (DEMO provenance), liveMarket.observedAt freshness, and nvidiaEvent (null = no trusted source; new boundary module documents why). Prompt rubric distinguishes paper scenario / external evidence / execution context; model stays free (PROTECT/WAIT/NO_ACTION), no authority/order fields, no ceilings.
+- Fresh genuine AI (groq/openai/gpt-oss-120b, new pack hash): PROTECT 30% → $150, mandate PASS (boundary), demoAccount position NONE confirmed live, nvidiaEvent UNAVAILABLE. Preflight on live data: flat re-verified, mandate PASS, standing AUTHORIZED, cumulative within (30% = max), all 16 gates PASS, preview sell/short market 0.62 @ 239.74 (~$148.64). Stopped before POST. No order placed.
+- 11 new contract tests; full suite 843 pass; tsc/lint/build/diff-check clean. No commit.
+
 ## Preflight 2026-10-06 (no write, GENUINE_AI_NO_ACTION)
 - Owner fixed `.env.local` (single TENAX_ANALYSIS_MODE=ai; DATABASE_URL rejoined, len 128) and flattened the Demo position.
 - Verified: env single-ai + groq/openai/gpt-oss-120b + BITGET_DEMO/demo + creds present + no live-money path; Postgres DURABLE on both ledgers (runs 0, proofs 1) after one Neon cold-start retry; Demo discovery overall PASS with currentPosition NONE, pending NVDAUSDT orders 0, hedge_mode/crossed/1x, mark 239.7.
