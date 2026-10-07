@@ -5,6 +5,7 @@
 // (TENAX_EXECUTION_MODE, default DRY_RUN): capability display only, never
 // an execution claim, never client-decided, never a secret.
 import type { ReactNode } from "react";
+import Link from "next/link";
 
 import { resolveExecutionMode } from "@/lib/tenax/execution";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
@@ -27,9 +28,15 @@ export default function AppLayout({ children }: { children: ReactNode }) {
       <SessionBootstrap />
       <header className="sticky top-0 z-30 border-b border-line bg-ivory/75 backdrop-blur-lg">
         <div className="relative mx-auto flex min-h-16 w-full max-w-[1408px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:gap-x-6 sm:px-6">
-          <TenaxWordmark href="/app" label="Tenax Capital home" />
+          <TenaxWordmark href="/" label="Tenax home" />
           <ShellNav />
           <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <Link
+              href="/"
+              className="font-syslabel hidden items-center gap-1.5 text-[11px] uppercase leading-[16px] tracking-[0.1em] text-ink/55 transition-colors hover:text-ink md:inline-flex"
+            >
+              <span aria-hidden="true">←</span> BACK TO SITE
+            </Link>
             <span className="font-syslabel inline-flex items-center gap-2 rounded-full border border-signal/40 bg-signal/[0.07] px-3 py-1.5 text-[10px] font-semibold uppercase leading-[14px] tracking-[0.1em] text-signal">
               <span className="h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_8px_var(--color-signal)]" aria-hidden="true" />
               □ {executionMode}

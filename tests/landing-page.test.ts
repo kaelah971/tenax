@@ -259,6 +259,14 @@ describe("Navigation Integration & Shell", () => {
     expect(shellNavSource).toContain('label: "PROOF"');
   });
 
+  it("always offers a return path from the app shell to the landing page", () => {
+    const appShellSource = read("src/app/app/layout.tsx");
+    expect(appShellSource).toContain('<TenaxWordmark href="/"');
+    expect(appShellSource).toContain("BACK TO SITE");
+    expect(appShellSource).toContain('href="/"');
+    expect(shellNavSource).toContain("← BACK TO SITE");
+  });
+
   it("landing navigation exposes the product sections and the app", () => {
     for (const label of ["Product", "How It Works", "Authority", "Evidence", "OPEN APP"]) {
       expect(landingSource).toContain(label);
