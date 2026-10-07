@@ -130,6 +130,51 @@ describe("Mascot hero", () => {
   });
 });
 
+describe("Dedicated hero art", () => {
+  const artSource = read("src/app/_landing/HeroArt.tsx");
+
+  const artPath = resolve(process.cwd(), "public/brand/tenax-agent-hero.png");
+
+  it("targets the dedicated hero PNG and requires the file once approved", async () => {
+    const { HERO_ART } = await import("../src/app/_landing/hero-art");
+    expect(HERO_ART.src).toBe("/brand/tenax-agent-hero.png");
+    if (HERO_ART.approved) expect(existsSync(artPath)).toBe(true);
+  });
+
+  it.runIf(existsSync(artPath))("the PNG is real RGBA with intrinsic dimensions matching the config", async () => {
+    const { HERO_ART } = await import("../src/app/_landing/hero-art");
+    const file = readFileSync(artPath);
+    expect(file.subarray(0, 8).toString("hex")).toBe("89504e470d0a1a0a");
+    expect(file.readUInt32BE(16)).toBe(HERO_ART.width);
+    expect(file.readUInt32BE(20)).toBe(HERO_ART.height);
+    expect(file[25]).toBe(6); // RGBA colour type: real alpha channel
+  });
+
+  it("goes live only behind the owner approval gate", () => {
+    expect(landingSource).toContain("HERO_ART.approved ? (");
+    expect(landingSource).toContain("<HeroArt />");
+  });
+
+  it("is the whole visual: no HTML phones layered over the render", () => {
+    expect(artSource).toContain('from "next/image"');
+    expect(artSource).toContain("HERO_ART.src");
+    expect(artSource).not.toContain("unoptimized");
+    for (const forbidden of ["Phone", "EventScreen", "DecisionScreen", "tx-phone"]) {
+      expect(artSource).not.toContain(forbidden);
+    }
+  });
+
+  it("never leaks into the application, which keeps the original mascot", () => {
+    const appFiles = [
+      "src/app/app/_components/living.tsx",
+      "src/app/app/_components/AgentFigure.tsx",
+      "src/app/app/layout.tsx",
+    ];
+    for (const file of appFiles) expect(read(file)).not.toContain("tenax-agent-hero");
+    expect(read("src/app/app/_components/living.tsx")).toContain('"/brand/tenax-agent.png"');
+  });
+});
+
 describe("Storytelling section", () => {
   it("states the authority thesis and truthful system facts only", () => {
     expect(landingSource).toContain("AI can suggest the trade.");

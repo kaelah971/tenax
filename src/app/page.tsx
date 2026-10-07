@@ -30,6 +30,8 @@ import {
   MandateIcon,
   McpIcon,
 } from "./_landing/icons";
+import HeroArt from "./_landing/HeroArt";
+import { HERO_ART } from "./_landing/hero-art";
 import MascotHero from "./_landing/MascotHero";
 import OutcomeCarousel from "./_landing/OutcomeCarousel";
 import "./_landing/landing.css";
@@ -257,9 +259,15 @@ export default function LandingPage() {
               </div>
             </div>
 
-            <div className="mx-auto w-full max-w-[460px] sm:max-w-[540px] lg:-ml-6 lg:-mr-4 lg:w-auto lg:max-w-none xl:-ml-12 xl:-mr-8 2xl:-mr-16">
-              <MascotHero data={devices} />
-            </div>
+            {HERO_ART.approved ? (
+              <div className="flex justify-center lg:justify-end lg:pr-[2%]">
+                <HeroArt />
+              </div>
+            ) : (
+              <div className="mx-auto w-full max-w-[460px] sm:max-w-[540px] lg:-ml-6 lg:-mr-4 lg:w-auto lg:max-w-none xl:-ml-12 xl:-mr-8 2xl:-mr-16">
+                <MascotHero data={devices} />
+              </div>
+            )}
           </div>
         </section>
 

@@ -316,6 +316,55 @@ html:has(.tx-landing) {
   color: rgba(145, 155, 148, 0.75);
 }
 
+/* ---- Hero art (dedicated transparent render) ---------------------------------
+   The image is the whole visual. Only a soft glow behind it and a ground
+   shadow under the shoes tie it into the existing signal field. */
+.tx-hero-art {
+  position: relative;
+  isolation: isolate;
+  width: min(78vw, 400px);
+  margin: 0;
+}
+
+.tx-hero-art-img {
+  position: relative;
+  z-index: 1;
+  display: block;
+  width: 100%;
+  height: auto;
+  user-select: none;
+  filter: drop-shadow(0 22px 28px rgba(0, 0, 0, 0.55));
+}
+
+.tx-hero-art-glow {
+  position: absolute;
+  inset: 16% 6% 24% 6%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(99, 255, 42, 0.14), rgba(18, 61, 22, 0.28) 55%, transparent 80%);
+  filter: blur(40px);
+  pointer-events: none;
+}
+
+.tx-hero-art-ground {
+  position: absolute;
+  left: 18%;
+  right: 14%;
+  bottom: 3.5%;
+  height: 7%;
+  z-index: 0;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgba(0, 0, 0, 0.85), rgba(0, 0, 0, 0.4) 50%, rgba(99, 255, 42, 0.12) 72%, transparent 88%);
+  filter: blur(8px);
+  pointer-events: none;
+}
+
+@media (min-width: 1024px) {
+  .tx-hero-art {
+    width: clamp(380px, 36vw, 520px);
+  }
+}
+
 /* ---- Mascot hero ------------------------------------------------------------
    Scene unit: 1em = 10 asset pixels of the 1254px mascot render, derived
    from container width, so mascot, phones and finger overlays stay locked
