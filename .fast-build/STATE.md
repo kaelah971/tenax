@@ -99,6 +99,13 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Authorized capture attempt 2026-10-07 (no write, BLOCKED)
+- Owner authorized ONE Demo order for the then-current 30%/$150 PROTECT proposal with fresh-gate re-verification.
+- Live server (PID 7004, :3000) confirmed current: Postgres DURABLE, 0 runs baseline.
+- Fresh genuine Groq analysis (flow-0001, new pack hash) decided PROTECT 40% → $200 — over mandate (30%/$150) → deterministic verdict MANDATE_REFUSED (failedRules max_protection_pct, max_trade_value). No clamping, no override, no second attempt.
+- Post-check read-only probe: position NONE, trade-read PASS — zero orders placed, ledger untouched (0 runs).
+- Incidental observation (not fixed, out of scope): analyze-route provenance still labels AI analyses analysis:DEVELOPMENT_FIXTURE in the JSON payload (page shows the AI pill separately). No code changes, no commit.
+
 ## Evidence-contract fix 2026-10-06 (no write, READY_FOR_OWNER_AUTHORIZATION)
 - Pack now carries exposureMode SIMULATED_PAPER + ownedAssetClaim NONE, read-only demoAccount group (DEMO provenance), liveMarket.observedAt freshness, and nvidiaEvent (null = no trusted source; new boundary module documents why). Prompt rubric distinguishes paper scenario / external evidence / execution context; model stays free (PROTECT/WAIT/NO_ACTION), no authority/order fields, no ceilings.
 - Fresh genuine AI (groq/openai/gpt-oss-120b, new pack hash): PROTECT 30% → $150, mandate PASS (boundary), demoAccount position NONE confirmed live, nvidiaEvent UNAVAILABLE. Preflight on live data: flat re-verified, mandate PASS, standing AUTHORIZED, cumulative within (30% = max), all 16 gates PASS, preview sell/short market 0.62 @ 239.74 (~$148.64). Stopped before POST. No order placed.
