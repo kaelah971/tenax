@@ -18,6 +18,7 @@ export const PROOF_KINDS = [
   "EXECUTION_FILLED",
   "AUTHORITY_ESCALATED",
   "AUTHORITY_REFUSED",
+  "POLICY_REFUSED",
   "REVIEW_REQUIRED",
   "EXECUTION_FAILED",
 ] as const;
@@ -27,7 +28,7 @@ const finiteNumber = z.number().finite();
 const nullableFiniteNumber = z.number().finite().nullable();
 
 export const proofAuthoritySchema = z.object({
-  source: z.enum(["STANDING_MANDATE", "HUMAN_APPROVAL"]).nullable(),
+  source: z.enum(["STANDING_MANDATE", "HUMAN_APPROVAL", "DETERMINISTIC_MANDATE"]).nullable(),
   mode: z.string().nullable(),
   mandateId: z.string().nullable(),
   mandateHash: z.string().nullable(),

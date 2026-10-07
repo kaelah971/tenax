@@ -176,6 +176,7 @@ const DRY_RUN_PATTERN = /\bdry[\s_-]?run\b/i;
 const NON_EXECUTION_OUTCOMES: Readonly<Record<Exclude<ProofKind, "EXECUTION_FILLED">, string>> = {
   AUTHORITY_ESCALATED: "NO AUTONOMOUS ORDER SENT",
   AUTHORITY_REFUSED: "NO ORDER SENT",
+  POLICY_REFUSED: "NO ORDER SENT",
   REVIEW_REQUIRED: "HUMAN REVIEW REQUIRED — NO AUTONOMOUS ORDER SENT",
   EXECUTION_FAILED: "FAILED — NO POSITION OPENED",
 };
@@ -439,6 +440,7 @@ export function validateHistoricalProof(
     if (
       candidateKind === "AUTHORITY_ESCALATED" ||
       candidateKind === "AUTHORITY_REFUSED" ||
+      candidateKind === "POLICY_REFUSED" ||
       candidateKind === "EXECUTION_FAILED"
     ) {
       const reasonCodes = record.reasonCodes;

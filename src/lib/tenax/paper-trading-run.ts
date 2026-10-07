@@ -175,6 +175,7 @@ export function paperTradingRunId(flowId: string): string {
 
 export function isPaperTradingTerminalActivityType(type: ActivityEventType): boolean {
   return (
+    type === "DETERMINISTIC_POLICY_REFUSED" ||
     type === "STANDING_AUTHORITY_ESCALATED" ||
     type === "STANDING_AUTHORITY_REFUSED" ||
     type === "STANDING_REVIEW_REQUIRED" ||
@@ -209,6 +210,7 @@ function authorityFromProof(proof: JudgeProof | null): {
     case "AUTHORITY_ESCALATED":
       return { outcome: "ESCALATE", status: "ESCALATED" };
     case "AUTHORITY_REFUSED":
+    case "POLICY_REFUSED":
       return { outcome: "REFUSE", status: "REFUSED" };
     case "REVIEW_REQUIRED":
       return { outcome: "REVIEW", status: "REVIEW_REQUIRED" };
@@ -223,6 +225,7 @@ function authorityFromEvent(event: ActivityEvent | null, receipt: DecisionReceip
 } {
   if (event?.type === "STANDING_AUTHORITY_ESCALATED") return { outcome: "ESCALATE", status: "ESCALATED" };
   if (event?.type === "STANDING_AUTHORITY_REFUSED") return { outcome: "REFUSE", status: "REFUSED" };
+  if (event?.type === "DETERMINISTIC_POLICY_REFUSED") return { outcome: "REFUSE", status: "REFUSED" };
   if (event?.type === "STANDING_REVIEW_REQUIRED") return { outcome: "REVIEW", status: "REVIEW_REQUIRED" };
   if (event?.type === "AUTONOMOUS_EXECUTION_FILLED") return { outcome: "EXECUTE", status: "EXECUTED" };
   if (event?.type === "AUTONOMOUS_EXECUTION_FAILED") return { outcome: "EXECUTE", status: "FAILED" };
@@ -244,7 +247,7 @@ function executionStatusFor(
   if (proof?.execution?.status === "FILLED") return "FILLED";
   if (event?.type === "AUTONOMOUS_EXECUTION_FILLED") return "UNKNOWN";
   if (event?.type === "AUTONOMOUS_EXECUTION_FAILED") return "FAILED";
-  if (event?.type === "STANDING_AUTHORITY_ESCALATED" || event?.type === "STANDING_AUTHORITY_REFUSED" || event?.type === "STANDING_REVIEW_REQUIRED") return "NO_ORDER";
+  if (event?.type === "DETERMINISTIC_POLICY_REFUSED" || event?.type === "STANDING_AUTHORITY_ESCALATED" || event?.type === "STANDING_AUTHORITY_REFUSED" || event?.type === "STANDING_REVIEW_REQUIRED") return "NO_ORDER";
   if (receipt?.executionMode === "DRY_RUN") return "PREVIEW";
   if (demoExecution?.filled === true) return "FILLED";
   if (demoExecution?.orderId || demoExecution?.orderStatus) return "SUBMITTED";

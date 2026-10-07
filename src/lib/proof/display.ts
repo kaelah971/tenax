@@ -38,6 +38,8 @@ export function proofKindLabel(kind: ProofKind): string {
       return "HUMAN REVIEW REQUIRED";
     case "AUTHORITY_REFUSED":
       return "TENAX REFUSED";
+    case "POLICY_REFUSED":
+      return "POLICY REFUSED — NO ORDER SENT";
     case "REVIEW_REQUIRED":
       return "HUMAN REVIEW REQUIRED";
     case "EXECUTION_FAILED":
@@ -54,6 +56,8 @@ export function proofTone(kind: ProofKind): ProofTone {
     case "AUTHORITY_ESCALATED":
       return "escalated";
     case "AUTHORITY_REFUSED":
+      return "refused";
+    case "POLICY_REFUSED":
       return "refused";
     case "REVIEW_REQUIRED":
       return "review";

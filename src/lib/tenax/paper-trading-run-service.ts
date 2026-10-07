@@ -54,6 +54,7 @@ function eventPriority(event: ActivityEvent): number {
     case "AUTONOMOUS_EXECUTION_FILLED":
     case "AUTONOMOUS_EXECUTION_FAILED":
       return 5;
+    case "DETERMINISTIC_POLICY_REFUSED":
     case "STANDING_AUTHORITY_ESCALATED":
     case "STANDING_AUTHORITY_REFUSED":
     case "STANDING_REVIEW_REQUIRED":

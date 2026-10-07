@@ -158,13 +158,15 @@ export const standingMandateUpdateSchema = z
 export interface Provenance {
   readonly marketData: "REAL" | "PARTIAL" | "UNAVAILABLE";
   readonly exposure: "SIMULATED";
-  readonly analysis: "DEVELOPMENT_FIXTURE";
+  /** Derived from the actual analysis seated in the flow: model output is AI_MODEL. */
+  readonly analysis: "DEVELOPMENT_FIXTURE" | "AI_MODEL";
   readonly execution: "DRY_RUN" | "BITGET_DEMO" | "NOT_EXECUTED";
 }
 
 function provenanceFor(
   snapshot: NvidiaMarketSnapshot,
   execution: Provenance["execution"],
+  analysis: Provenance["analysis"] = "DEVELOPMENT_FIXTURE",
 ): Provenance {
   return {
     marketData:
@@ -174,7 +176,7 @@ function provenanceFor(
           ? "PARTIAL"
           : "UNAVAILABLE",
     exposure: "SIMULATED",
-    analysis: "DEVELOPMENT_FIXTURE",
+    analysis,
     execution,
   };
 }
@@ -446,7 +448,7 @@ export async function analyzeProtectionIntentWithAi(
     mandateChecks: decision.checks,
     failedRules: decision.failedRules,
     executionEligible: analysis.authority.executionEligible,
-    provenance: provenanceFor(snapshot, "NOT_EXECUTED"),
+    provenance: provenanceFor(snapshot, "NOT_EXECUTED", aiAudit ? "AI_MODEL" : "DEVELOPMENT_FIXTURE"),
   };
 }
 
@@ -465,6 +467,65 @@ export function evaluateProtectionProposal(store: TenaxDevStore, flowId: string)
     mandateChecks: decision.checks,
     failedRules: decision.failedRules,
   };
+}
+
+/**
+ * Record a deterministic mandate REFUSE as durable terminal evidence.
+ *
+ * Called by the analyze route after a REFUSE verdict and by the
+ * autonomous cycle for policy-level refusals. Emits exactly one
+ * DETERMINISTIC_POLICY_REFUSED activity per flow (retries find the
+ * existing event and record nothing new), then persists the JudgeProof
+ * and PaperTradingRun through the canonical seam. Never approves,
+ * never executes, never POSTs — NO_ORDER evidence only.
+ */
+export async function recordDeterministicRefusal(
+  store: TenaxDevStore,
+  flowId: string,
+  input: { readonly reasonCodes?: readonly string[]; readonly nowMs?: number } = {},
+) {
+  const nowMs = input.nowMs ?? Date.now();
+  const flow = getFlow(store, flowId);
+  const { analysis, aiAudit } = flow.getContext();
+  if (!analysis) return null;
+  // A model WAIT/NO_ACTION analysis is never a refusal: its stored idle
+  // proposal exists only to stop the flow, not to accuse a proposal.
+  if (analysis.reasoning.kind === "model" && aiAudit && aiAudit.decision !== "PROTECT") {
+    return null;
+  }
+  const decision = analysis.authority.mandateDecision;
+  // An explicit override covers refusals without a REFUSE verdict (e.g.
+  // no active standing mandate); otherwise only REFUSE is recordable.
+  if (decision.verdict !== "REFUSE" && !input.reasonCodes) return null;
+  if (
+    store.activities.some(
+      (existing) =>
+        existing.flowId === flowId && existing.type === "DETERMINISTIC_POLICY_REFUSED",
+    )
+  ) {
+    return null;
+  }
+  const reasonCodes = [...(input.reasonCodes ?? decision.failedRules)];
+  if (reasonCodes.length === 0) reasonCodes.push("mandate_refused");
+  const event = await emitActivityAndAwaitProof(
+    store,
+    {
+      type: "DETERMINISTIC_POLICY_REFUSED",
+      flowId,
+      summary: `Deterministic mandate refused ${analysis.proposal.protectionPct}% / $${analysis.authority.calculatedTradeValueUsdt} (${reasonCodes.join(",")}) — no order sent`,
+      details: {
+        mandateId: null,
+        proposedPct: analysis.proposal.protectionPct,
+        proposedUsd: analysis.authority.calculatedTradeValueUsdt,
+        maxPct: MANDATE_FIXTURE.maxProtectionPct,
+        maxNotional: MANDATE_FIXTURE.maxTradeValueUsdt,
+        reasonCodes,
+        outcome: "POLICY_REFUSED",
+      },
+    },
+    nowMs,
+  );
+  return { event };
 }
 
 export function approveProtectionProposal(
@@ -1344,12 +1405,14 @@ export async function runProtectionAgentCycle(
   }
 
   // 3. Deterministic policy re-evaluation from the STORED proposal.
+  // A policy REFUSE is terminal authority evidence: activity + proof +
+  // run with NO_ORDER (never a provider write).
   const fresh = evaluateMandate(proposal, MANDATE_FIXTURE, NVDA_EXPOSURE_FIXTURE);
   if (fresh.verdict !== "PASS") {
-    await persistPaperTradingCycle({
-      store,
-      flowId,
-      terminal: { status: "REFUSED", authorityOutcome: "REFUSE", reasonCodes: [...fresh.failedRules], createdAt: new Date(nowMs).toISOString() },
+    // Fresh rules, not the stored verdict: the stored analysis may predate
+    // the proposal under evaluation.
+    await recordDeterministicRefusal(store, flowId, {
+      reasonCodes: [...fresh.failedRules],
       nowMs,
     });
     return {
@@ -1434,10 +1497,8 @@ export async function runProtectionAgentCycle(
   // 4–5. Standing authority: fresh mandate, fresh evaluation.
   const mandate = getActiveStandingMandate(store);
   if (!mandate) {
-    await persistPaperTradingCycle({
-      store,
-      flowId,
-      terminal: { status: "REFUSED", authorityOutcome: "REFUSE", reasonCodes: ["no_standing_mandate"], createdAt: new Date(nowMs).toISOString() },
+    await recordDeterministicRefusal(store, flowId, {
+      reasonCodes: ["no_standing_mandate"],
       nowMs,
     });
     return { outcome: "NO_STANDING_MANDATE", flowId, state: flow.getFlowState() };

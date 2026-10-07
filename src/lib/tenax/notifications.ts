@@ -25,6 +25,7 @@ import type { DecisionReceipt } from "./domain";
 import type { TenaxDevStore } from "./dev-store";
 
 export const NOTIFICATION_TYPES = [
+  "DETERMINISTIC_POLICY_REFUSED",
   "STANDING_REVIEW_REQUIRED",
   "STANDING_AUTHORITY_ESCALATED",
   "STANDING_AUTHORITY_REFUSED",
@@ -169,6 +170,18 @@ function draftForEvent(store: TenaxDevStore, event: ActivityEvent): Notification
         type: "STANDING_AUTHORITY_REFUSED",
         title: "Tenax refused an action.",
         body: `Execution stayed inside your safety rules${suffix}. No order was sent.`,
+        severity: "WARNING",
+        target: "ANALYSIS",
+        targetHref: `/app/analysis/${event.flowId}`,
+      };
+    }
+    case "DETERMINISTIC_POLICY_REFUSED": {
+      const reasons = event.details?.reasonCodes?.filter((r) => r.length > 0) ?? [];
+      const suffix = reasons.length > 0 ? ` (${reasons.join(" · ").toUpperCase()})` : "";
+      return {
+        type: "DETERMINISTIC_POLICY_REFUSED",
+        title: "Tenax refused a proposal.",
+        body: `The deterministic mandate refused this proposal${suffix}. No order was sent.`,
         severity: "WARNING",
         target: "ANALYSIS",
         targetHref: `/app/analysis/${event.flowId}`,

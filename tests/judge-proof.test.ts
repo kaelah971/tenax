@@ -541,11 +541,14 @@ describe("judge display helpers", () => {
       "EXECUTION_FILLED",
       "AUTHORITY_ESCALATED",
       "AUTHORITY_REFUSED",
+      "POLICY_REFUSED",
       "REVIEW_REQUIRED",
       "EXECUTION_FAILED",
     ]);
     expect(proofKindLabel("EXECUTION_FILLED")).toBe("PROTECTION EXECUTED");
+    expect(proofKindLabel("POLICY_REFUSED")).toBe("POLICY REFUSED — NO ORDER SENT");
     expect(proofTone("AUTHORITY_REFUSED")).toBe("refused");
+    expect(proofTone("POLICY_REFUSED")).toBe("refused");
     expect(parseProofFilter("EXECUTED")).toBe("EXECUTED");
     expect(parseProofFilter("nope")).toBe("ALL");
     expect(parseProofFilter(null)).toBe("ALL");

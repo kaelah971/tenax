@@ -99,6 +99,13 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Terminal-evidence fix (no live calls, no writes)
+- Fixed analyze-route provenance: AI analyses now report analysis:AI_MODEL (fixture stays DEVELOPMENT_FIXTURE); receipt evidence string derives the same way. No hash changes (provenance is display truth, not pack input).
+- New DETERMINISTIC_POLICY_REFUSED activity → POLICY_REFUSED proof (authority DETERMINISTIC_MANDATE, NO ORDER SENT, explicit reason codes) → canonical run (REFUSE/NO_ORDER, AI attribution preserved). Wired into the analyze route on REFUSE verdicts and the agent-cycle POLICY_REFUSED/NO_STANDING_MANDATE branches; WAIT stays a non-refusal; per-flow idempotent. ESCALATE/REVIEW paths already emitted and now regression-locked.
+- No backfill of flow-0001 (server-local only, unprovable from durable sources) — fix is forward-looking.
+- 10 new terminal-evidence tests (+1 judge-proof pin update); full suite 853 pass (52 files); tsc/lint/build/diff-check clean. No commit.
+- Standing rule: same-evidence retry for a favorable decision is prohibited; the genuine 40%/$200 REFUSE stands; next capture needs materially new trusted event/evidence.
+
 ## Authorized capture attempt 2026-10-07 (no write, BLOCKED)
 - Owner authorized ONE Demo order for the then-current 30%/$150 PROTECT proposal with fresh-gate re-verification.
 - Live server (PID 7004, :3000) confirmed current: Postgres DURABLE, 0 runs baseline.

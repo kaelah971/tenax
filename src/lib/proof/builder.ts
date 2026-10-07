@@ -223,6 +223,32 @@ export function buildJudgeProof(
         provenance,
       };
     }
+    case "DETERMINISTIC_POLICY_REFUSED": {
+      const kind: ProofKind = "POLICY_REFUSED";
+      return {
+        id: proofIdFor(kind, event.id),
+        version: PROOF_VERSION,
+        kind,
+        flowId: event.flowId,
+        subject: "NVDA",
+        symbol: "NVDAUSDT",
+        createdAt: event.createdAt,
+        outcome: "NO ORDER SENT",
+        authority: {
+          source: "DETERMINISTIC_MANDATE",
+          mode: "DETERMINISTIC",
+          mandateId: details?.mandateId ?? null,
+          mandateHash: null,
+        },
+        proposal: baseProposal(details),
+        mandateSnapshot: mandateSnapshotFor(store, details?.mandateId),
+        execution: null,
+        receiptId: event.receiptId,
+        reasonCodes,
+        sourceActivityEventId: event.id,
+        provenance,
+      };
+    }
     case "STANDING_REVIEW_REQUIRED": {
       const kind: ProofKind = "REVIEW_REQUIRED";
       return {

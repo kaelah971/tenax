@@ -80,6 +80,7 @@ function cardFacts(proof: JudgeProof): ReadonlyArray<readonly [string, string]> 
         ],
       ];
     case "AUTHORITY_REFUSED":
+    case "POLICY_REFUSED":
       return proof.reasonCodes.length > 0 ? [["REASONS", proof.reasonCodes.join(" · ").toUpperCase()]] : [];
     case "REVIEW_REQUIRED":
       return [];
@@ -95,6 +96,7 @@ function cardResult(proof: JudgeProof): string {
     case "AUTHORITY_ESCALATED":
       return "NO AUTONOMOUS ORDER SENT";
     case "AUTHORITY_REFUSED":
+    case "POLICY_REFUSED":
       return "NO ORDER SENT";
     case "REVIEW_REQUIRED":
       return "NO AUTONOMOUS ORDER SENT";

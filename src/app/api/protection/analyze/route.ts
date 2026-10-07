@@ -24,6 +24,7 @@ import {
   analyzeProtectionIntentWithAi,
   createProtectionIntent,
   readDemoCredentials,
+  recordDeterministicRefusal,
 } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import {
@@ -79,9 +80,18 @@ export async function POST(request: Request) {
         demoAccount,
         nvidiaEvent,
       });
+      // A deterministic REFUSE is terminal authority evidence: record
+      // activity + proof + run (NO_ORDER) before responding. Never throws
+      // the analysis away, never writes to any provider.
+      if (result.mandateVerdict === "REFUSE") {
+        await recordDeterministicRefusal(store, flowId);
+      }
       return Response.json({ ok: true, ...result });
     }
     const result = analyzeProtectionIntent(store, flowId, snapshot);
+    if (result.mandateVerdict === "REFUSE") {
+      await recordDeterministicRefusal(store, flowId);
+    }
     return Response.json({ ok: true, ...result });
   } catch (err) {
     if (err instanceof ZodError) {

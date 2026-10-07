@@ -49,6 +49,7 @@ function cardResult(proof: JudgeProof): string {
     case "AUTHORITY_ESCALATED":
       return "NO AUTONOMOUS ORDER SENT";
     case "AUTHORITY_REFUSED":
+    case "POLICY_REFUSED":
       return "NO ORDER SENT";
     case "REVIEW_REQUIRED":
       return "NO AUTONOMOUS ORDER SENT";

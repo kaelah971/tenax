@@ -698,7 +698,7 @@ export class ProtectionFlow {
       ],
       evidenceRefs: [
         ...analysis.reasoning.evidenceRefs,
-        `provenance: market=REAL(public Bitget), exposure=SIMULATED(fixture), analysis=DEVELOPMENT_FIXTURE, execution=${executionLabel}`,
+        `provenance: market=REAL(public Bitget), exposure=SIMULATED(fixture), analysis=${this.aiAudit ? "AI_MODEL" : "DEVELOPMENT_FIXTURE"}, execution=${executionLabel}`,
       ],
     });
     // Standing-authority provenance (B1-prepared fields): populated only
