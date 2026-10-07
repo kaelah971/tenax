@@ -7,6 +7,7 @@
 import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
+import { resolveAnalysisMode } from "@/lib/ai/provider.ts";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { MANDATE_FIXTURE } from "@/lib/tenax/fixtures";
 import { getActiveStandingMandate } from "@/lib/tenax/service";
@@ -100,7 +101,7 @@ export default async function ProtectPage() {
           VIEW MANDATE <span className="btn-arrow" aria-hidden="true">→</span>
         </Link>
       </nav>
-      <ProvenanceStrip items={[marketOk ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS"]} />
+      <ProvenanceStrip items={[marketOk ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", resolveAnalysisMode(process.env) === "ai" ? "AI ANALYSIS" : "DEVELOPMENT ANALYSIS"]} />
     </div>
   );
 }

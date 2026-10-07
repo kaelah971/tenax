@@ -28,6 +28,7 @@ import {
   surfaceProjection,
 } from "@/lib/tenax/visuals";
 import {
+  AUTHORITY_SEPARATION_LINE,
   cumulativeRefusalSentence,
   projectionStatusCopy,
   refusalSentence,
@@ -339,6 +340,9 @@ export default async function AnalysisPage({
         </div>
         <p className="font-syslabel mt-2 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
           {authorityCopy.title} · {authorityCopy.lines.join(" · ")}
+        </p>
+        <p className="mt-2 max-w-2xl text-[14px] font-bold leading-[20px]">
+          {AUTHORITY_SEPARATION_LINE}
         </p>
 
         {finalState === "AUTHORIZED" ? (

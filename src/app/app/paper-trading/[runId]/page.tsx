@@ -93,6 +93,13 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
               <span>{run.outcome.outcomeState}</span>
               <span>{run.createdAt}</span>
             </div>
+            {run.sourceProofId ? (
+              <div className="mt-4">
+                <Link href={`/app/proof/${encodeURIComponent(run.sourceProofId)}`} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] text-ink hover:brightness-95">
+                  VIEW DURABLE PROOF <span className="btn-arrow" aria-hidden="true">→</span>
+                </Link>
+              </div>
+            ) : null}
           </section>
 
           <EvidenceSection title="01 · EVENT" source={run.provenance.event}>

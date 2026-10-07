@@ -22,6 +22,9 @@ export const EXECUTION_PREVIEW_CREATED = "Execution preview created — no funds
 
 export const NOT_ADVICE = "Not investment advice. Tenax executes only within your mandate.";
 
+export const AUTHORITY_SEPARATION_LINE =
+  "AI can propose. It cannot authorize itself — deterministic rules decide.";
+
 export const DATE_UNAVAILABLE_LINE = "Date unavailable — no verified NVIDIA earnings date.";
 
 export const EVENT_UNAVAILABLE_LINE =

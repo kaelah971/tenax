@@ -6,6 +6,8 @@ import Link from "next/link";
 
 import { getDecisionReceipt } from "@/lib/tenax/service";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
+import { paperTradingRunId } from "@/lib/tenax/paper-trading-run";
+import { getPaperTradingRunRepository } from "@/lib/tenax/paper-trading-run-repository";
 import { getProofRepository } from "@/lib/proof/repository";
 import { NOT_ADVICE } from "../../_copy";
 import { SceneAnchor } from "../../_components/materials";
@@ -17,8 +19,12 @@ export const dynamic = "force-dynamic";
 export default async function ReceiptPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   let receipt;
+  // AI provenance comes from the seated model audit, never from a label:
+  // fixture flows have no audit and stay DEVELOPMENT-labeled.
+  let isModel = false;
   try {
     ({ receipt } = getDecisionReceipt(getTenaxDevStore(), id));
+    isModel = getTenaxDevStore().flows.get(id)?.getContext().aiAudit != null;
   } catch {
     notFound();
   }
@@ -40,6 +46,15 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
   } catch {
     proofHref = null;
   }
+  // Canonical paper-trading run for this flow when reconciled. Same
+  // hide-on-absence contract as the proof link above.
+  let runHref: string | null = null;
+  try {
+    const run = await getPaperTradingRunRepository().getRun(paperTradingRunId(id));
+    if (run) runHref = `/app/paper-trading/${encodeURIComponent(run.runId)}`;
+  } catch {
+    runHref = null;
+  }
 
   const stages: Array<{ index: string; title: string; lines: string[] }> = [
     { index: "01", title: "EXPOSURE", lines: [`$${receipt.exposureValueUsdt} NVIDIA`, "○ DEMO"] },
@@ -47,7 +62,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
     {
       index: "03",
       title: "INTELLIGENCE",
-      lines: [`${receipt.proposedProtectionPct}% protection`, "◇ DEV"],
+      lines: [`${receipt.proposedProtectionPct}% protection`, isModel ? "AI MODEL" : "◇ DEV"],
     },
     { index: "04", title: "MANDATE", lines: [`${receipt.mandateResult}`, `${cleared}/${total} rules cleared`] },
     {
@@ -280,16 +295,23 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
         items={[
           "LIVE BITGET DATA",
           "SIMULATED PORTFOLIO",
-          "DEVELOPMENT ANALYSIS",
+          isModel ? "AI ANALYSIS" : "DEVELOPMENT ANALYSIS",
           isDemo ? "BITGET_DEMO EXECUTION" : "DRY_RUN EXECUTION",
         ]}
       />
       <JourneyNav label="Continue" links={receiptJourney()} />
-      {proofHref ? (
-        <nav aria-label="Durable proof">
-          <Link href={proofHref} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
-            VIEW DURABLE PROOF <span className="btn-arrow" aria-hidden="true">→</span>
-          </Link>
+      {proofHref || runHref ? (
+        <nav aria-label="Durable evidence" className="flex flex-wrap items-center gap-2">
+          {proofHref ? (
+            <Link href={proofHref} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+              VIEW DURABLE PROOF <span className="btn-arrow" aria-hidden="true">→</span>
+            </Link>
+          ) : null}
+          {runHref ? (
+            <Link href={runHref} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+              VIEW PAPER-TRADING RUN <span className="btn-arrow" aria-hidden="true">→</span>
+            </Link>
+          ) : null}
         </nav>
       ) : null}
       <p className="text-[11px] leading-[14px] text-mutedink">{NOT_ADVICE}</p>

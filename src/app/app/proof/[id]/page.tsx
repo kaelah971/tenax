@@ -7,6 +7,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 
 import { getProofRepository } from "@/lib/proof/repository";
+import { paperTradingRunId } from "@/lib/tenax/paper-trading-run";
+import { getPaperTradingRunRepository } from "@/lib/tenax/paper-trading-run-repository";
 import { formatProofTime, formatProofUsd, proofKindLabel, proofTone } from "@/lib/proof/display";
 import type { JudgeProof } from "@/lib/proof/model";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
@@ -65,6 +67,19 @@ export default async function ProofDetailPage({ params }: { params: Promise<{ id
   }
   if (!proof) notFound();
   const proofRecord: JudgeProof = proof;
+  // Canonical run for this flow when reconciled; AI provenance derives
+  // from the run's recorded decision source. Absence hides the link.
+  let runHref: string | null = null;
+  let runIsAi = false;
+  try {
+    const run = await getPaperTradingRunRepository().getRun(paperTradingRunId(proofRecord.flowId));
+    if (run) {
+      runHref = `/app/paper-trading/${encodeURIComponent(run.runId)}`;
+      runIsAi = run.decision.provider !== null;
+    }
+  } catch {
+    runHref = null;
+  }
   const mandate = proofRecord.mandateSnapshot;
   const execution = proofRecord.execution;
   const durabilityLabel =
@@ -111,7 +126,7 @@ export default async function ProofDetailPage({ params }: { params: Promise<{ id
       <section aria-label="Authority" className="tx-material-editorial border-t-2 border-ink pt-4">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">AUTHORITY</p>
         <dl className="mt-3">
-          <Row term="SOURCE" value={proofRecord.authority.source === "STANDING_MANDATE" ? "Standing Mandate" : (proofRecord.authority.source ?? "—")} />
+          <Row term="SOURCE" value={proofRecord.authority.source === "STANDING_MANDATE" ? "Standing Mandate" : proofRecord.authority.source === "DETERMINISTIC_MANDATE" ? "Deterministic Mandate" : proofRecord.authority.source === "HUMAN_APPROVAL" ? "Human Approval" : "—"} />
           <Row term="MODE" value={proofRecord.authority.mode ?? "—"} />
           <Row term="MANDATE" value={proofRecord.authority.mandateId ?? "—"} />
           <Row term="MANDATE HASH" value={proofRecord.authority.mandateHash ? `${proofRecord.authority.mandateHash.slice(0, 16)}…` : "—"} />
@@ -182,11 +197,16 @@ export default async function ProofDetailPage({ params }: { params: Promise<{ id
             VIEW RECEIPT <span className="btn-arrow" aria-hidden="true">→</span>
           </Link>
         ) : null}
+        {runHref ? (
+          <Link href={runHref} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
+            VIEW PAPER-TRADING RUN <span className="btn-arrow" aria-hidden="true">→</span>
+          </Link>
+        ) : null}
         <Link href="/app/activity" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] border border-ink/70 bg-softwhite/30 px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] hover:bg-ink hover:text-softwhite">
           VIEW ACTIVITY <span className="btn-arrow" aria-hidden="true">→</span>
         </Link>
       </nav>
-      <ProvenanceStrip items={["SIMULATED PORTFOLIO", "DEVELOPMENT ANALYSIS"]} />
+      <ProvenanceStrip items={["SIMULATED PORTFOLIO", runIsAi ? "AI ANALYSIS" : "DEVELOPMENT ANALYSIS"]} />
     </div>
   );
 }

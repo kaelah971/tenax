@@ -99,6 +99,13 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Judge-journey clarity B7 (JUDGE_JOURNEY_READY_EVENT_SOURCE_BLOCKED)
+- Core message now judge-facing: AUTHORITY_SEPARATION_LINE ("AI can propose. It cannot authorize itself — deterministic rules decide.") rendered at the analysis FINAL TENAX DECISION boundary.
+- Fixed AI/fixture labeling from seated truth: receipts derive AI ANALYSIS/AI MODEL from the flow aiAudit (was hardcoded DEV); protect strip follows server analysis mode; proof detail derives AI labeling from the linked run and maps DETERMINISTIC_MANDATE/HUMAN_APPROVAL to human words (was raw enum).
+- Journey continuity: receipt → proof + canonical run links (hide-on-absence), run → proof link, proof → run link. Refusal language audited (no failure-confusion; UNKNOWN fail-closed copy is correct usage).
+- No receipt state-machine change: executed-only receipts stand; refusal story terminates at proof + run detail (both durable). Responsive: existing classes only, no new layout primitives, no client state.
+- 12 new journey tests; full suite 880 pass (55 files); tsc/lint/build/diff-check clean. No commit.
+
 ## Judge-path hardening (JUDGE_PATH_READY_EVENT_SOURCE_BLOCKED)
 - Event source now has a typed judge-facing state: LIVE_VERIFIED_EVENT / SOURCE_UNAVAILABLE / NO_ELIGIBLE_EVENT via probeNvidiaEventSource (fetchTrustedNvidiaEvent kept as the null-wrapper; route callers untouched). Dead source can never become fixture content, a date, or a proposal seed (tested).
 - Event Room gained a VERIFIED EVENT CALENDAR · BITGET MCP panel (bounded 12s server probe): verified date+source+retrievedAt when live, else explicit integrity copy ("Live event source unavailable … No AI decision generated … SOURCE INTEGRITY HELD — NOT AN APPLICATION FAILURE") plus NO VERIFIED EVENT provenance. No hardcoded dates; existing cassette untouched.
