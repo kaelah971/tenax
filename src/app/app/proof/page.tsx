@@ -17,45 +17,21 @@ import {
   proofTone,
   parseProofFilter,
   PROOF_FILTERS,
-  type ProofTone,
 } from "@/lib/proof/display";
 import type { JudgeProof } from "@/lib/proof/model";
 import { DecisionRail, ProvenanceStrip } from "../_components/ui";
+import { outcomeBadgeClass, outcomeEdgeClass, SignalRail, signalRailForProof } from "../_components/signal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
 
 function filterClass(active: boolean): string {
   return `font-syslabel rounded-[7px] px-3 py-2 text-[11px] uppercase leading-[14px] tracking-[0.08em] ${
-    active ? "bg-ink font-bold text-softwhite" : "text-mutedink hover:bg-ink/5"
+    active ? "bg-signal/10 font-bold text-signal shadow-[inset_0_0_0_1px_rgba(99,255,42,0.35)]" : "text-mutedink hover:bg-ink/5 hover:text-ink"
   }`;
 }
 
-function toneClass(tone: ProofTone): string {
-  switch (tone) {
-    case "refused":
-    case "failed":
-      return "border-clay/60";
-    case "escalated":
-    case "review":
-      return "border-signal";
-    default:
-      return "border-ink/15";
-  }
-}
 
-function badgeClass(tone: ProofTone): string {
-  switch (tone) {
-    case "refused":
-    case "failed":
-      return "bg-clay text-softwhite";
-    case "escalated":
-    case "review":
-      return "bg-signal text-ink";
-    default:
-      return "bg-ink text-softwhite";
-  }
-}
 
 function cardFacts(proof: JudgeProof): ReadonlyArray<readonly [string, string]> {
   switch (proof.kind) {
@@ -200,13 +176,13 @@ export default async function ProofPage({
               const tone = proofTone(proof.kind);
               const facts = cardFacts(proof);
               return (
-                <li key={proof.id} className={`flex flex-col gap-2 border-t-2 py-4 ${toneClass(tone)}`}>
+                <li key={proof.id} className={`flex flex-col gap-2 border-t py-4 ${outcomeEdgeClass(tone)}`}>
                   <div className="flex flex-wrap items-center gap-3">
                     <span className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                       NVIDIA · NVDAUSDT
                     </span>
-                    <span className={`state-mark ${badgeClass(tone)}`}>{proofKindLabel(proof.kind)}</span>
-                    <Link href={`/app/proof/${proof.id}`} className="ml-auto min-h-11 rounded-[9px] border border-ink/70 bg-softwhite/30 px-4 py-2 text-[13px] font-bold leading-[18px] hover:bg-ink hover:text-softwhite">
+                    <span className={`state-mark ${outcomeBadgeClass(tone)}`}>{proofKindLabel(proof.kind)}</span>
+                    <Link href={`/app/proof/${proof.id}`} className="btn-living ml-auto inline-flex min-h-11 items-center rounded-[10px] border border-ink/70 bg-softwhite/30 px-4 py-2 font-syslabel text-[12px] font-semibold leading-[18px]">
                       VIEW PROOF →
                     </Link>
                   </div>
@@ -226,6 +202,7 @@ export default async function ProofPage({
                   <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
                     {cardResult(proof)}
                   </p>
+                  <SignalRail nodes={signalRailForProof(proof.kind)} label={`Signal rail for ${proof.id}`} />
                 </li>
               );
             })}

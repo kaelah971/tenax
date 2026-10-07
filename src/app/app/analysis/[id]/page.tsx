@@ -36,6 +36,7 @@ import {
 } from "../../_copy";
 import ProtectionMarketPanel from "../../_components/protection-market";
 import { LightInstrument, SceneAnchor } from "../../_components/materials";
+import { SignalRail, signalRailForAnalysis } from "../../_components/signal";
 import {
   analysisIntervalHref,
   analysisJourney,
@@ -348,6 +349,9 @@ export default async function AnalysisPage({
         <p className="mt-2 max-w-2xl text-[14px] font-bold leading-[20px]">
           {AUTHORITY_SEPARATION_LINE}
         </p>
+        <div className="mt-3">
+          <SignalRail nodes={signalRailForAnalysis(finalState, policyPass)} label="Authority progression" />
+        </div>
 
         {finalState === "AUTHORIZED" ? (
           <div className="mt-3 flex flex-col gap-3">

@@ -11,6 +11,7 @@ import {
 } from "@/lib/tenax/paper-trading-run-repository";
 import type { PaperTradingRun } from "@/lib/tenax/paper-trading-run";
 import { calculatePaperTradingMetrics } from "@/lib/tenax/paper-trading-metrics";
+import { outcomeBadgeClass } from "../_components/signal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -79,15 +80,17 @@ function time(value: string): string {
 function statusClass(status: PaperTradingRun["status"]): string {
   switch (status) {
     case "EXECUTED":
-      return "bg-pass text-softwhite";
+      return outcomeBadgeClass("done");
     case "ESCALATED":
+      return outcomeBadgeClass("escalated");
     case "REVIEW_REQUIRED":
-      return "bg-signal text-ink";
+      return outcomeBadgeClass("review");
     case "REFUSED":
+      return outcomeBadgeClass("refused");
     case "FAILED":
-      return "bg-clay text-softwhite";
+      return outcomeBadgeClass("failed");
     default:
-      return "bg-ink text-softwhite";
+      return "border border-ink/20 text-ink";
   }
 }
 
@@ -95,8 +98,9 @@ function filterLink(filters: Filters, key: keyof Filters, value: string): ReactE
   const active = filters[key] === value;
   return (
     <Link
+      key={`${key}:${value}`}
       href={queryFor(filters, key, value)}
-      className={`font-syslabel rounded-[7px] px-3 py-2 text-[10px] uppercase tracking-[0.08em] ${active ? "bg-ink font-bold text-softwhite" : "text-mutedink hover:bg-ink/5"}`}
+      className={`font-syslabel rounded-[7px] px-3 py-2 text-[10px] uppercase tracking-[0.08em] ${active ? "bg-signal/10 font-bold text-signal shadow-[inset_0_0_0_1px_rgba(99,255,42,0.35)]" : "text-mutedink hover:bg-ink/5 hover:text-ink"}`}
       aria-current={active ? "page" : undefined}
     >
       {value.replaceAll("_", " ")}

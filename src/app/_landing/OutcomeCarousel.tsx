@@ -56,6 +56,13 @@ export const AUTHORITY_OUTCOMES: readonly Outcome[] = [
 
 const pad = (n: number): string => String(n).padStart(2, "0");
 
+const TONE_SURFACE: Record<Tone, string> = {
+  refuse: "surface-refuse",
+  escalate: "surface-review",
+  pass: "surface-authority",
+  review: "surface-review",
+};
+
 function OutcomeCard({
   outcome,
   position,
@@ -69,7 +76,7 @@ function OutcomeCard({
 }) {
   return (
     <article
-      className={`tx-outcome-card flex flex-col tx-outcome-${outcome.tone}${primary ? " tx-outcome-primary" : ""} ${className}`}
+      className={`tx-outcome-card flex flex-col ${primary ? "surface-glass-raised tx-outcome-primary" : "surface-glass"} ${TONE_SURFACE[outcome.tone]} tx-outcome-${outcome.tone} ${className}`}
       aria-label={`${outcome.name} outcome`}
     >
       <div className="flex items-start justify-between gap-4">
@@ -124,7 +131,7 @@ export default function OutcomeCarousel() {
           <p className="mt-2 font-syslabel text-[10px] uppercase tracking-[0.14em] text-mutedink">AUTHORITY OUTCOMES</p>
           <div className="mt-4 flex gap-1.5" aria-hidden="true">
             {AUTHORITY_OUTCOMES.map((o, i) => (
-              <span key={o.name} className={`h-[3px] flex-1 rounded-full ${i <= index ? "bg-signal" : "bg-ink/15"}`} />
+              <span key={o.name} className={`h-[3px] flex-1 rounded-full ${i <= index ? "bg-signal shadow-[0_0_8px_rgba(99,255,42,0.6)]" : "bg-ink/15"}`} />
             ))}
           </div>
           <ul className="mt-5 flex flex-wrap gap-x-4 gap-y-2 lg:flex-col">
@@ -149,7 +156,7 @@ export default function OutcomeCarousel() {
             type="button"
             onClick={() => go(index - 1)}
             aria-label="Previous outcome"
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-ink/25 text-ink transition-colors hover:border-ink/60"
+            className="tx-btn-secondary flex h-12 w-12 items-center justify-center rounded-[12px] border transition-colors"
           >
             <ArrowLeftIcon />
           </button>
@@ -157,7 +164,7 @@ export default function OutcomeCarousel() {
             type="button"
             onClick={() => go(index + 1)}
             aria-label="Next outcome"
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-[#e6ecf4] text-[#05070b] transition-transform hover:translate-x-0.5"
+            className="flex h-12 w-12 items-center justify-center tx-btn-primary rounded-[12px] transition-transform hover:translate-x-0.5"
           >
             <ArrowRightIcon />
           </button>

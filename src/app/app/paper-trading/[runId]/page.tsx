@@ -5,6 +5,7 @@ import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import type { PaperTradingRun } from "@/lib/tenax/paper-trading-run";
 import { getPaperTradingRunRepository } from "@/lib/tenax/paper-trading-run-repository";
 import { reconcilePaperTradingRuns } from "@/lib/tenax/paper-trading-run-service";
+import { EvidenceStamp, outcomeBadgeClass, SignalRail, signalRailForRun, type OutcomeTone } from "../../_components/signal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -13,16 +14,23 @@ function valueOrUnknown(value: string | number | null | undefined, unknownLabel 
   return value === null || value === undefined || value === "" ? unknownLabel : String(value);
 }
 
-function statusClass(status: PaperTradingRun["status"]): string {
+function statusTone(status: PaperTradingRun["status"]): OutcomeTone {
   switch (status) {
-    case "EXECUTED": return "bg-pass text-softwhite";
-    case "ESCALATED":
-    case "REVIEW_REQUIRED": return "bg-signal text-ink";
-    case "REFUSED":
-    case "FAILED": return "bg-clay text-softwhite";
-    default: return "bg-ink text-softwhite";
+    case "EXECUTED": return "done";
+    case "ESCALATED": return "escalated";
+    case "REVIEW_REQUIRED": return "review";
+    case "REFUSED": return "refused";
+    case "FAILED": return "failed";
+    default: return "done";
   }
 }
+
+const SECTION_SURFACE = {
+  evidence: "surface-glass surface-proof",
+  ai: "surface-glass surface-ai",
+  authority: "surface-glass surface-authority",
+  exec: "surface-glass surface-exec",
+} as const;
 
 function DetailGrid({ rows }: { rows: ReadonlyArray<readonly [string, string]> }) {
   return (
@@ -37,9 +45,9 @@ function DetailGrid({ rows }: { rows: ReadonlyArray<readonly [string, string]> }
   );
 }
 
-function EvidenceSection({ title, source, children }: { title: string; source: string; children: ReactNode }) {
+function EvidenceSection({ title, source, role = "evidence", children }: { title: string; source: string; role?: keyof typeof SECTION_SURFACE; children: ReactNode }) {
   return (
-    <section className="tx-material-editorial border-t-2 border-ink p-5 sm:p-7">
+    <section className={`${SECTION_SURFACE[role]} p-5 sm:p-7`}>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
         <h2 className="font-display text-[26px] font-bold tracking-[-0.01em]">{title}</h2>
         <p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">SOURCE · {source}</p>
@@ -85,13 +93,25 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
                 <p className="font-syslabel text-[11px] uppercase tracking-[0.08em] text-mutedink">CANONICAL RUN · {run.symbol}</p>
                 <h1 className="mt-3 font-display text-[48px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[82px]">Evidence</h1>
               </div>
-              <span className={`inline-flex rounded-full px-3 py-2 font-syslabel text-[11px] font-bold uppercase tracking-[0.08em] ${statusClass(run.status)}`}>{run.authority.outcome}</span>
+              <span className={`inline-flex rounded-full px-3 py-2 font-syslabel text-[11px] font-bold uppercase tracking-[0.08em] ${run.status === "NO_ACTION" ? "border border-ink/20 text-ink" : outcomeBadgeClass(statusTone(run.status))}`}>{run.authority.outcome}</span>
             </div>
             <div className="mt-5 flex flex-wrap gap-5 font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">
               <span>{run.environment ?? "ENVIRONMENT UNKNOWN"}</span>
               <span>{run.execution.status === "SUBMITTED" ? "SUBMITTED · FILL NOT VERIFIED" : run.execution.status}</span>
               <span>{run.outcome.outcomeState}</span>
               <span>{run.createdAt}</span>
+            </div>
+            <div className="mt-6 flex flex-col gap-4">
+              <SignalRail nodes={signalRailForRun(run.status, run.execution.status, run.sourceProofId !== null)} />
+              <EvidenceStamp
+                title="RUN RECORD · CANONICAL LEDGER"
+                verified={false}
+                rows={[
+                  ["CREATED", run.createdAt],
+                  ["RUN", run.runId],
+                  ["ENVIRONMENT", run.environment ?? "UNKNOWN"],
+                ]}
+              />
             </div>
             {run.sourceProofId ? (
               <div className="mt-4">
@@ -113,7 +133,7 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
             ]} />
           </EvidenceSection>
 
-          <EvidenceSection title="02 · AI DECISION" source={run.provenance.decision}>
+          <EvidenceSection title="02 · AI DECISION" source={run.provenance.decision} role="ai">
             <DetailGrid rows={[
               ["PROVIDER", valueOrUnknown(run.decision.provider)],
               ["MODEL", valueOrUnknown(run.decision.model)],
@@ -124,12 +144,12 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
               ["PROPOSAL TIME", valueOrUnknown(run.decision.proposedAt, "UNKNOWN")],
             ]} />
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
-              <div className="border-l-2 border-signal bg-signal/10 p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">SUMMARY</p><p className="mt-2 text-[14px] leading-[21px]">{valueOrUnknown(run.decision.summary)}</p></div>
+              <div className="border-l-2 border-ai/60 bg-ai/[0.07] p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">SUMMARY</p><p className="mt-2 text-[14px] leading-[21px]">{valueOrUnknown(run.decision.summary)}</p></div>
               <div className="border-l-2 border-ink/20 bg-ink/[0.03] p-4"><p className="font-syslabel text-[10px] uppercase tracking-[0.08em] text-mutedink">REASONING</p><p className="mt-2 text-[14px] leading-[21px]">{valueOrUnknown(run.decision.reasoning)}</p></div>
             </div>
           </EvidenceSection>
 
-          <EvidenceSection title="03 · AUTHORITY" source={run.provenance.authority}>
+          <EvidenceSection title="03 · AUTHORITY" source={run.provenance.authority} role="authority">
             <DetailGrid rows={[
               ["RESULT", run.authority.outcome],
               ["MANDATE ID", valueOrUnknown(run.authority.mandateId)],
@@ -141,7 +161,7 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
             {run.authority.outcome === "ESCALATE" || run.authority.outcome === "REFUSE" || run.authority.outcome === "REVIEW" ? <p className="mt-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-clay">NO ORDER SENT</p> : null}
           </EvidenceSection>
 
-          <EvidenceSection title="04 · EXECUTION" source={run.provenance.execution}>
+          <EvidenceSection title="04 · EXECUTION" source={run.provenance.execution} role="exec">
             <DetailGrid rows={[
               ["STATUS", run.execution.status === "SUBMITTED" ? "SUBMITTED · FILL NOT VERIFIED" : run.execution.status],
               ["PROVIDER", valueOrUnknown(run.execution.provider)],
@@ -157,7 +177,7 @@ export default async function PaperTradingRunPage({ params }: { params: Promise<
           </EvidenceSection>
 
           <EvidenceSection title="05 · OUTCOME" source={run.provenance.outcome}>
-            {run.outcome.outcomeState === "OPEN_MARK" ? <p className="mb-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-signal">UNREALIZED / OBSERVED MARK</p> : null}
+            {run.outcome.outcomeState === "OPEN_MARK" ? <p className="mb-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-amber">UNREALIZED / OBSERVED MARK</p> : null}
             {run.outcome.outcomeState === "REALIZED" ? <p className="mb-4 font-syslabel text-[11px] uppercase tracking-[0.08em] text-pass">REALIZED OUTCOME</p> : null}
             <DetailGrid rows={[
               ["OUTCOME STATE", run.outcome.outcomeState],

@@ -21,7 +21,7 @@ function severityClass(severity: Notification["severity"]): string {
     case "WARNING":
       return "bg-clay text-softwhite";
     case "ATTENTION":
-      return "bg-signal text-ink";
+      return "bg-amber text-ink";
     case "SUCCESS":
       return "bg-pass text-ink";
     default:

@@ -8,8 +8,8 @@ const NODES = [
   { id: "event", label: "EVENT", x: 92, y: 318, tone: "neutral" },
   { id: "intent", label: "AI INTENT", x: 238, y: 206, tone: "ai" },
   { id: "mandate", label: "MANDATE", x: 400, y: 276, tone: "authority" },
-  { id: "human", label: "HUMAN AUTHORITY", x: 548, y: 170, tone: "cyan" },
-  { id: "executor", label: "EXECUTOR", x: 664, y: 278, tone: "neutral" },
+  { id: "human", label: "HUMAN AUTHORITY", x: 548, y: 170, tone: "human" },
+  { id: "executor", label: "EXECUTOR", x: 664, y: 278, tone: "exec" },
   { id: "proof", label: "PROOF", x: 752, y: 168, tone: "authority" },
 ] as const;
 
@@ -22,10 +22,11 @@ const LIT = [
 ] as const;
 
 const TONE: Record<(typeof NODES)[number]["tone"], string> = {
-  neutral: "#C3CEDC",
-  ai: "#A397FF",
-  authority: "#45E0CF",
-  cyan: "#62D6FF",
+  neutral: "#C9D3CC",
+  ai: "#8B7CFF",
+  authority: "#63FF2A",
+  human: "#FFB454",
+  exec: "#4CC9FF",
 };
 
 export default function AuthorityFlow() {
@@ -39,7 +40,7 @@ export default function AuthorityFlow() {
     >
       <defs>
         <pattern id="txf-dots" width="11" height="11" patternUnits="userSpaceOnUse">
-          <circle cx="5.5" cy="5.5" r="1.25" fill="#9FB4CF" />
+          <circle cx="5.5" cy="5.5" r="1.25" fill="#C9D3CC" />
         </pattern>
         <radialGradient id="txf-soft" cx="50%" cy="50%" r="50%">
           <stop offset="0" stopColor="#fff" stopOpacity="1" />
@@ -54,18 +55,18 @@ export default function AuthorityFlow() {
           <ellipse cx="380" cy="380" rx="160" ry="90" fill="url(#txf-soft)" />
         </mask>
         <linearGradient id="txf-path" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#C3CEDC" stopOpacity="0.35" />
-          <stop offset="0.3" stopColor="#A397FF" stopOpacity="0.85" />
-          <stop offset="0.48" stopColor="#45E0CF" />
-          <stop offset="1" stopColor="#62D6FF" />
+          <stop offset="0" stopColor="#C9D3CC" stopOpacity="0.35" />
+          <stop offset="0.3" stopColor="#8B7CFF" stopOpacity="0.85" />
+          <stop offset="0.48" stopColor="#63FF2A" />
+          <stop offset="1" stopColor="#4CC9FF" />
         </linearGradient>
         <linearGradient id="txf-proposal" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#A397FF" stopOpacity="0" />
-          <stop offset="1" stopColor="#A397FF" stopOpacity="0.07" />
+          <stop offset="0" stopColor="#8B7CFF" stopOpacity="0" />
+          <stop offset="1" stopColor="#8B7CFF" stopOpacity="0.07" />
         </linearGradient>
         <linearGradient id="txf-authorized" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#45E0CF" stopOpacity="0.08" />
-          <stop offset="1" stopColor="#45E0CF" stopOpacity="0" />
+          <stop offset="0" stopColor="#63FF2A" stopOpacity="0.08" />
+          <stop offset="1" stopColor="#63FF2A" stopOpacity="0" />
         </linearGradient>
         <filter id="txf-glow" x="-50%" y="-50%" width="200%" height="200%">
           <feGaussianBlur stdDeviation="6" />
@@ -80,16 +81,16 @@ export default function AuthorityFlow() {
 
       {LIT.map(([x, y]) => (
         <g key={`${x}-${y}`}>
-          <circle cx={x} cy={y} r="7" fill="#45E0CF" opacity="0.18" filter="url(#txf-glow)" />
-          <circle cx={x} cy={y} r="1.8" fill="#45E0CF" opacity="0.6" />
+          <circle cx={x} cy={y} r="7" fill="#63FF2A" opacity="0.18" filter="url(#txf-glow)" />
+          <circle cx={x} cy={y} r="1.8" fill="#63FF2A" opacity="0.6" />
         </g>
       ))}
 
-      <line x1="400" y1="52" x2="400" y2="430" stroke="#45E0CF" strokeOpacity="0.45" strokeDasharray="2 6" />
-      <text x="388" y="66" textAnchor="end" className="tx-flow-zone" fill="#A397FF">
+      <line x1="400" y1="52" x2="400" y2="430" stroke="#63FF2A" strokeOpacity="0.45" strokeDasharray="2 6" />
+      <text x="388" y="66" textAnchor="end" className="tx-flow-zone" fill="#8B7CFF">
         PROPOSAL · PROBABILISTIC
       </text>
-      <text x="412" y="66" className="tx-flow-zone" fill="#45E0CF">
+      <text x="412" y="66" className="tx-flow-zone" fill="#63FF2A">
         AUTHORITY · DETERMINISTIC
       </text>
 
@@ -106,7 +107,7 @@ export default function AuthorityFlow() {
             {major ? (
               <circle cx={node.x} cy={node.y} r="15" fill="none" stroke={color} strokeOpacity="0.55" />
             ) : null}
-            <circle cx={node.x} cy={node.y} r={major ? 7 : 5} fill="#05070B" stroke={color} strokeWidth="2" />
+            <circle cx={node.x} cy={node.y} r={major ? 7 : 5} fill="#050706" stroke={color} strokeWidth="2" />
             <circle cx={node.x} cy={node.y} r={major ? 3 : 2} fill={color} />
             <text
               x={node.x}

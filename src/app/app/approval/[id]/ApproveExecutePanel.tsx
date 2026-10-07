@@ -112,10 +112,10 @@ export default function ApproveExecutePanel({
       <AuthorityInstrument className="tx-preview-sheet tx-observatory-entry p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-exec">
               DEMO HEDGE SUBMITTED
             </p>
-            <p className="state-mark mt-3 bg-signal text-ink">DEMO ORDER · VIRTUAL FUNDS ONLY</p>
+            <p className="state-mark mt-3 bg-exec text-ink">DEMO ORDER · VIRTUAL FUNDS ONLY</p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
               ACTION_01 · {verified ? "VERIFIED · FILLED" : `STATUS ${String(submitted.orderStatus ?? "UNKNOWN").toUpperCase()}`}
             </p>
@@ -165,10 +165,10 @@ export default function ApproveExecutePanel({
       <AuthorityInstrument className="tx-preview-sheet tx-observatory-entry p-5 text-softwhite sm:p-8">
         <div className="flex flex-wrap items-start justify-between gap-4">
           <div>
-            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">
+            <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-exec">
               EXECUTION PREVIEW
             </p>
-            <p className="state-mark mt-3 bg-signal text-ink">NO FUNDS MOVED</p>
+            <p className="state-mark mt-3 bg-exec text-ink">NO FUNDS MOVED</p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">
               ACTION_01 · PREVIEW CREATED
             </p>
@@ -220,7 +220,7 @@ export default function ApproveExecutePanel({
         <LightInstrument className="tx-material-light-frost flex items-center gap-4 rounded-[16px] p-4 sm:p-5">
             <ol className="anim-rise flex flex-1 flex-col gap-1.5 overflow-hidden">
             {[
-              ["HUMAN", "APPROVED", "text-signal"],
+              ["HUMAN", "APPROVED", "text-amber"],
               ["MANDATE", "PASS", "text-pass"],
               ["ACTION", "CLEARED", "text-ink"],
             ].map(([label, state, color], i) => (

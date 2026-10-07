@@ -1,37 +1,43 @@
 @import "tailwindcss";
 
-/* Tenax authority system — dark institutional field.
-   One visual language for the public landing page and the application:
-   near-black field, graphite panels, thin technical hairlines, navy/teal
-   atmosphere, restrained violet for AI reasoning, teal for deterministic
-   authority, coral for refusal.
+/* Tenax "Obsidian Signal / Green Field" system.
+   Black is the dominant field; electric green is signal energy moving
+   beneath dark glass. Semantic colours carry meaning, never decoration:
+   violet = AI (probabilistic), green = mandate authority (deterministic),
+   amber = human review / escalation, blue = execution, coral = refusal,
+   mint = pass, neutral black + restrained green = proof.
 
-   Token polarity: the historical token names are kept so every surface
+   Token polarity: historical token names are kept so every surface
    converts centrally —
-     ivory     → field (page background)
-     softwhite → raised surface
-     ink       → foreground (text + hairlines)
-     signal    → authority teal (actions, live state, PASS illumination)
+     ivory     → base black field
+     softwhite → raised black surface
+     ink       → primary text + hairlines
+     signal    → Tenax signal green
    Dark authority surfaces (bg-ink, authority/critical materials, docks)
-   and solid signal surfaces flip ink/softwhite back locally, see
+   and solid semantic fills flip ink/softwhite back locally, see
    "Polarity scopes" below.
 
    Typography stays locked: Barlow Condensed display + IBM Plex Mono
    interface voice, centralized here — components consume the
    font-display / font-syslabel utilities, never raw font-family. */
 @theme {
-  --color-signal: #45e0cf;
-  --color-ink: #e6ecf4;
-  --color-graphite: #141b24;
-  --color-ivory: #05070b;
-  --color-softwhite: #0c1118;
-  --color-mutedink: #8b97a8;
-  --color-pass: #5fe08f;
-  --color-clay: #ff6f61;
-  --color-ai: #a397ff;
-  --color-cyan: #62d6ff;
-  --color-navy: #0e2648;
-  --color-line: rgba(160, 182, 212, 0.14);
+  --color-signal: #63ff2a;
+  --color-signal-bright: #87ff4d;
+  --color-deepgreen: #123d16;
+  --color-ink: #f3f6f3;
+  --color-graphite: #0d110f;
+  --color-obsidian: #080b0a;
+  --color-ivory: #050706;
+  --color-softwhite: #0d110f;
+  --color-mutedink: #919b94;
+  --color-pass: #66f2a2;
+  --color-clay: #ff665f;
+  --color-amber: #ffb454;
+  --color-exec: #4cc9ff;
+  --color-ai: #8b7cff;
+  --color-cyan: #4cc9ff;
+  --color-navy: #123d16;
+  --color-line: rgba(255, 255, 255, 0.08);
   --font-sans: "Inter Tight", "General Sans", Inter, ui-sans-serif, sans-serif;
   --font-body: var(--font-georama), ui-sans-serif, sans-serif;
   --font-display: var(--font-barlow-condensed), "Arial Narrow", ui-sans-serif, sans-serif;
@@ -39,10 +45,10 @@
 }
 
 /* ---- Polarity scopes ---------------------------------------------------------
-   Authority surfaces were authored as "dark panel + softwhite text". In the
-   dark field they stay dark: ink resolves dark (surface) and softwhite
-   resolves light (text) inside them. Solid signal/teal surfaces carry dark
-   ink text. Base layer so utilities on the same element still win. */
+   Authority surfaces were authored as "dark panel + softwhite text"; inside
+   them ink resolves dark (surface) and softwhite resolves light (text).
+   Solid semantic fills carry dark ink text. Base layer so utilities on the
+   same element still win. */
 @layer base {
   [class~="bg-ink"],
   [class~="bg-ink/95"],
@@ -56,67 +62,76 @@
   .tx-preview-sheet,
   .tx-technical-drawer,
   .technical-inset {
-    --color-ink: #070a0f;
-    --color-softwhite: #edf2f8;
+    --color-ink: #050706;
+    --color-softwhite: #f3f6f3;
     color: var(--color-softwhite);
   }
 
   [class~="bg-ink"],
   [class~="bg-ink/95"] {
-    --color-ink: #0a0f15;
+    --color-ink: #0b0f0d;
   }
 
   [class~="bg-signal"],
   [class~="bg-pass"],
+  [class~="bg-amber"],
+  [class~="bg-exec"],
   .glass-signal,
   .tx-rail-stage-active,
   .tx-gate-aperture {
-    --color-ink: #041513;
-    --color-mutedink: #0d3a35;
+    --color-ink: #061204;
+    --color-mutedink: #1d4a12;
   }
+}
+
+:root {
+  --tx-signal: #63ff2a;
+  --tx-signal-rgb: 99, 255, 42;
+  --tx-ai-rgb: 139, 124, 255;
+  --tx-exec-rgb: 76, 201, 255;
+  --tx-amber-rgb: 255, 180, 84;
+  --tx-clay-rgb: 255, 102, 95;
+  --tx-pass-rgb: 102, 242, 162;
+  --tx-fg: #f3f6f3;
+  --tx-ink: #f3f6f3;
+  --tx-graphite: #0d110f;
+  --tx-ivory: #050706;
+  --tx-softwhite: #0d110f;
+  --tx-pass: #66f2a2;
+  --tx-clay: #ff665f;
+  --tx-amber: #ffb454;
+  --tx-exec: #4cc9ff;
+  --tx-line: rgba(255, 255, 255, 0.08);
+  --tx-line-strong: rgba(255, 255, 255, 0.14);
+  --tx-smoked: rgba(10, 15, 12, 0.6);
+  --tx-deep-glass: rgba(5, 9, 7, 0.72);
+  --tx-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
+  --tx-shadow: 0 28px 64px -40px rgba(0, 0, 0, 0.95);
+  --tx-ease: cubic-bezier(0.22, 0.8, 0.28, 1);
+  /* Film grain: white speckle with alpha derived from turbulence. */
+  --tx-grain-soft: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.22 0 0 0 -0.1'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+  --tx-grain-strong: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0.62 0 0 0 -0.24'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
 /* Lightweight purposeful motion only; fully static under reduced motion. */
 @keyframes rail-activate {
-  from {
-    opacity: 0.25;
-  }
-  to {
-    opacity: 1;
-  }
+  from { opacity: 0.25; }
+  to { opacity: 1; }
 }
 
 @keyframes gate-illuminate {
-  0% {
-    box-shadow: 0 0 0 0 rgba(69, 224, 207, 0.5);
-  }
-  100% {
-    box-shadow: 0 0 0 26px rgba(69, 224, 207, 0);
-  }
+  0% { box-shadow: 0 0 0 0 rgba(99, 255, 42, 0.45); }
+  100% { box-shadow: 0 0 0 26px rgba(99, 255, 42, 0); }
 }
 
 @keyframes rise-in {
-  from {
-    opacity: 0;
-    transform: translateY(10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: none; }
 }
 
-.anim-rail {
-  animation: rail-activate 0.45s ease-out;
-}
-
-.anim-gate {
-  animation: gate-illuminate 1.1s ease-out;
-}
-
-.anim-rise {
-  animation: rise-in 0.5s ease-out;
-}
+.anim-rail { animation: rail-activate 0.45s ease-out; }
+.anim-gate { animation: gate-illuminate 1.1s ease-out; }
+.anim-rise { animation: rise-in 0.5s ease-out; }
 
 @media (prefers-reduced-motion: reduce) {
   *,
@@ -125,336 +140,479 @@
     animation: none !important;
     transition: none !important;
   }
-  .tx-env-grain {
-    display: none !important;
-  }
 }
 
-:root {
-  --tx-signal: #45e0cf;
-  --tx-signal-rgb: 69, 224, 207;
-  --tx-ai-rgb: 163, 151, 255;
-  --tx-cyan-rgb: 98, 214, 255;
-  --tx-fg: #e6ecf4;
-  --tx-fg-soft: rgba(230, 236, 244, 0.72);
-  --tx-ink: #e6ecf4;
-  --tx-graphite: #141b24;
-  --tx-ivory: #05070b;
-  --tx-softwhite: #0c1118;
-  --tx-pass: #5fe08f;
-  --tx-clay: #ff6f61;
-  --tx-line: rgba(160, 182, 212, 0.14);
-  --tx-line-strong: rgba(160, 182, 212, 0.24);
-  --tx-panel: linear-gradient(180deg, rgba(20, 28, 39, 0.78), rgba(10, 14, 20, 0.78));
-  --tx-panel-flat: rgba(12, 17, 24, 0.72);
-  --tx-highlight: inset 0 1px 0 rgba(255, 255, 255, 0.05);
-  --tx-shadow: 0 24px 60px -32px rgba(0, 0, 0, 0.85);
-  --tx-ease: cubic-bezier(0.22, 0.8, 0.28, 1);
-}
-
-/* Keyframes */
 @keyframes tx-float {
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-  50% {
-    transform: translateY(-7px);
-  }
-}
-
-@keyframes tx-drift {
-  0%,
-  100% {
-    transform: translate(0, 0) scale(1);
-  }
-  50% {
-    transform: translate(24px, -18px) scale(1.06);
-  }
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-7px); }
 }
 
 @keyframes tx-live-dot {
-  0%,
-  100% {
-    box-shadow: 0 0 0 0 rgba(69, 224, 207, 0.6);
-  }
-  60% {
-    box-shadow: 0 0 0 7px rgba(69, 224, 207, 0);
-  }
+  0%, 100% { box-shadow: 0 0 0 0 rgba(99, 255, 42, 0.55); }
+  60% { box-shadow: 0 0 0 7px rgba(99, 255, 42, 0); }
 }
 
 @keyframes tx-rise {
-  from {
-    opacity: 0;
-    transform: translateY(12px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes tx-rule-in {
-  from {
-    opacity: 0;
-    transform: translateX(-10px);
-  }
-  to {
-    opacity: 1;
-    transform: none;
-  }
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: none; }
 }
 
 @keyframes tx-travel {
-  0% {
-    transform: translateX(-120%);
-  }
-  100% {
-    transform: translateX(320%);
-  }
+  0% { transform: translateX(-120%); }
+  100% { transform: translateX(320%); }
 }
 
 @keyframes tx-draw {
-  from {
-    stroke-dashoffset: 320;
-  }
-  to {
-    stroke-dashoffset: 0;
-  }
+  from { stroke-dashoffset: 320; }
+  to { stroke-dashoffset: 0; }
 }
 
 @keyframes tx-scan {
-  0%,
-  100% {
-    transform: translateX(-14px);
-    opacity: 0.35;
-  }
-  50% {
-    transform: translateX(14px);
-    opacity: 1;
-  }
+  0%, 100% { transform: translateX(-14px); opacity: 0.35; }
+  50% { transform: translateX(14px); opacity: 1; }
 }
 
 @keyframes tx-value-pulse {
-  0% {
-    opacity: 0.35;
-  }
-  100% {
-    opacity: 1;
-  }
+  0% { opacity: 0.35; }
+  100% { opacity: 1; }
 }
 
 @keyframes tx-seal-in {
-  0% {
-    opacity: 0;
-    transform: scale(1.35) rotate(-7deg);
-  }
-  60% {
-    opacity: 1;
-    transform: scale(0.97) rotate(1deg);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1) rotate(-2deg);
-  }
-}
-
-@keyframes tx-bloom-breathe {
-  0%,
-  100% {
-    opacity: 0.75;
-  }
-  50% {
-    opacity: 1;
-  }
+  0% { opacity: 0; transform: scale(1.35) rotate(-7deg); }
+  60% { opacity: 1; transform: scale(0.97) rotate(1deg); }
+  100% { opacity: 1; transform: scale(1) rotate(-2deg); }
 }
 
 @keyframes tx-glow-sweep {
-  0% {
-    transform: translateX(-100%);
-  }
-  100% {
-    transform: translateX(100%);
-  }
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
 }
 
-/* Environment (LEVEL 0): fixed atmospheric backdrop — near-black field with
-   navy depth, a teal authority glow and a restrained violet AI glow. */
-.tx-env {
+@keyframes tx-beam {
+  0% { transform: translateX(-140%) skewX(-12deg); opacity: 0; }
+  18% { opacity: 1; }
+  55% { opacity: 1; }
+  100% { transform: translateX(240%) skewX(-12deg); opacity: 0; }
+}
+
+/* ---- LEVEL 0 · Signal field ----------------------------------------------------
+   Layered environment: black base → low-opacity green forms → blurred
+   ribbon loops with brighter cores → optional violet AI light → vignette →
+   film grain. Static by design; variants re-weight the same primitives per
+   page and ease between each other on navigation. */
+.tx-field {
+  --form-a-x: 58vw;
+  --form-a-y: -18vh;
+  --form-a-o: 0.8;
+  --form-b-x: -22vw;
+  --form-b-y: 62vh;
+  --form-b-o: 0.55;
+  --rib-x: 18%;
+  --rib-y: -14%;
+  --rib-r: -8deg;
+  --rib-s: 1;
+  --rib-o: 0.5;
+  --core-o: 0.45;
+  --ai-o: 0;
+  --grid-o: 0;
   position: fixed;
   inset: 0;
   z-index: -1;
   overflow: hidden;
-  background:
-    radial-gradient(ellipse 70% 50% at 50% -10%, rgba(14, 38, 72, 0.75), transparent 70%),
-    var(--tx-ivory);
   pointer-events: none;
+  background: #050706;
 }
 
-.tx-env-bloom {
+.tx-field > * {
   position: absolute;
-  top: -340px;
-  left: 50%;
-  width: min(1100px, 130vw);
-  height: 640px;
-  transform: translateX(-50%);
-  background: radial-gradient(
-    ellipse 52% 46% at 50% 42%,
-    rgba(31, 92, 140, 0.32),
-    rgba(31, 92, 140, 0.08) 55%,
-    transparent 72%
-  );
+  transition:
+    transform 1.1s var(--tx-ease),
+    opacity 1.1s var(--tx-ease);
 }
 
-.tx-env-bloom-pass {
-  background: radial-gradient(
-    ellipse 60% 52% at 50% 46%,
-    rgba(69, 224, 207, 0.22),
-    rgba(69, 224, 207, 0.06) 58%,
-    transparent 75%
-  );
-}
-
-.tx-env-grid {
-  position: absolute;
+.tx-field-base {
   inset: 0;
-  background-image:
-    linear-gradient(rgba(160, 182, 212, 0.045) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(160, 182, 212, 0.045) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse 90% 60% at 50% 0%, black 20%, transparent 75%);
+  background:
+    radial-gradient(120% 80% at 50% 115%, #0a120c 0%, transparent 62%),
+    radial-gradient(90% 60% at 50% -15%, #0a100b 0%, transparent 70%),
+    #050706;
 }
 
-.tx-env-path {
-  position: absolute;
+.tx-field-form {
+  width: 72vmax;
+  height: 52vmax;
+  border-radius: 50%;
+  filter: blur(90px);
+}
+
+.tx-field-form-a {
+  left: 0;
+  top: 0;
+  opacity: var(--form-a-o);
+  transform: translate(var(--form-a-x), var(--form-a-y)) rotate(-18deg);
+  background: radial-gradient(closest-side, rgba(99, 255, 42, 0.13), rgba(18, 61, 22, 0.26) 46%, transparent 76%);
+}
+
+.tx-field-form-b {
+  left: 0;
+  top: 0;
+  width: 60vmax;
+  height: 44vmax;
+  opacity: var(--form-b-o);
+  transform: translate(var(--form-b-x), var(--form-b-y)) rotate(24deg);
+  background: radial-gradient(closest-side, rgba(18, 61, 22, 0.55), rgba(99, 255, 42, 0.06) 55%, transparent 80%);
+}
+
+.tx-field-ribbons,
+.tx-field-core {
+  left: -10%;
   top: -10%;
-  bottom: -10%;
-  left: 12%;
-  width: 1px;
-  background: linear-gradient(transparent, rgba(160, 182, 212, 0.08) 30%, rgba(160, 182, 212, 0.08) 70%, transparent);
-  transform: rotate(14deg);
+  width: 120%;
+  height: 120%;
+  transform: translate(var(--rib-x), var(--rib-y)) rotate(var(--rib-r)) scale(var(--rib-s));
+  transform-origin: 50% 50%;
 }
 
-.tx-env-path-right {
-  left: auto;
-  right: 10%;
-  transform: rotate(-12deg);
+.tx-field-ribbons {
+  opacity: var(--rib-o);
+  filter: blur(34px);
 }
 
-.tx-env-blob {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(80px);
+.tx-field-core {
+  opacity: var(--core-o);
+  filter: blur(7px);
+  mix-blend-mode: screen;
 }
 
-.tx-env-blob-a {
-  width: 520px;
-  height: 520px;
-  left: -220px;
-  top: 30%;
-  background: radial-gradient(circle, rgba(69, 224, 207, 0.12), transparent 68%);
+.tx-field-ai {
+  left: 0;
+  top: 0;
+  width: 56vmax;
+  height: 40vmax;
+  border-radius: 50%;
+  opacity: var(--ai-o);
+  transform: translate(-14vw, 4vh);
+  filter: blur(90px);
+  background: radial-gradient(closest-side, rgba(139, 124, 255, 0.28), rgba(139, 124, 255, 0.05) 60%, transparent 80%);
 }
 
-.tx-env-blob-b {
-  width: 600px;
-  height: 600px;
-  right: -240px;
-  top: 52%;
-  background: radial-gradient(circle, rgba(143, 128, 255, 0.1), transparent 68%);
+.tx-field-grid {
+  inset: 0;
+  opacity: var(--grid-o);
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 72px 72px;
+  mask-image: radial-gradient(ellipse 70% 60% at 50% 30%, black 10%, transparent 75%);
 }
 
-.tx-env-glow {
-  position: absolute;
-  border-radius: 9999px;
-  filter: blur(70px);
+.tx-field-vignette {
+  inset: 0;
+  background:
+    radial-gradient(ellipse 85% 75% at 55% 45%, transparent 38%, rgba(0, 0, 0, 0.8) 100%);
 }
 
-.tx-env-glow-l {
-  width: 460px;
-  height: 320px;
-  left: -160px;
-  top: 4%;
-  background: radial-gradient(ellipse, rgba(31, 92, 140, 0.28), transparent 70%);
+.tx-field-grain {
+  inset: 0;
+  opacity: 0.3;
+  background-image: var(--tx-grain-strong);
+  background-size: 200px 200px;
 }
 
-.tx-env-glow-r {
-  width: 480px;
-  height: 340px;
-  right: -170px;
-  top: 22%;
-  background: radial-gradient(ellipse, rgba(69, 224, 207, 0.1), transparent 70%);
+/* Variants: same primitives, page-specific weighting. */
+.tx-field--landing {
+  --form-a-x: 46vw;
+  --form-a-y: -8vh;
+  --form-a-o: 0.75;
+  --form-b-o: 0.6;
+  --rib-x: 14%;
+  --rib-y: -6%;
+  --rib-r: -10deg;
+  --rib-s: 1.12;
+  --rib-o: 0.66;
+  --core-o: 0.62;
+  --ai-o: 0.4;
 }
 
-.tx-env-shape {
-  position: absolute;
-  width: 820px;
-  height: 820px;
-  left: 50%;
-  top: 70%;
-  transform: translateX(-50%);
-  border-radius: 9999px;
-  background: radial-gradient(circle, rgba(14, 38, 72, 0.35), transparent 65%);
-  filter: blur(40px);
+.tx-field--dashboard {
+  --form-a-x: 62vw;
+  --form-a-y: -22vh;
+  --form-b-x: -26vw;
+  --form-b-y: 70vh;
+  --rib-x: 34%;
+  --rib-y: -24%;
+  --rib-r: -6deg;
+  --rib-o: 0.5;
+  --core-o: 0.42;
 }
 
-.tx-env-grain {
-  position: absolute;
-  inset: -40px;
-  opacity: 0.035;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+.tx-field--event {
+  --form-a-x: 30vw;
+  --form-a-y: -26vh;
+  --rib-x: 6%;
+  --rib-y: -30%;
+  --rib-r: 8deg;
+  --rib-s: 1.05;
+  --rib-o: 0.5;
+  --core-o: 0.4;
 }
 
-/* Glass + depth system: low-contrast graphite panels with hairlines. */
-.glass-surface {
+.tx-field--protect {
+  --form-a-x: 18vw;
+  --form-a-y: 4vh;
+  --form-a-o: 0.9;
+  --rib-x: -4%;
+  --rib-y: 6%;
+  --rib-r: -16deg;
+  --rib-s: 0.92;
+  --rib-o: 0.58;
+  --core-o: 0.5;
+}
+
+.tx-field--analysis {
+  --form-a-x: 56vw;
+  --form-a-y: 10vh;
+  --rib-x: 28%;
+  --rib-y: 14%;
+  --rib-r: 12deg;
+  --rib-o: 0.4;
+  --core-o: 0.34;
+  --ai-o: 0.85;
+}
+
+.tx-field--authority {
+  --form-a-x: 24vw;
+  --form-a-y: -30vh;
+  --form-b-o: 0.4;
+  --rib-x: 0%;
+  --rib-y: -34%;
+  --rib-r: 0deg;
+  --rib-s: 1.3;
+  --rib-o: 0.4;
+  --core-o: 0.5;
+  --grid-o: 1;
+}
+
+.tx-field--proof {
+  --form-a-x: 70vw;
+  --form-a-y: 50vh;
+  --form-a-o: 0.45;
+  --form-b-o: 0.35;
+  --rib-x: 42%;
+  --rib-y: 40%;
+  --rib-r: -22deg;
+  --rib-s: 0.9;
+  --rib-o: 0.24;
+  --core-o: 0.2;
+}
+
+@media (max-width: 640px) {
+  .tx-field-form,
+  .tx-field-ai {
+    filter: blur(60px);
+  }
+  .tx-field-ribbons {
+    filter: blur(24px);
+  }
+}
+
+/* ---- LEVELS 1–4 · Smoked glass surface system ------------------------------
+   One material, four depths, semantic blooms. Every surface is black glass
+   suspended above the field: translucent fill, backdrop blur, fine grain,
+   a localized internal bloom and a lit top edge where green light catches
+   the glass. Legacy material class names alias onto these levels. */
+.surface-structural,
+.surface-glass,
+.surface-glass-raised,
+.surface-focus,
+.tx-material-light-frost,
+.tx-material-clear-instrument,
+.tx-instrument-dock,
+.tx-material-authority,
+.tx-material-critical,
+.tx-preview-sheet,
+.tx-technical-drawer,
+.tx-rail-shell,
+.material-instrument,
+.material-authority,
+.material-critical,
+.float-module,
+.float-module-dark,
+.glass-surface,
+.glass-dark,
+.receipt-document,
+.tx-role-ai,
+.tx-role-authority,
+.tx-role-evidence {
+  --bloom-rgb: var(--tx-signal-rgb);
+  --bloom-a: 0.06;
+  --bloom-x: 92%;
+  --bloom-y: -12%;
+  --edge-a: 0.32;
+  --fill: linear-gradient(180deg, rgba(13, 19, 15, 0.62), rgba(5, 9, 7, 0.74));
   position: relative;
-  background: var(--tx-panel);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid var(--tx-line);
+  background:
+    linear-gradient(90deg, rgba(var(--bloom-rgb), 0) 6%, rgba(var(--bloom-rgb), var(--edge-a)) 30%, rgba(var(--bloom-rgb), 0) 62%) top left / 100% 1px no-repeat,
+    var(--tx-grain-soft) 0 0 / 180px 180px,
+    radial-gradient(70% 85% at var(--bloom-x) var(--bloom-y), rgba(var(--bloom-rgb), var(--bloom-a)), transparent 70%),
+    var(--fill);
+  border: 1px solid rgba(255, 255, 255, 0.08);
   box-shadow: var(--tx-highlight), var(--tx-shadow);
+  backdrop-filter: blur(18px) saturate(1.3);
+  -webkit-backdrop-filter: blur(18px) saturate(1.3);
 }
 
-.glass-dark {
-  position: relative;
-  background: linear-gradient(160deg, rgba(16, 24, 33, 0.92), rgba(7, 10, 15, 0.94));
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-  border: 1px solid rgba(69, 224, 207, 0.16);
+.surface-structural,
+.surface-glass,
+.surface-glass-raised,
+.surface-focus {
+  border-radius: 16px;
+}
+
+/* LEVEL 1 · structural */
+.surface-structural,
+.tx-material-clear-instrument,
+.tx-rail-shell {
+  --bloom-a: 0;
+  --edge-a: 0;
+  --fill: linear-gradient(180deg, rgba(8, 11, 10, 0.52), rgba(5, 7, 6, 0.6));
+  box-shadow: var(--tx-highlight);
+  backdrop-filter: blur(10px) saturate(1.15);
+  -webkit-backdrop-filter: blur(10px) saturate(1.15);
+}
+
+/* LEVEL 3 · raised / authority */
+.surface-glass-raised,
+.tx-material-authority,
+.material-authority,
+.glass-dark,
+.float-module-dark,
+.tx-preview-sheet,
+.tx-technical-drawer {
+  --bloom-a: 0.1;
+  --edge-a: 0.5;
+  --fill: linear-gradient(180deg, rgba(15, 22, 17, 0.74), rgba(5, 8, 6, 0.86));
+  border-color: rgba(255, 255, 255, 0.1);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 36px 80px -40px rgba(0, 0, 0, 1);
+}
+
+/* LEVEL 4 · focus / primary decision */
+.surface-focus,
+.tx-material-critical,
+.material-critical {
+  --bloom-a: 0.16;
+  --bloom-x: 50%;
+  --bloom-y: -20%;
+  --edge-a: 0.85;
+  --fill: linear-gradient(180deg, rgba(12, 19, 14, 0.82), rgba(4, 7, 5, 0.92));
+  overflow: hidden;
+  border-color: rgba(99, 255, 42, 0.22);
   box-shadow:
-    var(--tx-highlight),
-    inset 0 -18px 40px -30px rgba(69, 224, 207, 0.22),
-    var(--tx-shadow);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 44px 96px -40px rgba(0, 0, 0, 1),
+    0 0 70px -36px rgba(99, 255, 42, 0.5);
+}
+
+/* Semantic blooms — the card stays black; only the light changes. */
+.surface-ai,
+.tx-role-ai {
+  --bloom-rgb: var(--tx-ai-rgb);
+  --bloom-a: 0.15;
+  --edge-a: 0.55;
+  border-color: rgba(139, 124, 255, 0.18);
+}
+
+.surface-authority,
+.tx-role-authority,
+.tx-material-authority {
+  --bloom-rgb: var(--tx-signal-rgb);
+  --bloom-a: 0.12;
+  --edge-a: 0.6;
+  border-color: rgba(99, 255, 42, 0.16);
+}
+
+.surface-exec,
+.tx-preview-sheet {
+  --bloom-rgb: var(--tx-exec-rgb);
+  --bloom-a: 0.13;
+  --edge-a: 0.5;
+  border-color: rgba(76, 201, 255, 0.16);
+}
+
+.surface-review {
+  --bloom-rgb: var(--tx-amber-rgb);
+  --bloom-a: 0.13;
+  --edge-a: 0.55;
+  border-color: rgba(255, 180, 84, 0.2);
+}
+
+.surface-refuse,
+.material-critical.gate-refused,
+.tx-material-critical.tx-gate-refused {
+  --bloom-rgb: var(--tx-clay-rgb);
+  --bloom-a: 0.13;
+  --edge-a: 0.55;
+  border-color: rgba(255, 102, 95, 0.24);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 36px 80px -40px rgba(0, 0, 0, 1);
+}
+
+.surface-proof,
+.tx-role-evidence,
+.tx-technical-drawer,
+.receipt-document {
+  --bloom-rgb: var(--tx-signal-rgb);
+  --bloom-a: 0.035;
+  --edge-a: 0.22;
+}
+
+/* Role sections on functional pages become inset-railed glass. */
+.tx-role-ai,
+.tx-role-authority,
+.tx-role-evidence {
+  border-radius: 16px;
+  padding-right: 1rem;
+  box-shadow: inset 2px 0 0 rgba(var(--bloom-rgb), 0.55), var(--tx-highlight), var(--tx-shadow);
+}
+
+@media (min-width: 640px) {
+  .tx-role-ai,
+  .tx-role-authority,
+  .tx-role-evidence {
+    padding-right: 1.5rem;
+  }
+}
+
+.tx-role-evidence {
+  box-shadow: inset 2px 0 0 rgba(255, 255, 255, 0.14), var(--tx-highlight), var(--tx-shadow);
+}
+
+.event-evidence {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
 }
 
 .glass-signal {
   position: relative;
-  background: linear-gradient(150deg, rgba(69, 224, 207, 0.95), rgba(98, 214, 255, 0.85));
-  border: 1px solid rgba(69, 224, 207, 0.6);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.4),
-    0 16px 40px -16px rgba(69, 224, 207, 0.45);
+  background: linear-gradient(180deg, #87ff4d, #63ff2a);
+  border: 1px solid rgba(135, 255, 77, 0.6);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 16px 40px -18px rgba(99, 255, 42, 0.6);
 }
 
-.depth-panel {
-  box-shadow: var(--tx-highlight), 0 14px 34px -18px rgba(0, 0, 0, 0.8);
-}
-
-.depth-control {
-  box-shadow: var(--tx-highlight), 0 20px 48px -20px rgba(0, 0, 0, 0.85);
-  transform: translateZ(0);
-}
-
+.depth-panel { box-shadow: var(--tx-highlight), var(--tx-shadow); }
+.depth-control { box-shadow: var(--tx-highlight), 0 20px 48px -24px rgba(0, 0, 0, 0.95); }
 .depth-critical {
   box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    inset 0 0 70px -30px rgba(69, 224, 207, 0.32),
-    0 44px 90px -36px rgba(0, 0, 0, 0.9),
-    0 0 0 1px rgba(69, 224, 207, 0.12),
-    0 0 48px -22px rgba(69, 224, 207, 0.3);
+    inset 0 1px 0 rgba(255, 255, 255, 0.07),
+    0 44px 90px -40px rgba(0, 0, 0, 1),
+    0 0 60px -30px rgba(99, 255, 42, 0.4);
 }
 
-/* Material hierarchy: open field first, then only the depth the object
-   earns. These are deliberately not interchangeable card skins. */
 .material-flat {
   background: transparent;
   border-top: 1px solid var(--tx-line-strong);
@@ -465,58 +623,9 @@
   border-top-width: 3px;
 }
 
-.material-instrument {
-  position: relative;
-  border-radius: 16px;
-  background: var(--tx-panel);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid var(--tx-line);
-  box-shadow: var(--tx-highlight), var(--tx-shadow);
-}
+.signal-glow { text-shadow: 0 0 26px rgba(99, 255, 42, 0.5); }
 
-.material-authority {
-  position: relative;
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 140% at 0% 0%, rgba(69, 224, 207, 0.09), transparent 50%),
-    linear-gradient(160deg, #0d151d, #070a0f);
-  border: 1px solid rgba(69, 224, 207, 0.18);
-  box-shadow: var(--tx-highlight), var(--tx-shadow);
-}
-
-.event-evidence {
-  border: 1px solid rgba(237, 242, 248, 0.12);
-  border-radius: 10px;
-  background: rgba(237, 242, 248, 0.04);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
-}
-
-.material-critical {
-  position: relative;
-  overflow: hidden;
-  border-radius: 20px;
-  background:
-    radial-gradient(90% 120% at 50% 0%, rgba(69, 224, 207, 0.12), transparent 60%),
-    #060a0e;
-  border: 1px solid rgba(69, 224, 207, 0.2);
-  box-shadow:
-    inset 0 1px 0 rgba(255, 255, 255, 0.08),
-    0 38px 78px -36px rgba(0, 0, 0, 0.95);
-}
-
-.material-critical.gate-refused {
-  background:
-    radial-gradient(90% 120% at 50% 0%, rgba(255, 111, 97, 0.1), transparent 60%),
-    #0a0708;
-  border-color: rgba(255, 111, 97, 0.28);
-}
-
-.signal-glow {
-  text-shadow: 0 0 26px rgba(69, 224, 207, 0.5);
-}
-
-/* Live indicator: pulsing signal dot + mono label. */
+/* ---- Controls -------------------------------------------------------------- */
 .live-indicator {
   display: inline-flex;
   align-items: center;
@@ -531,9 +640,7 @@
   animation: tx-live-dot 2.2s ease-out infinite;
 }
 
-[class~="bg-signal"] .live-indicator-dot {
-  background: #041513;
-}
+[class~="bg-signal"] .live-indicator-dot { background: #061204; }
 
 .live-indicator-dot-quiet {
   animation: none;
@@ -541,12 +648,8 @@
   opacity: 0.5;
 }
 
-/* Soft glow behind live market figures when data refreshes. */
-.value-live {
-  animation: tx-value-pulse 1.1s var(--tx-ease);
-}
+.value-live { animation: tx-value-pulse 1.1s var(--tx-ease); }
 
-/* Microinteractions: buttons lift + glow, rows shift, arrows travel. */
 .btn-living {
   position: relative;
   overflow: hidden;
@@ -555,65 +658,74 @@
     box-shadow 0.22s var(--tx-ease),
     background-color 0.18s var(--tx-ease),
     border-color 0.18s var(--tx-ease),
-    color 0.18s var(--tx-ease),
-    filter 0.18s var(--tx-ease);
+    color 0.18s var(--tx-ease);
 }
 
-.btn-living:hover:not(:disabled) {
-  transform: translateY(-1px);
-  box-shadow:
-    0 14px 30px -14px rgba(0, 0, 0, 0.8),
-    0 0 26px -8px rgba(69, 224, 207, 0.55);
-}
-
-.btn-living:active:not(:disabled) {
-  transform: translateY(0);
-}
+.btn-living:hover:not(:disabled) { transform: translateY(-1px); }
+.btn-living:active:not(:disabled) { transform: translateY(0); }
 
 .btn-living .btn-arrow {
   display: inline-block;
   transition: transform 0.18s var(--tx-ease);
 }
 
-.btn-living:hover:not(:disabled) .btn-arrow {
-  transform: translateX(4px);
+.btn-living:hover:not(:disabled) .btn-arrow { transform: translateX(3px); }
+
+/* PRIMARY · illuminated signal surface with a terminal-arrow segment. */
+.btn-living[class~="bg-signal"],
+.tx-btn-primary {
+  background-image: linear-gradient(180deg, #87ff4d, #63ff2a);
+  color: #061204;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.45),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 12px 32px -16px rgba(99, 255, 42, 0.75);
 }
 
-.btn-living::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(100deg, transparent 30%, rgba(255, 255, 255, 0.22) 50%, transparent 70%);
-  transform: translateX(-100%);
-  pointer-events: none;
+.btn-living[class~="bg-signal"]:hover:not(:disabled),
+.tx-btn-primary:hover {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.5),
+    inset 0 -1px 0 rgba(0, 0, 0, 0.18),
+    0 16px 40px -14px rgba(99, 255, 42, 0.95);
 }
 
-.btn-living:hover:not(:disabled)::after {
-  animation: tx-glow-sweep 0.7s var(--tx-ease);
+.btn-living[class~="bg-signal"] .btn-arrow,
+.tx-btn-primary .btn-arrow {
+  margin-left: 0.7rem;
+  padding-left: 0.7rem;
+  border-left: 1px solid rgba(6, 18, 4, 0.25);
 }
 
-/* Solid signal actions read as a lit teal instrument, not a flat block. */
-.btn-living[class~="bg-signal"] {
-  background-image: linear-gradient(135deg, #45e0cf, #4cc9f0);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.35), 0 10px 28px -14px rgba(69, 224, 207, 0.65);
+/* SECONDARY · smoked glass with a hairline and a small green response. */
+.btn-living[class*="bg-softwhite"],
+.tx-btn-secondary {
+  background: rgba(10, 15, 12, 0.6);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: var(--tx-fg);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05);
 }
 
-.btn-living[class~="bg-signal"]:hover:not(:disabled) {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4), 0 14px 34px -12px rgba(69, 224, 207, 0.8);
+.btn-living[class*="bg-softwhite"]:hover:not(:disabled),
+.tx-btn-secondary:hover {
+  background: rgba(99, 255, 42, 0.06);
+  border-color: rgba(99, 255, 42, 0.45);
+  color: var(--tx-fg);
 }
 
 .row-living {
   transition:
     transform 0.16s var(--tx-ease),
     border-color 0.16s var(--tx-ease),
-    background-color 0.16s var(--tx-ease),
-    box-shadow 0.2s var(--tx-ease);
+    background-color 0.16s var(--tx-ease);
 }
 
 a.row-living:hover,
 button.row-living:hover {
   transform: translateX(3px);
-  border-color: rgba(69, 224, 207, 0.5);
+  border-color: rgba(99, 255, 42, 0.4);
 }
 
 .mandate-row-living {
@@ -623,15 +735,12 @@ button.row-living:hover {
 }
 
 .mandate-row-living:hover {
-  background-color: rgba(69, 224, 207, 0.05);
+  background-color: rgba(99, 255, 42, 0.04);
   padding-left: 6px;
 }
 
-.mandate-row-living:focus-within {
-  background-color: rgba(69, 224, 207, 0.07);
-}
+.mandate-row-living:focus-within { background-color: rgba(99, 255, 42, 0.06); }
 
-/* Entrance choreography: stagger children with --i index. */
 .tx-stagger > * {
   animation: tx-rise 0.55s var(--tx-ease) both;
   animation-delay: calc(var(--i, 0) * 90ms);
@@ -642,12 +751,11 @@ button.row-living:hover {
   animation-delay: calc(var(--i, 0) * 110ms);
 }
 
-/* Travelling signal line for the Protect arming surface. */
 .signal-track {
   position: relative;
   height: 2px;
   overflow: hidden;
-  background: rgba(237, 242, 248, 0.1);
+  background: rgba(255, 255, 255, 0.08);
 }
 
 .signal-track-segment {
@@ -659,142 +767,40 @@ button.row-living:hover {
   animation: tx-travel 1.1s var(--tx-ease) 0.2s both;
 }
 
-/* Animated sparkline stroke. */
 .spark-draw {
   stroke-dasharray: 320;
   animation: tx-draw 1.8s var(--tx-ease) both;
 }
 
-.spark-end {
-  animation: none;
-}
+.spark-end { animation: none; }
 
-/* TenaxAgent Sentinel. */
-.tx-agent {
-  animation: none;
-}
+/* ---- Agent, gate, records ------------------------------------------------------- */
+.tx-agent { animation: none; }
+.tx-agent-watching { animation: tx-float 5s ease-in-out infinite; }
+.tx-agent-glow-pass { filter: drop-shadow(0 0 16px rgba(99, 255, 42, 0.35)); }
+.tx-agent-glow-dim { filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.7)); }
+.tx-agent-glow-clay { filter: drop-shadow(0 0 14px rgba(255, 102, 95, 0.45)); }
+.tx-agent-scan { animation: tx-scan 0.9s ease-in-out 0.15s both; }
 
-.tx-agent-watching {
-  animation: tx-float 5s ease-in-out infinite;
-}
-
-.tx-agent-glow-pass {
-  filter: drop-shadow(0 0 16px rgba(69, 224, 207, 0.4));
-}
-
-.tx-agent-glow-dim {
-  filter: drop-shadow(0 6px 14px rgba(0, 0, 0, 0.6));
-}
-
-.tx-agent-scan {
-  animation: tx-scan 0.9s ease-in-out 0.15s both;
-}
-
-/* Receipt seal stamp. */
-.seal-stamp {
-  display: inline-block;
-  transform: rotate(-2deg);
-  animation: tx-seal-in 0.6s var(--tx-ease) both;
-}
-
-/* Decision rail: live circuit. */
-.tx-rail {
-  scrollbar-width: thin;
-}
-
-.tx-rail-node-done {
-  box-shadow: inset 0 -2px 0 rgba(69, 224, 207, 0.7);
-}
-
-.tx-rail-node-active {
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.4);
-}
-
-.tx-rail-pulse {
-  animation: none;
-}
-
-@keyframes tx-beam {
-  0% {
-    transform: translateX(-140%) skewX(-12deg);
-    opacity: 0;
-  }
-  18% {
-    opacity: 1;
-  }
-  55% {
-    opacity: 1;
-  }
-  100% {
-    transform: translateX(240%) skewX(-12deg);
-    opacity: 0;
-  }
-}
-
-/* Floating modules: rounded graphite instruments with hairline edges. */
-.float-module {
-  position: relative;
-  border-radius: 16px;
-  background: var(--tx-panel);
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid var(--tx-line);
-  box-shadow: var(--tx-highlight), var(--tx-shadow);
-}
-
-.float-module-dark {
-  position: relative;
-  border-radius: 16px;
-  background:
-    radial-gradient(120% 120% at 0% 0%, rgba(69, 224, 207, 0.08), transparent 55%),
-    linear-gradient(160deg, rgba(14, 21, 29, 0.92), rgba(6, 9, 13, 0.94));
-  backdrop-filter: blur(14px) saturate(1.1);
-  -webkit-backdrop-filter: blur(14px) saturate(1.1);
-  border: 1px solid rgba(69, 224, 207, 0.16);
-  box-shadow: var(--tx-highlight), var(--tx-shadow);
-}
-
-/* Gentle hover lift for floating interactive modules. */
-.float-lift {
-  transition:
-    transform 0.22s var(--tx-ease),
-    border-color 0.22s var(--tx-ease),
-    box-shadow 0.26s var(--tx-ease);
-}
-
-.float-lift:hover {
-  transform: translateY(-2px);
-  border-color: var(--tx-line-strong);
-  box-shadow: var(--tx-highlight), 0 38px 70px -30px rgba(0, 0, 0, 0.9);
-}
-
-/* Mascot stage: soft pedestal glow so the agent feels placed, not pasted. */
-.agent-stage {
-  position: relative;
-}
+.agent-stage { position: relative; }
 
 .agent-stage::before {
   content: "";
   position: absolute;
   inset: 12% -8% -6% -8%;
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(31, 92, 140, 0.35), transparent 70%);
-  filter: blur(6px);
   z-index: -1;
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(18, 61, 22, 0.6), transparent 70%);
+  filter: blur(6px);
 }
 
 .agent-stage.agent-halo-signal::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(69, 224, 207, 0.28), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(99, 255, 42, 0.24), transparent 70%);
 }
 
 .agent-stage.agent-halo-clay::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(255, 111, 97, 0.26), transparent 70%);
+  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(255, 102, 95, 0.24), transparent 70%);
 }
 
-.agent-stage.agent-halo-dim::before {
-  background: radial-gradient(ellipse 50% 42% at 50% 55%, rgba(31, 92, 140, 0.35), transparent 70%);
-}
-
-/* State shimmer: a soft signal sweep beneath the asset for watchful states. */
 .agent-shimmer {
   position: absolute;
   left: 12%;
@@ -802,45 +808,29 @@ button.row-living:hover {
   bottom: 2%;
   height: 3px;
   border-radius: 9999px;
-  background: linear-gradient(90deg, transparent, rgba(69, 224, 207, 0.85), transparent);
-  filter: blur(0.5px);
+  background: linear-gradient(90deg, transparent, rgba(99, 255, 42, 0.85), transparent);
   animation: tx-scan 0.9s ease-in-out 0.15s both;
 }
 
-.tx-agent-glow-clay {
-  filter: drop-shadow(0 0 14px rgba(255, 111, 97, 0.45));
+.seal-stamp {
+  display: inline-block;
+  transform: rotate(-2deg);
+  animation: tx-seal-in 0.6s var(--tx-ease) both;
 }
 
-/* Slow glass highlight drift — hero and gate only, barely-there. */
-@keyframes tx-sheen-drift {
-  0%,
-  100% {
-    transform: translateX(-30%);
-    opacity: 0;
-  }
-  30% {
-    opacity: 0.5;
-  }
-  60% {
-    opacity: 0.5;
-  }
+.seal-ring {
+  box-shadow:
+    0 0 0 2px var(--tx-signal),
+    0 0 0 5px rgba(5, 7, 6, 0.9),
+    0 0 32px -6px rgba(99, 255, 42, 0.55);
 }
 
-.glass-sheen {
-  position: relative;
-}
+.tx-rail { scrollbar-width: thin; }
+.tx-rail-node-done { box-shadow: inset 0 -2px 0 rgba(99, 255, 42, 0.7); }
+.tx-rail-pulse { animation: none; }
 
-.glass-sheen::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  background: linear-gradient(100deg, transparent 35%, rgba(255, 255, 255, 0.05) 50%, transparent 65%);
-  transform: translateX(-30%);
-  pointer-events: none;
-}
+.glass-sheen { position: relative; }
 
-/* Gate chamber: rounded critical vessel with floor light + check beam. */
 .gate-chamber {
   border-radius: 20px;
   overflow: hidden;
@@ -852,13 +842,13 @@ button.row-living:hover {
   right: 8%;
   bottom: 10px;
   height: 26px;
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(69, 224, 207, 0.26), transparent 70%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(99, 255, 42, 0.28), transparent 70%);
   filter: blur(4px);
   pointer-events: none;
 }
 
 .gate-floor-refused {
-  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(255, 111, 97, 0.22), transparent 70%);
+  background: radial-gradient(ellipse 50% 100% at 50% 50%, rgba(255, 102, 95, 0.22), transparent 70%);
 }
 
 .gate-beam {
@@ -866,99 +856,194 @@ button.row-living:hover {
   top: 0;
   bottom: 0;
   width: 34%;
-  background: linear-gradient(90deg, transparent, rgba(69, 224, 207, 0.18), transparent);
+  background: linear-gradient(90deg, transparent, rgba(99, 255, 42, 0.16), transparent);
   animation: tx-beam 1.2s var(--tx-ease) 0.15s both;
   pointer-events: none;
 }
 
-/* Receipt record stack: layered sheets beneath the sealed record. */
-.record-stack {
-  position: relative;
-}
+.record-stack { position: relative; }
 
 .record-stack::before,
 .record-stack::after {
   content: "";
   position: absolute;
   inset: 0;
-  border-radius: 14px;
-  background: rgba(12, 17, 24, 0.7);
-  border: 1px solid var(--tx-line);
   z-index: -1;
+  border-radius: 14px;
+  background: rgba(8, 11, 10, 0.72);
+  border: 1px solid var(--tx-line);
 }
 
-.record-stack::before {
-  transform: translateY(8px) scale(0.985);
-}
+.record-stack::before { transform: translateY(8px) scale(0.985); }
+.record-stack::after { transform: translateY(15px) scale(0.97); opacity: 0.6; }
 
-.record-stack::after {
-  transform: translateY(15px) scale(0.97);
-  opacity: 0.6;
-}
-
-/* Stepped intelligence path: Exposure → Evidence → Proposal. */
-.path-spine {
-  position: relative;
-}
+.path-spine { position: relative; }
 
 .path-node {
   position: relative;
-  transition:
-    transform 0.18s var(--tx-ease),
-    box-shadow 0.22s var(--tx-ease);
+  transition: transform 0.18s var(--tx-ease);
 }
 
-.path-node:hover {
-  transform: translateY(-2px);
+.path-node:hover { transform: translateY(-2px); }
+.path-node-dot { box-shadow: 0 0 14px -2px rgba(99, 255, 42, 0.9); }
+.instrument-divider { border-color: rgba(255, 255, 255, 0.1); }
+
+.technical-inset {
+  border-radius: 10px;
+  background: rgba(3, 5, 4, 0.8);
+  border: 1px solid var(--tx-line);
+  box-shadow: var(--tx-highlight);
 }
 
-.path-node-dot {
-  box-shadow: 0 0 14px -2px rgba(69, 224, 207, 0.9);
+.state-mark {
+  display: inline-flex;
+  align-items: center;
+  border: 1px solid currentColor;
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-family: var(--font-syslabel);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 14px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-/* Instrument divider glow for dark glass panels. */
-.instrument-divider {
-  border-color: rgba(237, 242, 248, 0.12);
+/* ---- Authority role tags ------------------------------------------------------- */
+.tx-role-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 6px;
+  padding: 3px 8px;
+  font-family: var(--font-syslabel);
+  font-size: 10px;
+  font-weight: 600;
+  line-height: 14px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
 }
 
-.seal-ring {
-  box-shadow:
-    0 0 0 2px var(--tx-signal),
-    0 0 0 5px rgba(5, 7, 11, 0.9),
-    0 0 32px -6px rgba(69, 224, 207, 0.5);
+.tx-role-tag-ai {
+  color: var(--color-ai);
+  border: 1px solid rgba(139, 124, 255, 0.35);
+  background: rgba(139, 124, 255, 0.08);
 }
 
+.tx-role-tag-authority {
+  color: var(--tx-signal);
+  border: 1px solid rgba(99, 255, 42, 0.32);
+  background: rgba(99, 255, 42, 0.07);
+}
+
+/* ---- Signal rail motif: INTENT → POLICY → AUTHORITY → EXECUTION → PROOF ----- */
+.tx-signal-rail {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 4px;
+  font-family: var(--font-syslabel);
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.tx-signal-rail li {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--color-mutedink);
+}
+
+.tx-signal-rail li + li::before {
+  content: "";
+  width: 18px;
+  height: 1px;
+  margin-right: 2px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.tx-signal-node {
+  display: inline-block;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  border: 1px solid currentColor;
+}
+
+.tx-rail-done { color: var(--tx-fg); }
+.tx-rail-done .tx-signal-node { background: var(--tx-signal); border-color: var(--tx-signal); box-shadow: 0 0 8px rgba(99, 255, 42, 0.7); }
+.tx-rail-done + li::before { background: rgba(99, 255, 42, 0.5); }
+.tx-rail-pending { color: var(--color-mutedink); }
+.tx-rail-skipped { color: rgba(145, 155, 148, 0.45); text-decoration: line-through; text-decoration-color: rgba(145, 155, 148, 0.35); }
+.tx-rail-skipped .tx-signal-node { border-style: dashed; }
+.tx-rail-stopped { color: var(--tx-clay); }
+.tx-rail-stopped .tx-signal-node { border-radius: 1px; background: var(--tx-clay); border-color: var(--tx-clay); }
+.tx-rail-held { color: var(--tx-amber); }
+.tx-rail-held .tx-signal-node { background: transparent; border-color: var(--tx-amber); box-shadow: inset 0 0 0 2px rgba(255, 180, 84, 0.5); }
+.tx-rail-exec { color: var(--tx-exec); }
+.tx-rail-exec .tx-signal-node { background: var(--tx-exec); border-color: var(--tx-exec); }
+
+/* ---- Evidence stamp ------------------------------------------------------------ */
+.tx-evidence-stamp {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: flex-start;
+  gap: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  padding: 8px 12px;
+  background:
+    var(--tx-grain-soft) 0 0 / 180px 180px,
+    linear-gradient(180deg, rgba(10, 15, 12, 0.7), rgba(5, 8, 6, 0.8));
+  font-family: var(--font-syslabel);
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-mutedink);
+  max-width: 100%;
+}
+
+.tx-evidence-stamp-mark {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border: 1px solid rgba(99, 255, 42, 0.35);
+  color: var(--tx-signal);
+  font-size: 13px;
+}
+
+.tx-evidence-stamp[data-verified="false"] .tx-evidence-stamp-mark {
+  border-color: rgba(255, 180, 84, 0.35);
+  color: var(--tx-amber);
+}
+
+.tx-evidence-stamp-title {
+  font-weight: 700;
+  color: var(--tx-fg);
+}
+
+/* ---- Base ---------------------------------------------------------------------- */
 @media (max-width: 640px) {
-  .float-module,
-  .float-module-dark {
-    border-radius: 14px;
-    backdrop-filter: blur(10px) saturate(1.06);
-    -webkit-backdrop-filter: blur(10px) saturate(1.06);
-  }
-  .gate-chamber {
-    border-radius: 16px;
-  }
-  .mascot-scale {
-    transform: scale(0.84);
-    transform-origin: top center;
-  }
   .tx-rail {
     flex-wrap: nowrap !important;
     overflow-x: auto;
     padding-bottom: 4px;
-    -webkit-overflow-scrolling: touch;
   }
-  .tx-rail > li {
-    flex-shrink: 0;
-  }
-  .tx-agent {
-    animation-duration: 6s;
+  .tx-rail > li { flex-shrink: 0; }
+  .mascot-scale {
+    transform: scale(0.84);
+    transform-origin: top center;
   }
 }
 
 :root {
-  --background: #05070b;
-  --foreground: #e6ecf4;
+  --background: #050706;
+  --foreground: #f3f6f3;
   color-scheme: dark;
 }
 
@@ -970,22 +1055,14 @@ body {
 }
 
 ::selection {
-  background: rgba(69, 224, 207, 0.32);
+  background: rgba(99, 255, 42, 0.3);
   color: #ffffff;
 }
 
 /* Connected Mode uses a denser product type system without changing the root landing page. */
-.tx-connected {
-  font-family: var(--font-body);
-}
-
-.tx-connected .font-syslabel {
-  font-family: var(--font-syslabel);
-}
-
-.tx-connected .font-mono {
-  font-family: var(--font-geist-mono), var(--font-syslabel);
-}
+.tx-connected { font-family: var(--font-body); }
+.tx-connected .font-syslabel { font-family: var(--font-syslabel); }
+.tx-connected .font-mono { font-family: var(--font-geist-mono), var(--font-syslabel); }
 
 .tx-connected-display {
   font-family: var(--font-display);
@@ -998,97 +1075,9 @@ body {
   outline-offset: 3px;
 }
 
+:where([class~="bg-signal"]):focus-visible { outline-color: #f3f6f3; }
+
 /* Text and values must remain inspectable at narrow widths. */
-:where(dd, p, span, a, button) {
-  overflow-wrap: anywhere;
-}
+:where(dd, p, span, a, button) { overflow-wrap: anywhere; }
 
-/* Form controls inherit the dark field instead of browser-white. */
-:where(input, select, textarea) {
-  color-scheme: dark;
-}
-
-.receipt-document {
-  position: relative;
-  border: 1px solid var(--tx-line);
-  border-radius: 14px;
-  background: var(--tx-panel);
-  box-shadow: var(--tx-highlight), var(--tx-shadow);
-}
-
-.technical-inset {
-  border-radius: 10px;
-  background: #080c11;
-  border: 1px solid var(--tx-line);
-  box-shadow: var(--tx-highlight);
-}
-
-.state-mark {
-  display: inline-flex;
-  align-items: center;
-  border: 1px solid currentColor;
-  border-radius: 4px;
-  padding: 4px 8px;
-  font-family: var(--font-syslabel);
-  font-size: 11px;
-  font-weight: 700;
-  line-height: 14px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-/* ---- Authority roles ----------------------------------------------------------
-   AI CAN PROPOSE. IT CANNOT AUTHORIZE ITSELF. These role surfaces keep model
-   reasoning, deterministic authority and durable evidence visually distinct
-   inside one system: violet = AI intent (probabilistic), teal = mandate
-   authority (deterministic), graphite = evidence (record). */
-.tx-role-ai {
-  position: relative;
-  border-left: 2px solid rgba(var(--tx-ai-rgb), 0.55);
-  background: linear-gradient(90deg, rgba(var(--tx-ai-rgb), 0.06), transparent 55%);
-}
-
-.tx-role-authority {
-  position: relative;
-  border-left: 2px solid rgba(var(--tx-signal-rgb), 0.7);
-  background: linear-gradient(90deg, rgba(var(--tx-signal-rgb), 0.06), transparent 55%);
-}
-
-.tx-role-evidence {
-  position: relative;
-  border-left: 2px solid var(--tx-line-strong);
-}
-
-.tx-role-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  border-radius: 999px;
-  padding: 3px 9px;
-  font-family: var(--font-syslabel);
-  font-size: 10px;
-  font-weight: 600;
-  line-height: 14px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-}
-
-.tx-role-tag-ai {
-  color: var(--color-ai);
-  border: 1px solid rgba(var(--tx-ai-rgb), 0.35);
-  background: rgba(var(--tx-ai-rgb), 0.08);
-}
-
-.tx-role-tag-authority {
-  color: var(--tx-signal);
-  border: 1px solid rgba(var(--tx-signal-rgb), 0.35);
-  background: rgba(var(--tx-signal-rgb), 0.08);
-}
-
-@media (max-width: 640px) {
-  .tx-env-blob,
-  .tx-env-shape,
-  .tx-env-glow {
-    filter: blur(44px);
-  }
-}
+:where(input, select, textarea) { color-scheme: dark; }

@@ -58,7 +58,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
       {escalation ? (
         <section
           aria-label="Standing escalation"
-          className="tx-material-editorial border-t-4 border-t-signal p-5 sm:p-8"
+          className="surface-glass surface-review p-5 sm:p-8"
         >
           <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             ESCALATED FROM STANDING MANDATE · {escalation.mandateId.toUpperCase()}
@@ -102,7 +102,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
                   ? "border-softwhite/20"
                   : row.state === "REFUSED"
                     ? "border-clay/70 bg-clay/10"
-                    : "border-signal/60 bg-signal/[0.07]"
+                    : "border-amber/50 bg-amber/[0.06]"
               }`}
             >
               <span className="font-syslabel w-8 shrink-0 text-[11px] leading-[14px] text-softwhite/60">
@@ -120,7 +120,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
                     ? "bg-pass text-ink"
                     : row.state === "REFUSED"
                       ? "bg-clay text-ivory"
-                      : "border-2 border-signal text-signal"
+                      : "border border-amber text-amber"
                 }`}
               >
                 {row.state}
@@ -149,7 +149,7 @@ export default async function ApprovalPage({ params }: { params: Promise<{ id: s
               </div>
               <div className="border-t border-softwhite/15 pt-4 sm:border-l sm:border-t-0 sm:pl-5 sm:pt-0">
                 <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/60">HUMAN APPROVAL</p>
-                <p className="mt-1 font-display text-[32px] font-bold leading-none tracking-[0.02em] text-signal sm:text-[40px]">WAITING</p>
+                <p className="mt-1 font-display text-[32px] font-bold leading-none tracking-[0.02em] text-amber sm:text-[40px]">WAITING</p>
               </div>
             </div>
           </AuthorityInstrument>

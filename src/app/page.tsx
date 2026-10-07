@@ -11,6 +11,7 @@
 import Link from "next/link";
 
 import { TenaxMark, TenaxWordmark } from "@/app/app/_components/brand";
+import { SignalField } from "@/app/app/_components/signal-field";
 import { resolveExecutionMode } from "@/lib/tenax/execution";
 import {
   MANDATE_FIXTURE,
@@ -58,21 +59,21 @@ const STAGES = [
   {
     title: "AI INTENT",
     stage: "01 · PROBABILISTIC",
-    role: "tx-role-rgb-ai",
+    role: "surface-ai",
     Icon: IntentIcon,
     copy: "Tenax turns market and event context into an explicit proposed action — without granting the model execution authority.",
   },
   {
     title: "MANDATE GATE",
     stage: "02 · DETERMINISTIC",
-    role: "tx-role-rgb-authority",
+    role: "surface-authority",
     Icon: GateIcon,
     copy: "Deterministic rules decide whether the proposal is permitted, refused, escalated, or requires human review.",
   },
   {
     title: "DECISION EVIDENCE",
     stage: "03 · DURABLE",
-    role: "tx-role-rgb-evidence",
+    role: "surface-proof",
     Icon: EvidenceIcon,
     copy: "Every terminal decision preserves what the AI proposed, what authority decided, and what actually happened.",
   },
@@ -136,7 +137,7 @@ const CONTAINER = "mx-auto w-full max-w-[1240px] px-5 sm:px-8";
 const H2 = "font-display font-bold uppercase leading-[0.92] tracking-[0.005em] text-ink";
 const LEDE = "font-syslabel text-[14px] leading-[24px] text-ink/65 sm:text-[15px] sm:leading-[26px]";
 const CTA =
-  "tx-l-cta inline-flex min-h-12 items-center justify-center gap-2 rounded-full px-7 font-syslabel text-[12px] font-semibold uppercase tracking-[0.12em]";
+  "tx-l-cta inline-flex min-h-12 items-center justify-center rounded-[11px] pl-6 pr-4 font-syslabel text-[12px] font-semibold uppercase tracking-[0.12em]";
 
 export default function LandingPage() {
   const executionMode = resolveExecutionMode(process.env);
@@ -157,6 +158,7 @@ export default function LandingPage() {
 
   return (
     <div className="tx-landing min-h-screen">
+      <SignalField variant="landing" />
       <header className="sticky top-0 z-40 border-b border-line bg-ivory/70 backdrop-blur-xl">
         <div className={`${CONTAINER} relative flex h-16 items-center gap-8`}>
           <TenaxWordmark href="/" label="Tenax home" />
@@ -173,12 +175,12 @@ export default function LandingPage() {
           </nav>
           <Link
             href="/app"
-            className="font-syslabel hidden min-h-10 items-center rounded-full border border-signal/50 bg-signal/[0.08] px-5 text-[11px] font-semibold uppercase tracking-[0.14em] text-signal transition-colors hover:bg-signal/15 md:inline-flex"
+            className="tx-btn-secondary font-syslabel hidden min-h-10 items-center rounded-[10px] border px-5 text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors md:inline-flex"
           >
             OPEN APP
           </Link>
           <details className="ml-auto md:hidden">
-            <summary className="font-syslabel flex min-h-11 cursor-pointer list-none items-center rounded-full border border-line px-4 text-[11px] uppercase tracking-[0.14em] text-ink/80">
+            <summary className="font-syslabel flex min-h-11 cursor-pointer list-none items-center rounded-[10px] border border-line px-4 text-[11px] uppercase tracking-[0.14em] text-ink/80">
               MENU
             </summary>
             <nav
@@ -208,13 +210,12 @@ export default function LandingPage() {
       <main>
         {/* Hero */}
         <section aria-labelledby="hero-title" className="relative">
-          <span className="tx-l-glow tx-l-glow-navy -left-64 -top-64 h-[760px] w-[760px]" aria-hidden="true" />
-          <span className="tx-l-glow tx-l-glow-teal -right-40 bottom-0 h-[520px] w-[620px]" aria-hidden="true" />
+          <span className="tx-l-glow tx-l-glow-deep -left-64 -top-64 h-[760px] w-[760px]" aria-hidden="true" />
+          <span className="tx-l-glow tx-l-glow-green -right-40 bottom-0 h-[520px] w-[620px]" aria-hidden="true" />
           <span className="tx-l-grid" aria-hidden="true" />
           <div className={`${CONTAINER} grid items-center gap-14 pb-20 pt-14 sm:pt-20 lg:grid-cols-[minmax(0,1.12fr)_minmax(0,0.98fr)] lg:gap-6 lg:pb-24`}>
             <div>
-              <p className="font-syslabel inline-flex items-center gap-2 rounded-full border border-line bg-softwhite/60 px-3.5 py-1.5 text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/70">
-                <span className="h-1.5 w-1.5 rounded-full bg-signal shadow-[0_0_8px_var(--color-signal)]" aria-hidden="true" />
+              <p className="font-syslabel text-[10px] font-semibold uppercase tracking-[0.16em] text-ink/70">
                 AUTHORITY LAYER FOR AI TRADING
               </p>
               <h1
@@ -263,7 +264,7 @@ export default function LandingPage() {
 
         {/* Storytelling: the authority seam */}
         <section id="product" aria-labelledby="story-title" className="relative scroll-mt-20 py-20 sm:py-28">
-          <span className="tx-l-glow tx-l-glow-teal -right-56 top-10 h-[560px] w-[620px] opacity-70" aria-hidden="true" />
+          <span className="tx-l-glow tx-l-glow-green -right-56 top-10 h-[560px] w-[620px] opacity-70" aria-hidden="true" />
           <div className={`${CONTAINER} grid items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(0,1.05fr)] lg:gap-4`}>
             <div className="relative z-10">
               <h2 id="story-title" className={`${H2} text-[40px] sm:text-[52px] lg:text-[42px] xl:text-[50px]`}>
@@ -310,7 +311,7 @@ export default function LandingPage() {
             </div>
             <ol className="mt-14 grid gap-5 md:grid-cols-3">
               {STAGES.map(({ title, stage, role, Icon, copy }) => (
-                <li key={title} className={`tx-feature-card ${role} px-7 pb-10 pt-10`}>
+                <li key={title} className={`tx-feature-card surface-glass ${role} px-7 pb-10 pt-10`}>
                   <span className="tx-feature-icon">
                     <Icon size={26} />
                   </span>
@@ -325,7 +326,7 @@ export default function LandingPage() {
 
         {/* FAQ */}
         <section aria-labelledby="faq-title" className="relative scroll-mt-20 py-20 sm:py-28">
-          <span className="tx-l-glow tx-l-glow-navy -left-60 top-0 h-[520px] w-[560px] opacity-70" aria-hidden="true" />
+          <span className="tx-l-glow tx-l-glow-deep -left-60 top-0 h-[520px] w-[560px] opacity-70" aria-hidden="true" />
           <div className={`${CONTAINER} grid gap-12 lg:grid-cols-[minmax(0,0.78fr)_minmax(0,1.22fr)] lg:gap-16`}>
             <div>
               <h2 id="faq-title" className={`${H2} text-[40px] sm:text-[56px]`}>
@@ -344,7 +345,7 @@ export default function LandingPage() {
             </div>
             <div className="flex flex-col gap-3">
               {FAQ.map((item) => (
-                <details key={item.q} name="tenax-faq" className="tx-faq-item">
+                <details key={item.q} name="tenax-faq" className="tx-faq-item surface-structural">
                   <summary className="flex min-h-14 cursor-pointer items-center justify-between gap-6 px-5 py-4 font-syslabel text-[12px] font-semibold uppercase leading-[18px] tracking-[0.08em] text-ink sm:px-6">
                     <span>{item.q}</span>
                     <span className="tx-faq-plus text-ink/55" aria-hidden="true" />
@@ -376,7 +377,7 @@ export default function LandingPage() {
             <div className="mt-12 flex justify-center">
               <Link
                 href="/app/proof"
-                className="font-syslabel inline-flex min-h-11 items-center rounded-full border border-line px-6 text-[11px] font-semibold uppercase tracking-[0.12em] text-ink/80 transition-colors hover:border-ink/40 hover:text-ink"
+                className="tx-btn-secondary font-syslabel inline-flex min-h-11 items-center rounded-[10px] border px-6 text-[11px] font-semibold uppercase tracking-[0.12em] transition-colors"
               >
                 View recorded decision proofs →
               </Link>
@@ -405,7 +406,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <footer className="border-t border-line bg-[#04060a]">
+      <footer className="border-t border-line bg-[#040605]/85 backdrop-blur-md">
         <div className={`${CONTAINER} grid gap-10 py-14 sm:grid-cols-2 lg:grid-cols-[1.5fr_1fr_1fr_1fr_1.3fr] lg:gap-8`}>
           <div>
             <TenaxWordmark href="/" label="Tenax home" />
@@ -430,12 +431,12 @@ export default function LandingPage() {
           ))}
           <div>
             <p className="font-syslabel text-[10px] font-semibold uppercase tracking-[0.18em] text-mutedink">EXECUTION MODE</p>
-            <p className="mt-5 inline-flex items-center gap-2 rounded-full border border-signal/40 bg-signal/[0.07] px-3 py-1.5 font-syslabel text-[10px] font-semibold uppercase tracking-[0.12em] text-signal">
+            <p className="mt-5 inline-flex items-center gap-2 rounded-[8px] border border-signal/40 bg-signal/[0.07] px-3 py-1.5 font-syslabel text-[10px] font-semibold uppercase tracking-[0.12em] text-signal">
               <TenaxMark size={14} />□ {executionMode}
             </p>
             <Link
               href="/app"
-              className="mt-4 flex min-h-11 w-full max-w-[220px] items-center justify-center rounded-full border border-line font-syslabel text-[11px] font-semibold uppercase tracking-[0.14em] text-ink/80 transition-colors hover:border-ink/40 hover:text-ink"
+              className="tx-btn-secondary mt-4 flex min-h-11 w-full max-w-[220px] items-center justify-center rounded-[10px] border font-syslabel text-[11px] font-semibold uppercase tracking-[0.14em] transition-colors"
             >
               OPEN APP →
             </Link>

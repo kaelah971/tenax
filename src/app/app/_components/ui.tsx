@@ -55,7 +55,7 @@ type ChipTone = "pass" | "refused" | "dryrun" | "live" | "muted";
 const CHIP_STYLES: Record<ChipTone, string> = {
   pass: "border border-pass/40 bg-pass/10 text-pass",
   refused: "border border-clay/50 bg-clay/10 text-clay",
-  dryrun: "border border-ink bg-signal text-ink",
+  dryrun: "border border-exec/50 bg-exec/10 text-exec",
   live: "border border-ink/30 bg-signal text-ink",
   muted: "border border-ink/20 bg-ivory text-ink",
 };
@@ -540,7 +540,7 @@ export function CheckRow({ check, index }: { check: MandateCheck; index: string 
         </span>
       </span>
       {display.tone === "dryrun" ? (
-        <span className="rounded-full border-2 border-ink bg-signal px-2.5 py-0.5 text-[13px] font-bold leading-[18px] text-ink">
+        <span className="rounded-full border border-amber/60 bg-amber/10 px-2.5 py-0.5 text-[13px] font-bold leading-[18px] text-amber">
           {display.label}
         </span>
       ) : (

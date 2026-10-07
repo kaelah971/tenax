@@ -167,7 +167,7 @@ export default async function ExposurePage({
             $500
           </p>
           <p className="pb-1">
-            <span className="state-mark bg-signal text-ink">○ SIMULATED</span>
+            <span className="state-mark text-mutedink">○ SIMULATED</span>
           </p>
         </div>
         <p className="mt-1.5 max-w-xl text-[14px] leading-[20px] text-mutedink">

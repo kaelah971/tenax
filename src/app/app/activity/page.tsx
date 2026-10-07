@@ -10,42 +10,18 @@ import Link from "next/link";
 
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { SESSION_ONLY_NOTICE } from "../_copy";
+import { outcomeBadgeClass, outcomeEdgeClass } from "../_components/signal";
 import {
   DecisionRail,
   Chip,
   ProvenanceStrip,
   flowAuditView,
   latestMeaningfulEvent,
-  type AuditCard,
 } from "../_components/ui";
 
 export const dynamic = "force-dynamic";
 
-function toneClass(tone: AuditCard["tone"]): string {
-  switch (tone) {
-    case "refused":
-    case "failed":
-      return "border-clay/60";
-    case "escalated":
-    case "review":
-      return "border-signal";
-    default:
-      return "border-ink/15";
-  }
-}
 
-function badgeClass(tone: AuditCard["tone"]): string {
-  switch (tone) {
-    case "refused":
-    case "failed":
-      return "bg-clay text-softwhite";
-    case "escalated":
-    case "review":
-      return "bg-signal text-ink";
-    default:
-      return "bg-ink text-softwhite";
-  }
-}
 
 export default async function ActivityPage() {
   const store = getTenaxDevStore();
@@ -69,10 +45,10 @@ export default async function ActivityPage() {
           if (view.kind === "event") {
             const card = view.card;
             return (
-              <li key={flowId} className={`flex flex-col gap-2 border-t-2 py-4 ${toneClass(card.tone)}`}>
+              <li key={flowId} className={`flex flex-col gap-2 border-t py-4 ${outcomeEdgeClass(card.tone)}`}>
                 <div className="flex flex-wrap items-center gap-3">
                   <span className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">{flowId}</span>
-                  <span className={`state-mark ${badgeClass(card.tone)}`}>{card.badge}</span>
+                  <span className={`state-mark ${outcomeBadgeClass(card.tone)}`}>{card.badge}</span>
                   {card.cta ? (
                     <Link href={card.cta.href} className="ml-auto min-h-11 rounded-[9px] border border-ink/70 bg-softwhite/30 px-4 py-2 text-[13px] font-bold leading-[18px] hover:bg-ink hover:text-softwhite">{card.cta.label} →</Link>
                   ) : null}

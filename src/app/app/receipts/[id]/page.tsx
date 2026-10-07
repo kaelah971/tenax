@@ -13,6 +13,7 @@ import { NOT_ADVICE } from "../../_copy";
 import { SceneAnchor } from "../../_components/materials";
 import { DecisionRail, JourneyNav, ProvenanceStrip, receiptJourney } from "../../_components/ui";
 import { TenaxAgent, staggerStyle } from "../../_components/living";
+import { EvidenceStamp, SignalRail, signalRailForReceipt } from "../../_components/signal";
 
 export const dynamic = "force-dynamic";
 
@@ -139,12 +140,30 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             <p className="mt-4 font-display text-[20px] font-bold leading-none tracking-[0.02em] text-ink sm:text-[28px]">
               ACTION CLEARED
             </p>
-            <p className="value-live mt-4 font-syslabel text-[72px] font-semibold leading-none tracking-[-0.02em] drop-shadow-[0_10px_24px_rgba(17,17,17,0.18)] sm:text-[120px]">
+            <p className="value-live mt-4 font-syslabel text-[72px] font-semibold leading-none tracking-[-0.02em] drop-shadow-[0_0_28px_rgba(99,255,42,0.18)] sm:text-[120px]">
               ${receipt.proposedTradeValueUsdt}
             </p>
             <p className="font-syslabel mt-3 text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
               PROTECTION · NVIDIA · NVDAUSDT · USDT-FUTURES · BITGET DEMO
             </p>
+            <div className="mt-6 flex flex-col gap-4">
+              <SignalRail
+                nodes={signalRailForReceipt({
+                  mode: isDemo ? "BITGET_DEMO" : "DRY_RUN",
+                  filled: demo?.filled === true,
+                  hasProof: proofHref !== null,
+                })}
+              />
+              <EvidenceStamp
+                title={proofHref ? "SESSION RECEIPT · DURABLE PROOF LINKED" : "SESSION RECEIPT · NOT DURABLE PROOF"}
+                verified={false}
+                rows={[
+                  ["RECORDED", receipt.timestamp],
+                  ["RECEIPT", receipt.receiptId],
+                  ["MODE", isDemo ? "BITGET DEMO · VIRTUAL FUNDS" : "DRY RUN · NO FUNDS MOVED"],
+                ]}
+              />
+            </div>
           </div>
           <SceneAnchor className="tx-floating-mascot flex flex-col items-center gap-4">
             <TenaxAgent state="complete" size={104} caption="DECISION RECORDED" className="mascot-scale" />
@@ -166,7 +185,7 @@ export default async function ReceiptPage({ params }: { params: Promise<{ id: st
             <li
               key={stage.index}
               style={staggerStyle(i)}
-              className="tx-rule flex flex-col gap-1 border-t-2 border-ink py-4 sm:flex-row sm:items-baseline sm:gap-6"
+              className="tx-rule flex flex-col gap-1 border-t border-ink py-4 sm:flex-row sm:items-baseline sm:gap-6"
             >
               <span className="font-syslabel w-24 shrink-0 text-[11px] leading-[14px] text-mutedink">
                 {stage.index} {stage.title}

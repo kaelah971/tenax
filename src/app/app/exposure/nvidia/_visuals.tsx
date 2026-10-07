@@ -233,11 +233,11 @@ export function CandleChart({
               x2={g.padL + g.plotW}
               y1={g.y(v)}
               y2={g.y(v)}
-              stroke="#A0B6D4"
+              stroke="#C9D3CC"
               strokeOpacity="0.1"
               strokeWidth="1"
             />
-            <text x={g.W - 4} y={g.y(v) + 4} textAnchor="end" fontSize="10.5" fill="#8B97A8">
+            <text x={g.W - 4} y={g.y(v) + 4} textAnchor="end" fontSize="10.5" fill="#919B94">
               {v.toFixed(2)}
             </text>
           </g>
@@ -254,7 +254,7 @@ export function CandleChart({
                 x2={cx}
                 y1={g.y(c.h)}
                 y2={g.y(c.l)}
-                stroke={up ? "#45E0CF" : "#C3CEDC"}
+                stroke={up ? "#66F2A2" : "#C9D3CC"}
                 strokeOpacity="0.75"
                 strokeWidth="1.25"
               />
@@ -263,8 +263,8 @@ export function CandleChart({
                 y={top}
                 width={bodyW}
                 height={height}
-                fill={up ? "#45E0CF" : "#0C1118"}
-                stroke={up ? "#45E0CF" : "#C3CEDC"}
+                fill={up ? "#66F2A2" : "#0D110F"}
+                stroke={up ? "#66F2A2" : "#C9D3CC"}
                 strokeWidth="1.25"
               />
             </g>
@@ -277,7 +277,7 @@ export function CandleChart({
             y={g.H - 6}
             textAnchor="middle"
             fontSize="10.5"
-            fill="#8B97A8"
+            fill="#919B94"
           >
             {formatCandleTime(candles[i]?.t ?? 0, interval)}
           </text>
@@ -289,19 +289,19 @@ export function CandleChart({
               x2={g.padL + g.plotW}
               y1={actionY}
               y2={actionY}
-              stroke="#E6ECF4"
+              stroke="#F3F6F3"
               strokeOpacity="0.7"
               strokeDasharray="6 4"
               strokeWidth="1.5"
             />
             {dotX !== null ? (
-              <circle cx={dotX} cy={actionY} r="6" fill="#45E0CF" stroke="#05070B" strokeWidth="2.5" />
+              <circle cx={dotX} cy={actionY} r="6" fill="#63FF2A" stroke="#050706" strokeWidth="2.5" />
             ) : null}
-            <rect x={labelX} y={labelY} width="192" height="52" rx="8" fill="#0A0F15" stroke="#45E0CF" strokeOpacity="0.45" />
-            <text x={labelX + 12} y={labelY + 21} fill="#45E0CF" fontSize="11" fontWeight="800" letterSpacing="1">
+            <rect x={labelX} y={labelY} width="192" height="52" rx="8" fill="#080B0A" stroke="#63FF2A" strokeOpacity="0.45" />
+            <text x={labelX + 12} y={labelY + 21} fill="#63FF2A" fontSize="11" fontWeight="800" letterSpacing="1">
               TENAX PROTECTION
             </text>
-            <text x={labelX + 12} y={labelY + 39} fill="#E6ECF4" fontSize="12.5" fontWeight="700">
+            <text x={labelX + 12} y={labelY + 39} fill="#F3F6F3" fontSize="12.5" fontWeight="700">
               SHORT {action.qty} ENTRY {action.avgPrice}
             </text>
           </g>

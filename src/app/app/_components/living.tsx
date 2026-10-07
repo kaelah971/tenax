@@ -9,6 +9,7 @@
 import type { CSSProperties, ReactNode } from "react";
 
 import AgentFigure from "./AgentFigure";
+import { SignalField, type SignalFieldVariant } from "./signal-field";
 
 export type AgentState =
   | "idle"
@@ -83,7 +84,7 @@ export function TenaxAgent({
 }) {
   const presence = agentPresence(state);
   const glowColor =
-    presence.glow === "signal" ? "#45E0CF" : presence.glow === "clay" ? "#FF6F61" : "#5B6B80";
+    presence.glow === "signal" ? "#63FF2A" : presence.glow === "clay" ? "#FF665F" : "#4E5A52";
   const glowClass =
     presence.glow === "signal"
       ? "tx-agent-glow-pass"
@@ -123,22 +124,9 @@ export function TenaxAgent({
   );
 }
 
-/** Tenax environment: bloom, glow fields, grid, paths, blobs, grain. */
-export function TenaxEnvironment({ bloom = false }: { bloom?: boolean }) {
-  return (
-    <div className="tx-env" aria-hidden="true">
-      <div className={`tx-env-bloom${bloom ? " tx-env-bloom-pass" : ""}`} />
-      <div className="tx-env-glow tx-env-glow-l" />
-      <div className="tx-env-glow tx-env-glow-r" />
-      <div className="tx-env-grid" />
-      <div className="tx-env-path" />
-      <div className="tx-env-path tx-env-path-right" />
-      <div className="tx-env-blob tx-env-blob-a" />
-      <div className="tx-env-blob tx-env-blob-b" />
-      <div className="tx-env-shape" />
-      <div className="tx-env-grain" />
-    </div>
-  );
+/** Tenax environment: the shared green signal field (see signal-field.tsx). */
+export function TenaxEnvironment({ variant = "dashboard" }: { variant?: SignalFieldVariant }) {
+  return <SignalField variant={variant} />;
 }
 
 /** Animated LIVE indicator. `hot=false` renders a quiet static marker. */
@@ -172,17 +160,17 @@ export function Sparkline({ className = "" }: { className?: string }) {
     >
       <defs>
         <linearGradient id="txs-fill" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#45E0CF" stopOpacity="0.32" />
-          <stop offset="0.7" stopColor="#45E0CF" stopOpacity="0.05" />
-          <stop offset="1" stopColor="#45E0CF" stopOpacity="0" />
+          <stop offset="0" stopColor="#63FF2A" stopOpacity="0.32" />
+          <stop offset="0.7" stopColor="#63FF2A" stopOpacity="0.05" />
+          <stop offset="1" stopColor="#63FF2A" stopOpacity="0" />
         </linearGradient>
         <linearGradient id="txs-line" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0" stopColor="#62D6FF" stopOpacity="0.2" />
-          <stop offset="0.6" stopColor="#45E0CF" stopOpacity="0.85" />
-          <stop offset="1" stopColor="#45E0CF" />
+          <stop offset="0" stopColor="#123D16" stopOpacity="0.2" />
+          <stop offset="0.6" stopColor="#63FF2A" stopOpacity="0.85" />
+          <stop offset="1" stopColor="#63FF2A" />
         </linearGradient>
       </defs>
-      <g fill="#A0B6D4" opacity="0.16">
+      <g fill="#C9D3CC" opacity="0.16">
         {Array.from({ length: 12 }, (_, c) =>
           Array.from({ length: 3 }, (_, r) => (
             <circle key={`${c}-${r}`} cx={14 + c * 24} cy={16 + r * 26} r="1" />
@@ -202,8 +190,8 @@ export function Sparkline({ className = "" }: { className?: string }) {
         strokeLinejoin="round"
         className="spark-draw"
       />
-      <circle cx="255" cy="22" r="7" fill="#45E0CF" opacity="0.25" className="spark-end" />
-      <circle cx="255" cy="22" r="4" fill="#45E0CF" stroke="#05070B" strokeWidth="2" />
+      <circle cx="255" cy="22" r="7" fill="#63FF2A" opacity="0.25" className="spark-end" />
+      <circle cx="255" cy="22" r="4" fill="#63FF2A" stroke="#050706" strokeWidth="2" />
     </svg>
   );
 }

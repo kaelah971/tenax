@@ -12,6 +12,7 @@ import { getPaperTradingRunRepository } from "@/lib/tenax/paper-trading-run-repo
 import { formatProofTime, formatProofUsd, proofKindLabel, proofTone } from "@/lib/proof/display";
 import type { JudgeProof } from "@/lib/proof/model";
 import { DecisionRail, ProvenanceStrip } from "../../_components/ui";
+import { EvidenceStamp, outcomeBadgeClass, SignalRail, signalRailForProof } from "../../_components/signal";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -26,18 +27,6 @@ function Row({ term, value }: { term: string; value: string }) {
   );
 }
 
-function badgeClass(kind: JudgeProof["kind"]): string {
-  switch (proofTone(kind)) {
-    case "refused":
-    case "failed":
-      return "bg-clay text-softwhite";
-    case "escalated":
-    case "review":
-      return "bg-signal text-ink";
-    default:
-      return "bg-ink text-softwhite";
-  }
-}
 
 export default async function ProofDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -96,7 +85,7 @@ export default async function ProofDetailPage({ params }: { params: Promise<{ id
           VERIFIED DECISION HISTORY · HISTORICAL RECORD
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-3">
-          <span className={`state-mark ${badgeClass(proofRecord.kind)}`}>{proofKindLabel(proofRecord.kind)}</span>
+          <span className={`state-mark ${outcomeBadgeClass(proofTone(proofRecord.kind))}`}>{proofKindLabel(proofRecord.kind)}</span>
           <span className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">
             NVIDIA · NVDAUSDT
           </span>
@@ -109,6 +98,24 @@ export default async function ProofDetailPage({ params }: { params: Promise<{ id
           {durabilityLabel}
           {formatProofTime(proofRecord.createdAt)} · {proofRecord.id}
         </p>
+        <div className="mt-5 flex flex-col gap-4">
+          <SignalRail nodes={signalRailForProof(proofRecord.kind)} />
+          <EvidenceStamp
+            title={
+              handle.durabilityState === "DURABLE"
+                ? "VERIFIED RECORD"
+                : handle.durabilityState === "EPHEMERAL"
+                  ? "EPHEMERAL RECORD · NOT DURABLE"
+                  : "RECORD · DURABILITY UNVERIFIED"
+            }
+            verified={handle.durabilityState === "DURABLE"}
+            rows={[
+              ["RECORDED", formatProofTime(proofRecord.provenance.recordedAt)],
+              ["PROOF", proofRecord.id],
+              ["SOURCE", proofRecord.provenance.evidenceSource],
+            ]}
+          />
+        </div>
       </div>
 
       <section aria-label="Outcome" className="tx-material-editorial border-t-2 border-ink pt-4">

@@ -10,7 +10,7 @@ import { resolveExecutionMode } from "@/lib/tenax/execution";
 import { getTenaxDevStore } from "@/lib/tenax/dev-store";
 import { getUnreadNotificationCount } from "@/lib/tenax/notifications";
 import { TenaxWordmark } from "./_components/brand";
-import { TenaxEnvironment } from "./_components/living";
+import AppSignalField from "./_components/AppSignalField";
 import NotificationBell from "./_components/NotificationBell";
 import SessionBootstrap from "./_components/SessionBootstrap";
 import ShellNav from "./_components/ShellNav";
@@ -23,9 +23,9 @@ export default function AppLayout({ children }: { children: ReactNode }) {
   const initialUnread = getUnreadNotificationCount(getTenaxDevStore());
   return (
     <div className="tx-observatory-app min-h-screen text-ink">
-      <TenaxEnvironment />
+      <AppSignalField />
       <SessionBootstrap />
-      <header className="sticky top-0 z-30 border-b border-line bg-ivory/70 backdrop-blur-xl">
+      <header className="sticky top-0 z-30 border-b border-line bg-ivory/75 backdrop-blur-lg">
         <div className="relative mx-auto flex min-h-16 w-full max-w-[1408px] flex-wrap items-center gap-x-4 gap-y-3 px-4 py-3 sm:gap-x-6 sm:px-6">
           <TenaxWordmark href="/app" label="Tenax Capital home" />
           <ShellNav />
