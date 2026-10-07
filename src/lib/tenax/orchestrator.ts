@@ -245,6 +245,30 @@ export class ProtectionFlow {
     return this.analysis;
   }
 
+  /**
+   * Seat a judge-demo analysis (DEVELOPMENT_FIXTURE only, never model).
+   * The demo proposal values are the controlled input; authority still
+   * comes from the real mandate evaluation inside the seated analysis.
+   * Production flows use analyze()/adoptAnalysis(); this changes none
+   * of their behavior.
+   */
+  adoptDemoAnalysis(mandate: Mandate, analysis: ProtectionAnalysis): ProtectionAnalysis {
+    this.require("INTENT_READY", "adopt demo analysis");
+    if (analysis.reasoning.kind !== "development-fixture") {
+      throw new FlowTransitionError(
+        this.state,
+        "adopt demo analysis",
+        "demo analyses must be kind development-fixture — model output is never seated here",
+      );
+    }
+    this.mandate = mandate;
+    this.analysis = analysis;
+    this.aiAudit = null;
+    this.analyzedAt = new Date().toISOString();
+    this.state = "ANALYZED";
+    return this.analysis;
+  }
+
   evaluate(): MandateDecision {
     this.require("ANALYZED", "evaluate mandate");
     const decision = (this.analysis as ProtectionAnalysis).authority.mandateDecision;

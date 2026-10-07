@@ -235,6 +235,9 @@ export default function LandingPage() {
                 <Link href="/app/protect/nvidia" className={CTA}>
                   SEE TENAX IN ACTION <span className="tx-l-arrow" aria-hidden="true">→</span>
                 </Link>
+                <Link href="/app/demo" className="font-syslabel inline-flex min-h-12 items-center justify-center rounded-[11px] border border-line px-6 text-[12px] font-semibold uppercase tracking-[0.12em] text-ink/80 transition-colors hover:border-ink/40 hover:text-ink">
+                  SEE DEMO <span className="tx-l-arrow" aria-hidden="true">→</span>
+                </Link>
                 <p className="font-syslabel text-[10px] uppercase tracking-[0.14em] text-mutedink">
                   □ EXECUTION MODE · {executionMode}
                 </p>

@@ -99,6 +99,12 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Hosted judge demo (RUNNABLE_JUDGE_DEMO_READY)
+- /app/demo + POST /api/demo/run (POST-only) run the real domain path on controlled 40%/$200 fixture input: exposure fixture → intent → demo-seated analysis (new minimal ProtectionFlow.adoptDemoAnalysis, fixture-kind-guarded) → real mandate REFUSE → recordDeterministicRefusal seam (activity + POLICY_REFUSED proof + NO_ORDER run). Zero network/creds/AI/MCP; execution unreachable by construction. Reruns mint fresh demo-<ms> flow identities (behavior A).
+- Landing SEE DEMO added beside hero CTA (OPEN APP preserved); docs/JUDGE_QUICKSTART.md (hosted-first + local + env table + Demo connection + capability table) + README pointer added.
+- Manually exercised live on dev server: demo run paper-run:v1:demo-1791394814469 persisted DURABLE (first canonical demo run, honestly labeled), run/proof/demo pages 200, export + summary reflect 1 refusal / prevention 1 / Sharpe INSUFFICIENT DATA.
+- 7 new judge-demo tests; full suite 918 pass (59 files); tsc/lint/build/diff-check clean. No commit.
+
 ## Typography pass (TYPOGRAPHY_READY_JUDGE_JOURNEY_EVENT_SOURCE_BLOCKED)
 - Previous system: Rajdhani/Georama loaded but headings actually rendered in fallback sans (font-display utility unused); labels already system-mono. Final: Barlow Condensed 600/700 for display + IBM Plex Mono 400/500/600 as the primary UI voice, both via next/font/google (latin), centralized through --font-display/--font-syslabel tokens; no scattered font-family, no binaries, no stroke effects.
 - Headings (h1s, NVIDIA EARNINGS, verdicts, ACTION CLEARED, gate word) on font-display at loaded 700 with eased tracking; financial/decision numerals ($500, prices, %, mandate rows, summaries) on font-syslabel (inherently tabular + global tabular-nums); 0.08em label tracking preserved; Georama/Inter body kept for long-form readability.

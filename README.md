@@ -1,5 +1,7 @@
 # TENAX
 
+> Judge? Start here → [docs/JUDGE_QUICKSTART.md](docs/JUDGE_QUICKSTART.md)
+
 ### Give AI permission to act. Not unlimited control of your capital.
 
 Tenax is a **programmable financial authority layer for autonomous capital**.
