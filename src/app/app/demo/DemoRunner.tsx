@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import type { JudgeDemoResult } from "@/lib/tenax/judge-demo";
+import { DEMO_TAKEAWAY_LINE } from "../_copy";
 import { AuthorityInstrument } from "../_components/materials";
 import { staggerStyle } from "../_components/living";
 
@@ -90,6 +91,9 @@ export default function DemoRunner() {
             <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">PROVENANCE</dt><dd className="mt-1 text-[20px] font-extrabold leading-none">{result.provenance}</dd></div>
             <div><dt className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">PROPOSAL</dt><dd className="mt-1 text-[20px] font-extrabold leading-none">{result.protectionPct}% · ${result.proposedTradeValueUsdt}</dd></div>
           </dl>
+          <p className="mt-4 max-w-2xl text-[15px] font-bold leading-[22px] text-softwhite/90">
+            {DEMO_TAKEAWAY_LINE}
+          </p>
           <nav aria-label="Demo evidence" className="mt-5 flex flex-wrap items-center gap-2">
             <Link href={`/app/paper-trading/${encodeURIComponent(result.runId)}`} className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-5 py-3 text-[13px] font-bold leading-[18px] tracking-[0.02em] text-ink hover:brightness-95">
               VIEW PAPER-TRADING RUN <span className="btn-arrow" aria-hidden="true">→</span>

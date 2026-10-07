@@ -28,6 +28,7 @@ export default async function EventsPage() {
       <div className="tx-material-editorial border-t-2 border-ink pt-7 sm:pt-10">
         <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EVENT ROOM · INTELLIGENCE</p>
         <h1 className="mt-3 max-w-3xl font-display text-[42px] font-bold leading-[0.95] tracking-[-0.01em] sm:text-[72px]">Events affecting your capital.</h1>
+        <p className="mt-4 max-w-2xl text-[15px] leading-[22px] text-mutedink">Events create risk. Tenax turns that context into a proposed action — but the proposal still has no authority to trade.</p>
       </div>
 
       <AuthorityInstrument as="section" className={`relative overflow-hidden rounded-[18px] p-5 sm:p-8 ${!live ? "opacity-90" : ""}`}>
@@ -55,7 +56,7 @@ export default async function EventsPage() {
                 <ClearInstrument className="tx-observation-pane p-4"><div className="flex flex-wrap items-center justify-between gap-3"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">PROVENANCE</p><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em]">● LIVE BITGET DATA</p></div></ClearInstrument>
               </EvidenceStack>
             ) : <div className="tx-observation-pane tx-observation-pane-muted p-5"><p className="text-[16px] leading-[24px] text-softwhite/80">{EVENT_UNAVAILABLE_LINE}</p></div>}
-            <Link href="/app/protect/nvidia" className="btn-living mt-7 inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">PROTECT THIS POSITION <span className="btn-arrow" aria-hidden="true">→</span></Link>
+            <Link href="/app/protect/nvidia" className="btn-living mt-7 inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-6 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">ANALYZE PROTECTION <span className="btn-arrow" aria-hidden="true">→</span></Link>
           </div>
         </div>
       </AuthorityInstrument>

@@ -117,6 +117,9 @@ export default async function ProofPage({
             Proof
           </h1>
           <p className="mt-3 max-w-2xl text-[15px] leading-[22px] text-mutedink">
+            Tenax keeps a durable record of what the AI proposed, what the authority layer decided, and whether anything actually executed.
+          </p>
+          <p className="mt-2 max-w-2xl text-[15px] leading-[22px] text-mutedink">
             Durable records of what Tenax executed, escalated, refused, or sent for human review.
           </p>
         </div>

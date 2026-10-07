@@ -99,6 +99,10 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Product clarity B8 (TENAX_PRODUCT_CLARITY_READY)
+- Copy-only slice: capital orientation line; Event Room risk→proposal line + ANALYZE PROTECTION CTA; analysis proposal-not-permission line + live proposed-vs-mandate REFUSE compare (values from canonical state, never hardcoded); proof why-care sentence; demo teaching stages + completion takeaway; MARKET DATA · LIVE and AI ANALYSIS · READY replace ambiguous labels. Landing/nav/authority semantics untouched (landing already carries the model story).
+- 10 new clarity tests; full suite 928 pass (60 files); tsc/lint/build/diff-check clean; all journey surfaces walked live at 200. No commit.
+
 ## Hosted judge demo (RUNNABLE_JUDGE_DEMO_READY)
 - /app/demo + POST /api/demo/run (POST-only) run the real domain path on controlled 40%/$200 fixture input: exposure fixture → intent → demo-seated analysis (new minimal ProtectionFlow.adoptDemoAnalysis, fixture-kind-guarded) → real mandate REFUSE → recordDeterministicRefusal seam (activity + POLICY_REFUSED proof + NO_ORDER run). Zero network/creds/AI/MCP; execution unreachable by construction. Reruns mint fresh demo-<ms> flow identities (behavior A).
 - Landing SEE DEMO added beside hero CTA (OPEN APP preserved); docs/JUDGE_QUICKSTART.md (hosted-first + local + env table + Demo connection + capability table) + README pointer added.

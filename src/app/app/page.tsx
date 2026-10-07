@@ -19,7 +19,6 @@ export default async function CapitalPage() {
   const executionMode = resolveExecutionMode(process.env);
   const live = snapshot.availability !== "UNAVAILABLE";
   const ticker = snapshot.ticker.data;
-  const instrument = snapshot.instrument.data;
   const sessionState = snapshot.sessions.data?.currentState ?? "UNKNOWN";
 
   return (
@@ -43,6 +42,7 @@ export default async function CapitalPage() {
                 <p className="mt-1 text-[11px] leading-[14px] text-mutedink">No funds represented as live ownership.</p>
               </div>
             </div>
+            <p className="mt-5 max-w-xl text-[15px] leading-[22px] text-mutedink">Tenax watches this capital, lets AI propose actions, then checks every proposal against your limits before anything can execute.</p>
           </div>
           <SceneAnchor className="tx-floating-mascot -mb-3 justify-self-end sm:-mr-5">
             <TenaxAgent state="watching" size={156} caption="WATCHING YOUR EXPOSURE" className="mascot-scale" />
@@ -53,7 +53,7 @@ export default async function CapitalPage() {
           <LightInstrument className="tx-instrument-dock p-4 sm:p-5">
             <div aria-label="Live market signal" className="flex flex-wrap items-center gap-3">
               <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">LIVE_SIGNAL · RNVDAUSDT · BITGET REALITY</p>
-              {live ? <span className="state-mark ml-auto bg-signal text-ink"><LiveDot label={`LIVE · ${instrument?.status?.toUpperCase() ?? "—"}`} /></span> : null}
+              {live ? <span className="state-mark ml-auto bg-signal text-ink"><LiveDot label="MARKET DATA · LIVE" /></span> : null}
             </div>
             {live ? (
               <div className="mt-4 grid grid-cols-2 gap-x-5 gap-y-4 sm:grid-cols-4">
@@ -87,7 +87,7 @@ export default async function CapitalPage() {
             <div className="mb-3 flex items-center gap-3"><span className="tx-watching-slit" aria-hidden="true" /><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-signal">WATCHING · EVIDENCE STATUS</p></div>
             <EvidenceStack>
               <ClearInstrument className="tx-observation-pane p-4"><div className="flex items-center justify-between gap-4"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">MARKET SESSION</p><p className="text-[16px] font-bold leading-[20px]">{sessionState}</p></div></ClearInstrument>
-              <ClearInstrument className="tx-observation-pane p-4"><div className="flex items-center justify-between gap-4"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">AGENT STATUS</p><p className="text-[16px] font-bold leading-[20px] text-signal">ASSESSMENT AVAILABLE</p></div></ClearInstrument>
+              <ClearInstrument className="tx-observation-pane p-4"><div className="flex items-center justify-between gap-4"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">AI ANALYSIS</p><p className="text-[16px] font-bold leading-[20px] text-signal">READY</p></div></ClearInstrument>
               <ClearInstrument className="tx-observation-pane p-4"><div className="flex items-center justify-between gap-4"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">PROVENANCE</p><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em]">● LIVE BITGET DATA</p></div></ClearInstrument>
             </EvidenceStack>
             <div className="mt-6 flex items-center justify-between gap-4"><p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-softwhite/55">{live ? `MARKET DATA · ${formatMarketTime(snapshot.fetchedAt)}` : "MARKET OFFLINE"}</p><Link href="/app/protect/nvidia" className="btn-living inline-flex min-h-11 items-center justify-center rounded-[11px] bg-signal px-5 py-3 text-[14px] font-bold leading-[20px] tracking-[0.02em] text-ink hover:brightness-95">PROTECT THIS POSITION <span className="btn-arrow" aria-hidden="true">→</span></Link></div>

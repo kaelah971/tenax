@@ -22,6 +22,13 @@ export const EXECUTION_PREVIEW_CREATED = "Execution preview created — no funds
 
 export const NOT_ADVICE = "Not investment advice. Tenax executes only within your mandate.";
 
+export const PROPOSAL_NOT_PERMISSION_LINE = "This is a proposal, not permission to trade.";
+
+export const OVER_AUTHORITY_LINE = "The AI asked for more authority than it had.";
+
+export const DEMO_TAKEAWAY_LINE =
+  "The AI could recommend the action. It did not have permission to execute it.";
+
 export const AUTHORITY_SEPARATION_LINE =
   "AI can propose. It cannot authorize itself — deterministic rules decide.";
 

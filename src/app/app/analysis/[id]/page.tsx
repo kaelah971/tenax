@@ -30,6 +30,8 @@ import {
 import {
   AUTHORITY_SEPARATION_LINE,
   cumulativeRefusalSentence,
+  OVER_AUTHORITY_LINE,
+  PROPOSAL_NOT_PERMISSION_LINE,
   projectionStatusCopy,
   refusalSentence,
   standingAuthorityCopy,
@@ -101,6 +103,8 @@ export default async function AnalysisPage({
   // mandate is active (B3 policies may differ from the fixture).
   const projectionMaxPct =
     standingMandate?.policy.maxProtectionPct ?? MANDATE_FIXTURE.maxProtectionPct;
+  const projectionMaxUsd =
+    standingMandate?.policy.maxNotionalUsdt ?? MANDATE_FIXTURE.maxTradeValueUsdt;
   const projection = surfaceProjection(
     surface.position,
     proposedUsd,
@@ -222,6 +226,9 @@ export default async function AnalysisPage({
           </div>
         </dl>
         <p className="mt-3 max-w-2xl text-[17px] font-bold leading-[24px]">{analysis.reasoning.summary}</p>
+        <p className="font-syslabel mt-2 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+          {PROPOSAL_NOT_PERMISSION_LINE}
+        </p>
         <ul className="mt-3 flex flex-col gap-1.5">
           {analysis.reasoning.riskObservations.map((observation, i) => (
             <li
@@ -371,6 +378,12 @@ export default async function AnalysisPage({
               <span className="state-mark bg-clay text-softwhite">TENAX REFUSED</span>
             </p>
             <p className="max-w-2xl text-[18px] font-bold leading-[26px]">{refusalText}</p>
+            <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              AI PROPOSED {analysis.proposal.protectionPct}% · ${analysis.proposal.proposedTradeValueUsdt} — MANDATE ALLOWS {projectionMaxPct}% · ${projectionMaxUsd}
+            </p>
+            <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
+              {OVER_AUTHORITY_LINE}
+            </p>
             <p className="font-syslabel text-[11px] uppercase leading-[18px] tracking-[0.08em] text-mutedink">
               Reason: {refusalCode}
             </p>
