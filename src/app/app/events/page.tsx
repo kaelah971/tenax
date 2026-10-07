@@ -2,7 +2,8 @@
 import Link from "next/link";
 
 import { getDemoSnapshot } from "@/lib/bitget/snapshot-cache";
-import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE } from "../_copy";
+import { probeNvidiaEventSource } from "@/lib/intelligence/nvidia-events.ts";
+import { DATE_UNAVAILABLE_LINE, EVENT_UNAVAILABLE_LINE, LIVE_EVENT_SOURCE_UNAVAILABLE_LINE, NO_ELIGIBLE_EVENT_LINE } from "../_copy";
 import { AuthorityInstrument, ClearInstrument, EvidenceStack } from "../_components/materials";
 import { DecisionRail, ProvenanceStrip } from "../_components/ui";
 import { LiveDot, TenaxAgent } from "../_components/living";
@@ -14,6 +15,12 @@ export default async function EventsPage() {
   const live = snapshot.availability !== "UNAVAILABLE";
   const forecast = snapshot.earningsForecast.data;
   const sessionState = snapshot.sessions.data?.currentState ?? "UNKNOWN";
+  // Verified earnings-calendar state (Bitget MCP, read-only, bounded).
+  // A dead source is a safety state, never a failure and never a reason
+  // to invent, reuse stale data, or fall back to fixture content.
+  const calendarState = await probeNvidiaEventSource({ timeoutMs: 12_000 }).catch(() =>
+    ({ kind: "SOURCE_UNAVAILABLE" as const }),
+  );
 
   return (
     <div className="tx-observatory-entry flex flex-col gap-8 pt-7 sm:gap-10 sm:pt-10">
@@ -53,7 +60,35 @@ export default async function EventsPage() {
         </div>
       </AuthorityInstrument>
 
-      <ProvenanceStrip items={[live ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO"]} />
+      <section aria-label="Verified event calendar" className="tx-material-editorial border-t-2 border-ink pt-4">
+        <div className="flex flex-wrap items-center gap-3">
+          <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">VERIFIED EVENT CALENDAR · BITGET MCP</p>
+          {calendarState.kind === "LIVE_VERIFIED_EVENT" ? (
+            <span className="state-mark bg-signal text-ink"><LiveDot label="VERIFIED" /></span>
+          ) : (
+            <span className="state-mark border-clay text-clay">NO VERIFIED EVENT</span>
+          )}
+        </div>
+        {calendarState.kind === "LIVE_VERIFIED_EVENT" ? (
+          <dl className="mt-3 grid grid-cols-2 gap-x-4 gap-y-2.5 sm:grid-cols-4">
+            <div className="min-w-0 border-t border-ink/15 pt-2"><dt className="font-syslabel truncate text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">EVENT</dt><dd className="mt-1 text-[14px] font-bold leading-[18px]">NVIDIA {calendarState.event.eventType}</dd></div>
+            <div className="min-w-0 border-t border-ink/15 pt-2"><dt className="font-syslabel truncate text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">DATE</dt><dd className="mt-1 text-[14px] font-bold leading-[18px]">{calendarState.event.eventDate ?? "UNVERIFIED"}</dd></div>
+            <div className="min-w-0 border-t border-ink/15 pt-2"><dt className="font-syslabel truncate text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">SOURCE</dt><dd className="mt-1 truncate text-[14px] font-bold leading-[18px]">{calendarState.event.source}</dd></div>
+            <div className="min-w-0 border-t border-ink/15 pt-2"><dt className="font-syslabel truncate text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">RETRIEVED</dt><dd className="mt-1 truncate text-[14px] font-bold leading-[18px]">{calendarState.event.retrievedAt}</dd></div>
+          </dl>
+        ) : (
+          <div className="tx-observation-pane tx-observation-pane-muted mt-3 p-5">
+            <p className="text-[16px] leading-[24px] text-softwhite/80">
+              {calendarState.kind === "SOURCE_UNAVAILABLE" ? LIVE_EVENT_SOURCE_UNAVAILABLE_LINE : NO_ELIGIBLE_EVENT_LINE}
+            </p>
+            <p className="font-syslabel mt-2 text-[11px] uppercase leading-[18px] tracking-[0.08em] text-softwhite/55">
+              SOURCE INTEGRITY HELD — NOT AN APPLICATION FAILURE
+            </p>
+          </div>
+        )}
+      </section>
+
+      <ProvenanceStrip items={[live ? "LIVE BITGET DATA" : "BITGET DATA UNAVAILABLE", "SIMULATED PORTFOLIO", calendarState.kind === "LIVE_VERIFIED_EVENT" ? "VERIFIED MCP EVENT" : "NO VERIFIED EVENT"]} />
     </div>
   );
 }

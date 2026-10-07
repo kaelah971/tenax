@@ -99,6 +99,19 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Judge-path hardening (JUDGE_PATH_READY_EVENT_SOURCE_BLOCKED)
+- Event source now has a typed judge-facing state: LIVE_VERIFIED_EVENT / SOURCE_UNAVAILABLE / NO_ELIGIBLE_EVENT via probeNvidiaEventSource (fetchTrustedNvidiaEvent kept as the null-wrapper; route callers untouched). Dead source can never become fixture content, a date, or a proposal seed (tested).
+- Event Room gained a VERIFIED EVENT CALENDAR · BITGET MCP panel (bounded 12s server probe): verified date+source+retrievedAt when live, else explicit integrity copy ("Live event source unavailable … No AI decision generated … SOURCE INTEGRITY HELD — NOT AN APPLICATION FAILURE") plus NO VERIFIED EVENT provenance. No hardcoded dates; existing cassette untouched.
+- Fixture/live audit: analysis page already separates AI ANALYSIS vs DEVELOPMENT ANALYSIS; run/proof surfaces already render NO ORDER SENT as authority outcomes. No silent fallback paths exist (probe failures yield typed states, never fixture mode).
+- Live re-check this slice: still SOURCE_UNAVAILABLE — no AI call, no writes. Recovery needs no code changes: route already consumes fetchTrustedNvidiaEvent; a future VERIFIED event flows into a materially new pack automatically.
+- 7 new judge-path tests; full suite 868 pass (54 files); tsc/lint/build/diff-check clean. No commit.
+
+## MCP event-source wiring 2026-10-07 (BLOCKED_EVENT_SOURCE)
+- Live-inspected https://agent.bitget.com/mcp (bitget-mcp-server 4.0.5): initialize → session id → tools/list shows exactly 2 tools (guide catalog browser, do_query executor). Resolved the earnings-calendar entry live from the catalog (equity_calendar). Added dependency-free server-only transport (src/lib/intelligence/bitget-mcp.ts) + wired fetchTrustedNvidiaEvent to guide→do_query with conservative single-upcoming-date extraction (key provenance, upcoming-only, ambiguous/past-only → null).
+- Live result: agent-data-platform upstream returns 503 for EVERY data query (equity_calendar x2, equity_price_quote, crypto_spot_ticker) — gateway/catalog healthy, all data down. Boundary honestly returns null; no AI call made (no material change exists); no writes.
+- 8 new MCP/event tests (+1 contract-test live-call removal); full suite 861 pass (53 files); tsc/lint/build/diff-check clean. No commit.
+- Retry of the calendar is allowed on a later materially-different source state (upstream recovery); same-evidence AI reruns remain prohibited.
+
 ## Terminal-evidence fix (no live calls, no writes)
 - Fixed analyze-route provenance: AI analyses now report analysis:AI_MODEL (fixture stays DEVELOPMENT_FIXTURE); receipt evidence string derives the same way. No hash changes (provenance is display truth, not pack input).
 - New DETERMINISTIC_POLICY_REFUSED activity → POLICY_REFUSED proof (authority DETERMINISTIC_MANDATE, NO ORDER SENT, explicit reason codes) → canonical run (REFUSE/NO_ORDER, AI attribution preserved). Wired into the analyze route on REFUSE verdicts and the agent-cycle POLICY_REFUSED/NO_STANDING_MANDATE branches; WAIT stays a non-refusal; per-flow idempotent. ESCALATE/REVIEW paths already emitted and now regression-locked.

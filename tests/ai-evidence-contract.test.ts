@@ -179,7 +179,14 @@ describe("funding context and event evidence", () => {
   });
 
   it("unavailable events stay unavailable with no fabricated date", async () => {
-    expect(await fetchTrustedNvidiaEvent()).toBeNull();
+    // Unreachable source (stubbed transport failure) stays null.
+    expect(
+      await fetchTrustedNvidiaEvent({
+        fetchImpl: async () => {
+          throw new Error("offline");
+        },
+      }),
+    ).toBeNull();
     const pack = buildEvidencePack({
       exposure: NVDA_EXPOSURE_FIXTURE,
       intent: testIntent(),

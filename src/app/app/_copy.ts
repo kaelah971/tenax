@@ -27,6 +27,12 @@ export const DATE_UNAVAILABLE_LINE = "Date unavailable — no verified NVIDIA ea
 export const EVENT_UNAVAILABLE_LINE =
   "Event data unavailable. Tenax will not propose actions on stale data.";
 
+export const LIVE_EVENT_SOURCE_UNAVAILABLE_LINE =
+  "Live event source unavailable — the Bitget calendar feed is unreachable. No AI decision generated from events.";
+
+export const NO_ELIGIBLE_EVENT_LINE =
+  "No eligible upcoming NVIDIA event found in the verified calendar. No AI decision generated from events.";
+
 export const SESSION_ONLY_NOTICE =
   "Session activity resets when the server restarts. Verified decision proof is stored separately in durable history.";
 
