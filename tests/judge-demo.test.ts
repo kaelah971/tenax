@@ -10,10 +10,13 @@ import { readFileSync } from "node:fs";
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { hashProposal } from "../src/lib/tenax/approval";
-import { createDevStore } from "../src/lib/tenax/index";
+import { fetchRealityBundle } from "../src/lib/bitget/reality";
+import { normalizeNvidiaSnapshot } from "../src/lib/intelligence/snapshot";
+import { createDevStore, getDecisionReceipt } from "../src/lib/tenax/index";
 import {
   JUDGE_DEMO_PROVENANCE,
   runJudgeDemo,
+  runJudgeExecutionDemo,
 } from "../src/lib/tenax/judge-demo";
 import { getProofRepository } from "../src/lib/proof/repository";
 import {
@@ -21,6 +24,8 @@ import {
   resetPaperTradingRunRepositoryForTests,
 } from "../src/lib/tenax/paper-trading-run-repository";
 import { POST as demoRunPost } from "../src/app/api/demo/run/route";
+import { calculatePaperTradingMetrics } from "../src/lib/tenax/paper-trading-metrics";
+import { FULL_PAYLOADS, stubClientFor } from "./fixtures/reality-payloads";
 
 const NOW_A = Date.parse("2026-10-07T12:00:00.000Z");
 const NOW_B = Date.parse("2026-10-07T12:00:01.000Z");
@@ -158,5 +163,114 @@ describe("landing and docs wiring", () => {
     expect(primary).not.toContain("localhost");
     const readme = readFileSync("README.md", "utf8");
     expect(readme).toContain("docs/JUDGE_QUICKSTART.md");
+  });
+});
+
+describe("judge execution demo (authorized preview)", () => {
+  async function testSnapshot() {
+    return normalizeNvidiaSnapshot(
+      await fetchRealityBundle(stubClientFor(FULL_PAYLOADS), { gapMs: 0 }),
+    );
+  }
+
+  it("passes mandate and executes an honest DRY_RUN preview with receipt + run", async () => {
+    const store = createDevStore();
+    const result = await runJudgeExecutionDemo(store, {
+      snapshot: await testSnapshot(),
+    });
+    expect(result.authorityOutcome).toBe("EXECUTE");
+    expect(result.executionStatus).toBe("PREVIEW");
+    expect(result.mandateVerdict).toBe("PASS");
+    expect(result.provenance).toBe("DEVELOPMENT_FIXTURE");
+    expect(result.protectionPct).toBe(20);
+    expect(result.proposedTradeValueUsdt).toBe(100);
+    expect(result.proposalHash).toBe(
+      hashProposal({ underlying: "NVDA", protectionPct: 20, proposedTradeValueUsdt: 100, leverageUsed: 1 }),
+    );
+    expect(result.stages).toHaveLength(7);
+    expect(result.stages.every((stage) => stage.status === "COMPLETE")).toBe(true);
+    expect(result.runId).toBe(`paper-run:v1:${result.flowId}`);
+    expect(result.receiptId).toBe(`TENAX-1C-${result.flowId}`);
+
+    const { receipt } = getDecisionReceipt(store, result.flowId);
+    expect(receipt.executionMode).toBe("DRY_RUN");
+    expect(receipt.fundsMoved).toBe(false);
+
+    const runs = await getPaperTradingRunRepository().listRuns();
+    expect(runs).toHaveLength(1);
+    expect(runs[0]).toMatchObject({
+      runId: result.runId,
+      status: "EXECUTED",
+      symbol: "NVDAUSDT",
+      environment: "DRY_RUN",
+      authority: { outcome: "EXECUTE" },
+      execution: { status: "PREVIEW", submitted: false, orderId: null },
+      outcome: { outcomeState: "NOT_OBSERVED" },
+    });
+
+    // Previews earn no execution proof — receipt + run are the records.
+    const proofs = await getProofRepository().repo.listProofs({ flowId: result.flowId });
+    expect(proofs).toEqual([]);
+  });
+
+  it("never fabricates fills, fees, or realized outcomes", async () => {
+    const store = createDevStore();
+    const result = await runJudgeExecutionDemo(store, {
+      snapshot: await testSnapshot(),
+    });
+    const runs = await getPaperTradingRunRepository().listRuns();
+    expect(runs[0]!.execution.status).not.toBe("FILLED");
+    expect(runs[0]!.outcome.realizedPnlUsdt).toBeNull();
+    expect(runs[0]!.outcome.exitPrice).toBeNull();
+    const metrics = calculatePaperTradingMetrics(runs);
+    expect(metrics.riskControl.executed).toBe(1);
+    expect(metrics.performance.realizedRunCount).toBe(0);
+    expect(metrics.performance.sharpeStatus).toBe("INSUFFICIENT_DATA");
+    expect(result.executionStatus).toBe("PREVIEW");
+  });
+
+  it("reruns mint fresh flow and receipt identities on a shared mandate", async () => {
+    const store = createDevStore();
+    const first = await runJudgeExecutionDemo(store, {
+      snapshot: await testSnapshot(),
+    });
+    const second = await runJudgeExecutionDemo(store, {
+      snapshot: await testSnapshot(),
+    });
+    expect(second.flowId).not.toBe(first.flowId);
+    expect(second.runId).not.toBe(first.runId);
+    expect(second.receiptId).not.toBe(first.receiptId);
+    expect(second.authorityOutcome).toBe("EXECUTE");
+    // One shared mandate: the second run reused it instead of failing on
+    // the single-active invariant, and DRY_RUN consumed no budget.
+    expect(store.mandates.size).toBe(1);
+    expect(await getPaperTradingRunRepository().listRuns()).toHaveLength(2);
+  });
+
+  it("rejects unknown demo scenarios at the route boundary", async () => {
+    const response = await (
+      await import("../src/app/api/demo/run/route")
+    ).POST(
+      new Request("http://localhost/api/demo/run", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ scenario: "bogus" }),
+      }) as never,
+    );
+    expect(response.status).toBe(400);
+    const body = (await response.json()) as { ok: boolean };
+    expect(body.ok).toBe(false);
+  });
+
+  it("demo page presents both scenarios with honest expectations", () => {
+    const page = readFileSync("src/app/app/demo/page.tsx", "utf8");
+    expect(page).toContain("RUN REFUSAL DEMO");
+    expect(page).toContain("RUN EXECUTION DEMO");
+    expect(page).toContain("SCENARIO 1 · AUTHORITY STOP");
+    expect(page).toContain("SCENARIO 2 · AUTHORIZED EXECUTION");
+    expect(page).toContain("PREVIEW, NEVER SUBMITTED");
+    const runner = readFileSync("src/app/app/demo/DemoRunner.tsx", "utf8");
+    expect(runner).toContain("VIEW DECISION RECEIPT");
+    expect(runner).toContain("PREVIEW · NO FUNDS MOVED");
   });
 });

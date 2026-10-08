@@ -149,6 +149,7 @@ export default async function PaperTradingPage({ searchParams }: { searchParams:
             <p className="font-syslabel text-[11px] uppercase leading-[14px] tracking-[0.08em] text-mutedink">PAPER TRADING EVIDENCE</p>
             <h1 className="mt-3 font-display text-[48px] font-bold leading-[0.9] tracking-[-0.01em] sm:text-[82px]">Event → Decision → Execution</h1>
             <p className="mt-4 max-w-2xl text-[16px] leading-[24px] text-mutedink">Durable record of Tenax agent cycles. This is a verifiable run log, not a backtest.</p>
+            <p className="mt-2 max-w-2xl text-[16px] leading-[24px] text-mutedink">Every Tenax cycle is recorded here — including actions that executed and actions authority stopped before an order existed.</p>
           </div>
           <div className="grid min-w-[220px] gap-3 rounded-[12px] border border-ink/15 bg-softwhite/60 p-4">
             <Fact label="TRACK" value="AGENTIC TRADING" />

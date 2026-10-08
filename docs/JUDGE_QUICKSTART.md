@@ -24,6 +24,13 @@ provider was contacted. Each RUN DEMO click mints a fresh explicit demo
 flow, so reruns never duplicate anything — a refused path cannot execute
 by construction.
 
+The second scenario, RUN EXECUTION DEMO, feeds the canonical 20% / $100
+fixture analysis through mandate PASS plus a fresh demo standing mandate,
+then runs the autonomous cycle forced to DRY_RUN. The preview-only
+adapter constructs the would-be order and moves nothing; the receipt +
+run persist with submitted false. Same zero-credential, zero-network,
+zero-AI guarantees as the refusal path.
+
 ## B. Optional: run Tenax locally (inspectors only)
 
 Only if you want to inspect the repository yourself. `localhost` appears

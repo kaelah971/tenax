@@ -24,9 +24,19 @@ import {
   NVDA_EXPOSURE_FIXTURE,
   PROPOSAL_REFUSE_VALUE_FIXTURE,
 } from "./fixtures.ts";
+import type { NvidiaMarketSnapshot } from "../intelligence/snapshot.ts";
 import { evaluateMandate } from "./mandate.ts";
 import { ProtectionFlow } from "./orchestrator.ts";
-import { recordDeterministicRefusal } from "./service.ts";
+import {
+  activateStandingMandateRecord,
+  analyzeProtectionIntent,
+  createProtectionIntent,
+  createStandingMandateRecord,
+  getActiveStandingMandate,
+  getDecisionReceipt,
+  recordDeterministicRefusal,
+  runProtectionAgentCycle,
+} from "./service.ts";
 import { paperTradingRunId } from "./paper-trading-run.ts";
 import { proofIdFor } from "../proof/model.ts";
 
@@ -74,6 +84,30 @@ export interface JudgeDemoResult {
 }
 
 export interface RunJudgeDemoInput {
+  readonly nowMs?: number;
+}
+
+export const JUDGE_DEMO_EXEC_RAW_TEXT =
+  "Judge demo: controlled 20% execution scenario (development fixture).";
+
+export interface JudgeExecutionDemoResult {
+  readonly version: typeof JUDGE_DEMO_VERSION;
+  readonly flowId: string;
+  readonly runId: string;
+  readonly receiptId: string;
+  readonly proposalHash: string;
+  readonly protectionPct: number;
+  readonly proposedTradeValueUsdt: number;
+  readonly mandateVerdict: "PASS";
+  readonly authorityOutcome: "EXECUTE";
+  readonly executionStatus: "PREVIEW";
+  readonly provenance: typeof JUDGE_DEMO_PROVENANCE;
+  readonly createdAt: string;
+  readonly stages: readonly JudgeDemoStage[];
+}
+
+export interface RunJudgeExecutionDemoInput {
+  readonly snapshot: NvidiaMarketSnapshot;
   readonly nowMs?: number;
 }
 
@@ -226,6 +260,127 @@ export async function runJudgeDemo(
         id: "RESULT",
         label: "06 · EVIDENCE",
         detail: "NO ORDER SENT — the decision is recorded as activity + proof + run",
+        status: "COMPLETE",
+      },
+    ],
+  };
+}
+
+/**
+ * Run one judge execution demo to its terminal PREVIEW evidence.
+ *
+ * Uses the full canonical product path with zero credentials: intent →
+ * fixture analysis (20%/$100) → mandate PASS → demo standing mandate
+ * (canonical 30%/$150 bounds) → autonomous agent cycle forced to
+ * DRY_RUN → preview-only execution → receipt + run. The DRY_RUN adapter
+ * constructs the would-be order and moves nothing; the cycle consumes no
+ * budget and performs zero network I/O. No proof is created for previews
+ * (only verified fills earn execution proofs) — the receipt + run are
+ * the legitimate terminal records. Each call mints a fresh flow; the
+ * active mandate is reused when one exists (never revoked for a demo)
+ * and created otherwise, so reruns never collide or double-spend.
+ */
+export async function runJudgeExecutionDemo(
+  store: TenaxDevStore,
+  input: RunJudgeExecutionDemoInput,
+): Promise<JudgeExecutionDemoResult> {
+  const nowMs = input.nowMs ?? Date.now();
+  const createdAt = new Date(nowMs).toISOString();
+
+  const { flowId } = createProtectionIntent(store, { rawText: JUDGE_DEMO_EXEC_RAW_TEXT });
+  const analyzed = analyzeProtectionIntent(store, flowId, input.snapshot);
+  if (analyzed.mandateVerdict !== "PASS") {
+    throw new Error(
+      `JUDGE_DEMO_UNEXPECTED: execution-demo analysis did not pass (got ${analyzed.mandateVerdict}) — refusing to proceed`,
+    );
+  }
+  // Fresh timestamp AFTER analysis: the standing freshness gate compares
+  // proposal time against evaluation time, so evaluating with a timestamp
+  // captured before analysis would misread the proposal as future-dated.
+  // Reuse an active mandate when one exists (never revoke user state for
+  // a demo); DRY_RUN previews consume no budget, so sharing is safe.
+  const authNowMs = Date.now();
+  const existing = getActiveStandingMandate(store);
+  const mandate =
+    existing ??
+    activateStandingMandateRecord(
+      store,
+      {
+        id: createStandingMandateRecord(
+          store,
+          { authorityMode: "AUTO_WITHIN_MANDATE", maxExecutions: 1 },
+          authNowMs,
+        ).id,
+      },
+      authNowMs,
+    );
+  const cycle = await runProtectionAgentCycle(
+    store,
+    { flowId },
+    { executionMode: "DRY_RUN", nowMs: authNowMs },
+  );
+  if (cycle.outcome !== "EXECUTED" || cycle.executionMode !== "DRY_RUN") {
+    throw new Error(
+      `JUDGE_DEMO_UNEXPECTED: execution-demo cycle did not execute (got ${cycle.outcome}) — refusing to proceed`,
+    );
+  }
+  const { receipt } = getDecisionReceipt(store, flowId);
+  const proposalHash = hashProposal(analyzed.proposal);
+
+  return {
+    version: JUDGE_DEMO_VERSION,
+    flowId,
+    runId: paperTradingRunId(flowId),
+    receiptId: receipt.receiptId,
+    proposalHash,
+    protectionPct: analyzed.proposal.protectionPct,
+    proposedTradeValueUsdt: analyzed.proposal.proposedTradeValueUsdt,
+    mandateVerdict: "PASS",
+    authorityOutcome: "EXECUTE",
+    executionStatus: "PREVIEW",
+    provenance: JUDGE_DEMO_PROVENANCE,
+    createdAt,
+    stages: [
+      {
+        id: "EXPOSURE",
+        label: "01 · CAPITAL",
+        detail: `$${NVDA_EXPOSURE_FIXTURE.exposureValueUsdt} simulated NVIDIA exposure exists (fixture, not owned live)`,
+        status: "COMPLETE",
+      },
+      {
+        id: "EVENT_CONTEXT",
+        label: "02 · EVENT",
+        detail: "Controlled fixture context stands in for event risk — no verified event consulted",
+        status: "COMPLETE",
+      },
+      {
+        id: "INTENT",
+        label: "03 · AI INTENT",
+        detail: `${analyzed.proposal.protectionPct}% / $${analyzed.proposal.proposedTradeValueUsdt} proposed (fixture input, not model output)`,
+        status: "COMPLETE",
+      },
+      {
+        id: "MANDATE_GATE",
+        label: "04 · AUTHORITY",
+        detail: `Tenax compares it to the ${mandate.policy.maxProtectionPct}% · $${mandate.policy.maxNotionalUsdt} mandate — PASS`,
+        status: "COMPLETE",
+      },
+      {
+        id: "EXECUTION_AUTHORITY",
+        label: "05 · DECISION",
+        detail: "EXECUTE — standing mandate authorized; DRY_RUN preview moves nothing",
+        status: "COMPLETE",
+      },
+      {
+        id: "RESULT",
+        label: "06 · RESULT",
+        detail: "Preview executed without submission — receipt + run persisted (PREVIEW)",
+        status: "COMPLETE",
+      },
+      {
+        id: "RESULT",
+        label: "07 · EVIDENCE",
+        detail: "Would-be order recorded honestly: submitted false, no funds moved",
         status: "COMPLETE",
       },
     ],
