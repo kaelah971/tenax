@@ -268,9 +268,14 @@ describe("Navigation Integration & Shell", () => {
   });
 
   it("landing navigation exposes the product sections and the app", () => {
-    for (const label of ["Product", "How It Works", "Authority", "Evidence", "OPEN APP"]) {
-      expect(landingSource).toContain(label);
+    // Labels live in the shared nav-links module consumed by both the
+    // desktop nav and the mobile overlay; the page wires them in.
+    const navLinksSource = read("src/app/_landing/nav-links.ts");
+    for (const label of ["Product", "How It Works", "Authority", "Evidence"]) {
+      expect(navLinksSource).toContain(label);
     }
+    expect(landingSource).toContain('from "./_landing/nav-links"');
+    expect(landingSource).toContain("OPEN APP");
     expect(landingSource).toContain('href="/app"');
   });
 });

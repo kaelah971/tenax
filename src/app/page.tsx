@@ -33,16 +33,11 @@ import {
 import HeroArt from "./_landing/HeroArt";
 import { HERO_ART } from "./_landing/hero-art";
 import OutcomeCarousel from "./_landing/OutcomeCarousel";
+import MobileMenu from "./_landing/MobileMenu";
+import { NAV_LINKS } from "./_landing/nav-links";
 import "./_landing/landing.css";
 
 export const dynamic = "force-dynamic";
-
-const NAV_LINKS = [
-  { label: "Product", href: "#product" },
-  { label: "How It Works", href: "#how-it-works" },
-  { label: "Authority", href: "#authority" },
-  { label: "Evidence", href: "/app/proof" },
-] as const;
 
 const SYSTEM_STRIP = [
   { label: "BITGET MCP", role: "EVENT SOURCE", Icon: McpIcon },
@@ -181,31 +176,7 @@ export default function LandingPage() {
           >
             OPEN APP
           </Link>
-          <details className="ml-auto md:hidden">
-            <summary className="font-syslabel flex min-h-11 cursor-pointer list-none items-center rounded-[10px] border border-line px-4 text-[11px] uppercase tracking-[0.14em] text-ink/80">
-              MENU
-            </summary>
-            <nav
-              aria-label="Main navigation (mobile)"
-              className="tx-authority-dock absolute right-5 top-[calc(100%+8px)] flex w-60 flex-col gap-1 rounded-[14px] p-2"
-            >
-              {NAV_LINKS.map((link) => (
-                <Link
-                  key={link.label}
-                  href={link.href}
-                  className="font-syslabel rounded-[8px] px-4 py-3 text-[11px] uppercase tracking-[0.14em] text-softwhite/80 hover:bg-softwhite/[0.06] hover:text-softwhite"
-                >
-                  {link.label}
-                </Link>
-              ))}
-              <Link
-                href="/app"
-                className="font-syslabel mt-1 rounded-[8px] bg-signal/10 px-4 py-3 text-[11px] font-semibold uppercase tracking-[0.14em] text-signal"
-              >
-                OPEN APP →
-              </Link>
-            </nav>
-          </details>
+          <MobileMenu />
         </div>
       </header>
 
