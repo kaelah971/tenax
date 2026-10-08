@@ -267,6 +267,19 @@ describe("Navigation Integration & Shell", () => {
     expect(shellNavSource).toContain("← BACK TO SITE");
   });
 
+  it("uses hard <a> navigation for the app-shell exit boundary, Link internally", () => {
+    const appShellSource = read("src/app/app/layout.tsx");
+    // Desktop Back to Site must be a plain anchor so leaving /app/* is a
+    // full navigation, never a client-side transition that can stall.
+    expect(appShellSource).toMatch(/<a\n?\s+href="\/"/);
+    expect(appShellSource).not.toMatch(/<Link\n?\s+href="\/"/);
+    // Mobile menu Back to Site is likewise a plain anchor.
+    expect(shellNavSource).toMatch(/<a\n?\s+href="\/"/);
+    // Internal /app navigation keeps using Next.js Link.
+    expect(shellNavSource).toContain("import Link from \"next/link\"");
+    expect(shellNavSource).toMatch(/<Link\n?\s+key=\{item\.href\}/);
+  });
+
   it("landing navigation exposes the product sections and the app", () => {
     // Labels live in the shared nav-links module consumed by both the
     // desktop nav and the mobile overlay; the page wires them in.

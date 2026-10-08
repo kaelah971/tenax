@@ -44,12 +44,14 @@ export default function ShellNav({ mobile = false }: { mobile?: boolean }) {
             </Link>
           );
         })}
-        <Link
+        {/* Plain anchor on purpose: leaving /app/* must be a full navigation, never a client transition. */}
+        {/* eslint-disable-next-line @next/next/no-html-link-for-pages */}
+        <a
           href="/"
           className="font-syslabel mt-1 min-h-11 rounded-[8px] px-4 py-3 text-[11px] uppercase leading-[20px] tracking-[0.1em] text-softwhite/60 hover:bg-softwhite/[0.06] hover:text-softwhite"
         >
           ← BACK TO SITE
-        </Link>
+        </a>
       </nav>
     );
   }
