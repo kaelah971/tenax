@@ -105,7 +105,9 @@ import type { ActivityEvent, ActivityEventDetails, ActivityEventType } from "./a
 import { notifyForActivityEvent } from "./notifications";
 import { dispatchTelegramForNotification } from "../telegram/delivery";
 import { ProofPersistenceError, recordJudgeProof } from "../proof/seam";
+import type { ProofRepository } from "../proof/repository.ts";
 import { persistPaperTradingCycle, persistPaperTradingRun } from "./paper-trading-run-service.ts";
+import type { PaperTradingRunRepository } from "./paper-trading-run-repository.ts";
 
 export type SnapshotBundleProvider = () => Promise<RealityPublicBundle>;
 
@@ -233,15 +235,19 @@ async function emitActivityAndAwaitProof(
     readonly details?: ActivityEventDetails | null;
   },
   nowMs: number = Date.now(),
+  repos: {
+    readonly runRepository?: PaperTradingRunRepository;
+    readonly proofRepository?: ProofRepository;
+  } = {},
 ): Promise<ActivityEvent> {
   const event = emitActivity(store, input, nowMs);
   let proof = null;
   try {
-    proof = await recordJudgeProof(store, event);
+    proof = await recordJudgeProof(store, event, repos.proofRepository);
   } catch (error) {
     if (!(error instanceof ProofPersistenceError)) throw error;
   }
-  await persistPaperTradingRun({ store, event, proof, nowMs });
+  await persistPaperTradingRun({ store, event, proof, nowMs, repository: repos.runRepository });
   return event;
 }
 
@@ -482,7 +488,12 @@ export function evaluateProtectionProposal(store: TenaxDevStore, flowId: string)
 export async function recordDeterministicRefusal(
   store: TenaxDevStore,
   flowId: string,
-  input: { readonly reasonCodes?: readonly string[]; readonly nowMs?: number } = {},
+  input: {
+    readonly reasonCodes?: readonly string[];
+    readonly nowMs?: number;
+    readonly runRepository?: PaperTradingRunRepository;
+    readonly proofRepository?: ProofRepository;
+  } = {},
 ) {
   const nowMs = input.nowMs ?? Date.now();
   const flow = getFlow(store, flowId);
@@ -524,6 +535,7 @@ export async function recordDeterministicRefusal(
       },
     },
     nowMs,
+    { runRepository: input.runRepository, proofRepository: input.proofRepository },
   );
   return { event };
 }

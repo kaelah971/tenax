@@ -322,6 +322,23 @@ export class PostgresProofRepository implements ProofRepository {
   private async run<T>(
     op: (query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>) => Promise<T>,
   ): Promise<T> {
+    try {
+      return await this.attempt(op);
+    } catch (error) {
+      // One retry on a fresh connection: serverless cold starts (Neon
+      // compute wake) routinely fail the first connect while the second
+      // succeeds. Every operation through here is idempotent, so a retry
+      // can never duplicate. Corrupt records never retry.
+      if (error instanceof Error && error.message === "PROOF_STORE_UNAVAILABLE") {
+        return await this.attempt(op);
+      }
+      throw error;
+    }
+  }
+
+  private async attempt<T>(
+    op: (query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>) => Promise<T>,
+  ): Promise<T> {
     let client: {
       connect(): Promise<void>;
       query(text: string, values?: unknown[]): Promise<{ rows: PgRows }>;

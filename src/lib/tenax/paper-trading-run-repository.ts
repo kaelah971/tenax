@@ -173,6 +173,24 @@ export class PostgresPaperTradingRunRepository implements PaperTradingRunReposit
   private async run<T>(
     operation: (query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>) => Promise<T>,
   ): Promise<T> {
+    try {
+      return await this.attempt(operation);
+    } catch (error) {
+      // One retry on a fresh connection: serverless cold starts (Neon
+      // compute wake) routinely fail the first connect while the second
+      // succeeds. Every operation through here is idempotent (INSERT ...
+      // ON CONFLICT DO NOTHING, keyed UPDATEs, reads), so a retry can
+      // never duplicate. Corruption and validation errors never retry.
+      if (error instanceof Error && error.message === "PAPER_RUN_STORE_UNAVAILABLE") {
+        return await this.attempt(operation);
+      }
+      throw error;
+    }
+  }
+
+  private async attempt<T>(
+    operation: (query: (text: string, values?: unknown[]) => Promise<{ rows: PgRows }>) => Promise<T>,
+  ): Promise<T> {
     let client: Awaited<ReturnType<PgClientFactory>>;
     try {
       client = await this.clientFactory(this.connectionString);

@@ -19,6 +19,7 @@
 import { hashProposal } from "./approval.ts";
 import type { ProtectionAnalysis } from "./analysis.ts";
 import type { TenaxDevStore } from "./dev-store.ts";
+import type { ProofRepository } from "../proof/repository.ts";
 import {
   MANDATE_FIXTURE,
   NVDA_EXPOSURE_FIXTURE,
@@ -38,6 +39,9 @@ import {
   runProtectionAgentCycle,
 } from "./service.ts";
 import { paperTradingRunId } from "./paper-trading-run.ts";
+import type { PaperTradingRunRepository } from "./paper-trading-run-repository.ts";
+import { getPaperTradingRunRepository } from "./paper-trading-run-repository.ts";
+import { getProofRepository } from "../proof/repository.ts";
 import { proofIdFor } from "../proof/model.ts";
 
 if (typeof window !== "undefined") {
@@ -85,6 +89,8 @@ export interface JudgeDemoResult {
 
 export interface RunJudgeDemoInput {
   readonly nowMs?: number;
+  readonly runRepository?: PaperTradingRunRepository;
+  readonly proofRepository?: ProofRepository;
 }
 
 export const JUDGE_DEMO_EXEC_RAW_TEXT =
@@ -205,9 +211,29 @@ export async function runJudgeDemo(
   }
 
   // 05–06: real terminal evidence seam (activity + proof + run, NO_ORDER).
-  const recorded = await recordDeterministicRefusal(store, flowId, { nowMs });
+  const recorded = await recordDeterministicRefusal(store, flowId, {
+    nowMs,
+    runRepository: input.runRepository,
+    proofRepository: input.proofRepository,
+  });
   if (!recorded) {
     throw new Error("JUDGE_DEMO_UNEXPECTED: refusal evidence was not recorded");
+  }
+
+  // Truthfulness gate: the returned runId must be durably retrievable
+  // right now — never report success for a record that is not there.
+  const runId = paperTradingRunId(flowId);
+  const runsRepo = input.runRepository ?? getPaperTradingRunRepository();
+  const proofsRepo = input.proofRepository ?? getProofRepository().repo;
+  const savedRun = await runsRepo.getRun(runId).catch(() => null);
+  const savedProof =
+    savedRun?.sourceProofId === null || savedRun?.sourceProofId === undefined
+      ? null
+      : await proofsRepo.getProof(savedRun.sourceProofId).catch(() => null);
+  if (!savedRun || !savedProof) {
+    throw new Error(
+      "JUDGE_DEMO_UNEXPECTED: durable refusal evidence not retrievable after persist — refusing to report success",
+    );
   }
 
   return {
