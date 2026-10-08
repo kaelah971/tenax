@@ -461,12 +461,18 @@ describe("agent-cycle escalation persists before response (flow-0002 path)", () 
     const rows = new Map<string, Record<string, unknown>>();
     // Genuine delay at the faked pg boundary (offline, no socket): proves the
     // caller awaits settlement before reading back. Same note as above.
+    // Budget note: this test performs 3 sequential statements (schema +
+    // insert, then a listing read). The per-statement delay is intentionally
+    // small so the total (~1.2s) stays deterministically far below the 5s
+    // test timeout on any machine — the previous 1500ms per statement put
+    // ~6s of sleeps against that same timeout and flaked under load. The
+    // awaiting-settlement assertion below is unchanged in kind.
     const factory = async () => ({
       connect: async () => {},
       query: async (text: string, values: unknown[] = []) => {
         // Offline (no socket), but every faked statement settles slowly so the
         // test proves the caller awaits settlement before reading back.
-        await new Promise<void>((resolve) => setTimeout(resolve, 1500));
+        await new Promise<void>((resolve) => setTimeout(resolve, 400));
         const head = text.trimStart().slice(0, 6).toUpperCase();
         if (head.startsWith("CREATE")) return { rows: [] };
         if (head.startsWith("INSERT")) {
@@ -506,7 +512,9 @@ describe("agent-cycle escalation persists before response (flow-0002 path)", () 
     const pgRepo = new PostgresProofRepository("postgres://u:p@localhost:5432/tenax", factory);
     const start = Date.now();
     const stored = await recordJudgeProof(store, event!, pgRepo);
-    expect(Date.now() - start).toBeGreaterThanOrEqual(1400);
+    // Two sequential delayed statements (schema + insert); parallel
+    // execution could never reach this floor, so awaiting is proven.
+    expect(Date.now() - start).toBeGreaterThanOrEqual(700);
     expect(stored?.kind).toBe("AUTHORITY_ESCALATED");
     expect(stored?.outcome).toBe("NO AUTONOMOUS ORDER SENT");
     expect(stored?.execution).toBeNull();

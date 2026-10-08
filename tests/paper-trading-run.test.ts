@@ -18,7 +18,11 @@ import {
   PostgresPaperTradingRunRepository,
   resetPaperTradingRunRepositoryForTests,
 } from "@/lib/tenax/paper-trading-run-repository";
-import { reconcilePaperTradingRuns } from "@/lib/tenax/paper-trading-run-service";
+import {
+  persistPaperTradingRun,
+  reconcilePaperTradingRuns,
+} from "@/lib/tenax/paper-trading-run-service";
+import type { JudgeProof } from "@/lib/proof/model";
 import { FULL_PAYLOADS, stubClientFor } from "./fixtures/reality-payloads";
 
 const NOW = Date.parse("2026-09-21T12:00:00.000Z");
@@ -167,5 +171,101 @@ describe("canonical paper-trading run ledger", () => {
     expect(await repository.saveRun({ ...run, status: "EXECUTED" })).toEqual(run);
     expect(queries[0]).toContain("CREATE TABLE IF NOT EXISTS tenax_paper_trading_runs");
     expect(queries.some((query) => query.startsWith("INSERT"))).toBe(true);
+  });
+});
+
+describe("proof-link backfill on first-write-wins races", () => {
+  const FLOW = "flow-0009";
+
+  function filledProof(): JudgeProof {
+    return {
+      id: "proof:v1:EXECUTION_FILLED:act-0009",
+      version: 1,
+      kind: "EXECUTION_FILLED",
+      flowId: FLOW,
+      subject: "NVDA",
+      symbol: "NVDAUSDT",
+      createdAt: new Date(NOW).toISOString(),
+      outcome: "FILLED · VERIFIED",
+      authority: {
+        source: "STANDING_MANDATE",
+        mode: "AUTO_WITHIN_MANDATE",
+        mandateId: "smand-0001",
+        mandateHash: "abc",
+      },
+      proposal: { protectionPct: 20, notionalUsd: 100, side: "sell", action: "SHORT_HEDGE" },
+      mandateSnapshot: null,
+      execution: {
+        environment: "BITGET_DEMO",
+        provider: "Bitget",
+        providerOrderId: "demo-oid-9",
+        quantity: "0.50",
+        avgFillPrice: "201.5",
+        executedValueUsdt: 100.75,
+        status: "FILLED",
+        fundsLabel: "DEMO · VIRTUAL FUNDS",
+      },
+      receiptId: null,
+      reasonCodes: [],
+      sourceActivityEventId: "act-0009",
+      provenance: {
+        evidenceSource: "TENAX_ACTIVITY_RECEIPT",
+        recordedAt: new Date(NOW).toISOString(),
+        imported: false,
+        importSource: null,
+      },
+    };
+  }
+
+  it("backfills a missing sourceProofId when the proof-linked write arrives late", async () => {
+    const repository = new InMemoryPaperTradingRunRepository();
+    // Seed: the poorer proof-less record wins the race (observed live).
+    const seedStore = createDevStore();
+    const seedEvent = activity("AUTONOMOUS_EXECUTION_FILLED", FLOW, "act-0008");
+    seedStore.activities.push(seedEvent);
+    const seed = buildPaperTradingRun({ store: seedStore, flowId: FLOW, event: seedEvent, proof: null, nowMs: NOW });
+    expect(seed.sourceProofId).toBeNull();
+    await repository.saveRun(seed);
+    // Late arrival: the rich proof-linked write for the same flow.
+    const richStore = createDevStore();
+    const richEvent = activity("AUTONOMOUS_EXECUTION_FILLED", FLOW, "act-0009");
+    richStore.activities.push(richEvent);
+    const proof = filledProof();
+    const saved = await persistPaperTradingRun({
+      store: richStore,
+      event: richEvent,
+      proof,
+      repository,
+      nowMs: NOW,
+    });
+    expect(saved?.sourceProofId).toBe(proof.id);
+    expect(saved?.status).toBe("EXECUTED");
+    // Link-only merge: the seed's own outcome fields are never rewritten.
+    expect(saved?.execution.status).toBe("UNKNOWN");
+    expect(saved?.sourceActivityEventId).toBe("act-0008");
+    expect((await repository.getRun(saved?.runId ?? ""))?.sourceProofId).toBe(proof.id);
+  });
+
+  it("leaves already-linked runs untouched and never invents links", async () => {
+    const repository = new InMemoryPaperTradingRunRepository();
+    const store = createDevStore();
+    const event = activity("AUTONOMOUS_EXECUTION_FILLED", FLOW, "act-0009");
+    store.activities.push(event);
+    const proof = filledProof();
+    const first = await persistPaperTradingRun({ store, event, proof, repository, nowMs: NOW });
+    expect(first?.sourceProofId).toBe(proof.id);
+    // A later proof-less write for the same flow cannot strip the link.
+    const poorer = await persistPaperTradingRun({ store, event, proof: null, repository, nowMs: NOW });
+    expect(poorer?.sourceProofId).toBe(proof.id);
+    // Refusals derive their proof deterministically from the event — the
+    // link is earned, never fabricated (id binds kind + source event).
+    const bare = await persistPaperTradingRun({
+      store,
+      event: activity("STANDING_AUTHORITY_REFUSED", "flow-0010", "act-0010"),
+      proof: null,
+      repository,
+      nowMs: NOW,
+    });
+    expect(bare?.sourceProofId).toBe("proof:v1:AUTHORITY_REFUSED:act-0010");
   });
 });

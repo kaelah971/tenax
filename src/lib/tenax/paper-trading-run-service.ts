@@ -43,7 +43,25 @@ export async function persistPaperTradingRun(input: {
       terminal: input.terminal,
       nowMs: input.nowMs,
     });
-    return await (input.repository ?? getPaperTradingRunRepository()).saveRun(run);
+    const repository = input.repository ?? getPaperTradingRunRepository();
+    const saved = await repository.saveRun(run);
+    // Root-cause repair for verified fills: repositories are
+    // first-write-wins, and persistence here is best-effort, so a
+    // transient failure on the richer proof-linked write can permanently
+    // lock in a poorer same-run record (observed live: a FILLED run
+    // persisted proof-less while its proof existed). When the stored run
+    // lacks a proof link the incoming write carries, backfill ONLY that
+    // link — outcomes, statuses, and numbers are never rewritten, proofs
+    // are never invented, and already-linked runs are untouched.
+    if (saved.sourceProofId === null && run.sourceProofId !== null) {
+      try {
+        const upgraded = await repository.updateRun({ ...saved, sourceProofId: run.sourceProofId });
+        return upgraded ?? saved;
+      } catch {
+        return saved;
+      }
+    }
+    return saved;
   } catch {
     return null;
   }

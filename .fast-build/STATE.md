@@ -99,6 +99,12 @@
 ## Next action
 - Slice 4b Live Paper-Run Capture ONLY after explicit owner authorization addressing the three decisions in READY_FOR_OWNER_AUTHORIZATION above; do not submit any Demo order in this invocation.
 
+## Evidence finalization (BITGET_DEMO_EVIDENCE_FINALIZED)
+- Closed the Tenax-created 0.42 short with ONE authorized buy (order 1491999852949032960, filled @235.72, exact-size body via canonical signed POST path); position NONE, no pending orders, account flat. Total slice writes: exactly 1.
+- sourceProofId root cause: best-effort persist + first-write-wins let a transient failure lock in the poorer proof-less record. Fixed in persistPaperTradingRun: backfill ONLY the missing proof link (never outcomes, never invented proofs); reconcile inherits it. Live run repaired canonically (same runId, proof existed); run page now shows VIEW DURABLE PROOF.
+- Timing flake root cause: 4 stacked 1500ms fake-statement sleeps (~6s) against the 5s default timeout. Fixed to 400ms/statement with the awaiting-settlement assertion preserved (threshold now matches the actual 2-statement record path); 5/5 clean runs.
+- Metrics untouched by design: open fill + manual close create no trusted EXIT observation, so realized stays 0 with Sharpe/drawdown INSUFFICIENT. No commit.
+
 ## Second demo scenario (PAPER_EXECUTION_JUDGE_PATH_READY)
 - /app/demo now offers AUTHORIZED EXECUTION alongside the unchanged refusal demo: canonical 20%/$100 fixture analysis → PASS → demo standing mandate (reused when active, never revoked) → DRY_RUN agent cycle → preview-only receipt + EXECUTED/PREVIEW run. No proof for previews (only verified fills earn execution proofs). POST /api/demo/run takes {scenario} (default refusal; unknown → 400).
 - Fixed two genuine findings en route: test-clock skew vs the standing freshness gate, and single-active-mandate reuse across reruns. Postgres was already DURABLE (the UNAVAILABLE premise was stale env); ledger now holds 1 refusal + 1 execute, realized 0, Sharpe INSUFFICIENT DATA.
