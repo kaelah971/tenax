@@ -181,3 +181,7 @@
 - Landing rebuilt to the approved dark-fintech reference (src/app/page.tsx + src/app/_landing/); app converted centrally via token remap + polarity scopes (globals.css, observatory.css), shell/nav restyled, AI/authority/evidence role tints on Analysis.
 - No logic, route, API, mandate, provider, DB, or execution changes. DESIGN.md palette now superseded (docs follow-up).
 - 893 tests; lint/tsc/build/diff-check clean; CDP layout/interaction checks clean on isolated DRY_RUN fixture server.
+
+## Judge execution flow identity (serverless-safe)
+- Scenario 2 now mints collision-resistant `demo-<ms>-<rand>` flow identities (same convention family as Scenario 1) instead of process-local `nextFlowId()`; `DemoServiceDeps` gained optional `repos` threaded through the whole agent cycle so persistence and verification observe the same store; execution-demo verify-after-write requires the exact EXECUTE/PREVIEW/unsubmitted/orderless record.
+- 4 new identity tests; full suite 957 pass (63 files); tsc/lint/build/diff-check clean. No commit yet.

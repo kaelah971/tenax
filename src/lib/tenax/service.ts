@@ -567,6 +567,16 @@ export interface DemoServiceDeps {
   readonly readFetchImpl?: ReadFetchImpl;
   readonly nowMs?: number;
   readonly executionMode?: ExecutionMode;
+  /**
+   * Optional evidence-repository overrides (tests and the judge demo).
+   * Omitted means the configured defaults — production behavior is
+   * unchanged. Threaded through the whole cycle so persistence and
+   * verification always observe the same store.
+   */
+  readonly repos?: {
+    readonly runRepository?: PaperTradingRunRepository;
+    readonly proofRepository?: ProofRepository;
+  };
 }
 
 /** Server-only credential loader. Returns null unless all three Demo secrets are present. Never logged. */
@@ -1478,6 +1488,7 @@ export async function runProtectionAgentCycle(
       undefined,
       nowMs,
       false,
+      deps.repos,
     );
   }
 
@@ -1530,7 +1541,7 @@ export async function runProtectionAgentCycle(
       flowId,
       summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
       details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
-    }, nowMs);
+    }, nowMs, deps.repos);
     return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
   }
   if (evaluation.decision === "ESCALATE") {
@@ -1545,7 +1556,7 @@ export async function runProtectionAgentCycle(
         flowId,
         summary: `Standing ${evaluation.mandateId} refused (${evaluation.failedRules.join(",") || "policy"})`,
         details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.failedRules], outcome: "STANDING_REFUSED" },
-      }, nowMs);
+      }, nowMs, deps.repos);
       return { outcome: "STANDING_REFUSED", flowId, state: flow.getFlowState(), evaluation };
     }
     if (mandate.policy.authorityMode === "REVIEW_EVERY_ACTION") {
@@ -1557,7 +1568,7 @@ export async function runProtectionAgentCycle(
         flowId,
         summary: `Standing ${evaluation.mandateId} requires human approval (review every action)`,
         details: { mandateId: evaluation.mandateId, reasonCodes: [...evaluation.reasonCodes], outcome: "STANDING_REVIEW" },
-      }, nowMs);
+      }, nowMs, deps.repos);
       return {
         outcome: "STANDING_REVIEW",
         flowId,
@@ -1588,7 +1599,7 @@ export async function runProtectionAgentCycle(
         reasonCodes: [...evaluation.reasonCodes],
         outcome: "STANDING_ESCALATE",
       },
-    }, nowMs);
+    }, nowMs, deps.repos);
     return {
       outcome: "STANDING_ESCALATE",
       flowId,
@@ -1654,7 +1665,7 @@ export async function runProtectionAgentCycle(
             reasonCodes: [cumulative.reasonCode, ...evaluation.reasonCodes],
             outcome: "STANDING_ESCALATE",
           },
-        }, nowMs);
+        }, nowMs, deps.repos);
         return {
           outcome: "STANDING_ESCALATE",
           flowId,
@@ -1691,7 +1702,7 @@ export async function runProtectionAgentCycle(
           reasonCodes: [cumulative.reasonCode],
           outcome: "STANDING_REFUSED",
         },
-      }, nowMs);
+      }, nowMs, deps.repos);
       return {
         outcome: "STANDING_REFUSED",
         flowId,
@@ -1769,10 +1780,10 @@ export async function runProtectionAgentCycle(
       type: "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
       summary: `Autonomous attempt failed (${reason.slice(0, 160)})`,
-    }, nowMs);
+    }, nowMs, deps.repos);
     return { outcome: "FAILED", flowId, state, reason };
   }
-  return await settleAutonomous(flowId, flow, authority, null, autonomousResult, false, store, reservationKey, nowMs);
+  return await settleAutonomous(flowId, flow, authority, null, autonomousResult, false, store, reservationKey, nowMs, true, deps.repos);
 }
 
 /** Best-effort fresh market read for the cumulative gate. Null on any failure. */
@@ -1819,6 +1830,7 @@ async function settleAutonomous(
   reservationKey?: { mandateId: string; flowId: string; proposalHash: string },
   nowMs?: number,
   emitEvents: boolean = true,
+  repos?: { readonly runRepository?: PaperTradingRunRepository; readonly proofRepository?: ProofRepository },
 ): Promise<Extract<AgentCycleResult, { outcome: "EXECUTED" }>> {
   const state = flow.getFlowState() as FlowState;
   if ("request" in result) {
@@ -1831,7 +1843,7 @@ async function settleAutonomous(
         flowId,
         summary: `Receipt ${finalReceipt.receiptId} ready (DRY_RUN preview, no funds moved)`,
         receiptId: finalReceipt.receiptId,
-      }, nowMs ?? Date.now());
+      }, nowMs ?? Date.now(), repos);
     }
     return {
       outcome: "EXECUTED",
@@ -1858,7 +1870,7 @@ async function settleAutonomous(
       flowId,
       summary: `Demo order ${result.orderId ?? "unresolved"} submitted (${result.qty} NVDAUSDT short)`,
       receiptId: finalReceipt.receiptId,
-    }, at);
+    }, at, repos);
     await emitActivityAndAwaitProof(store, {
       type: result.filled ? "AUTONOMOUS_EXECUTION_FILLED" : "AUTONOMOUS_EXECUTION_FAILED",
       flowId,
@@ -1866,13 +1878,13 @@ async function settleAutonomous(
         ? `Demo order filled (${result.orderStatus})`
         : `Demo order not filled (${result.orderStatus ?? "unknown"})`,
       receiptId: finalReceipt.receiptId,
-    }, at);
+    }, at, repos);
     await emitActivityAndAwaitProof(store, {
       type: "DECISION_RECEIPT_READY",
       flowId,
       summary: `Receipt ${finalReceipt.receiptId} ready (BITGET_DEMO, virtual funds)`,
       receiptId: finalReceipt.receiptId,
-    }, at);
+    }, at, repos);
   }
   return {
     outcome: "EXECUTED",

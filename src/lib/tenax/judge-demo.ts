@@ -16,6 +16,8 @@
 // RUN DEMO click yields its own explicit evidence set. Retries can never
 // duplicate provider execution because the refusal path has no write.
 
+import { randomBytes } from "node:crypto";
+
 import { hashProposal } from "./approval.ts";
 import type { ProtectionAnalysis } from "./analysis.ts";
 import type { TenaxDevStore } from "./dev-store.ts";
@@ -31,7 +33,6 @@ import { ProtectionFlow } from "./orchestrator.ts";
 import {
   activateStandingMandateRecord,
   analyzeProtectionIntent,
-  createProtectionIntent,
   createStandingMandateRecord,
   getActiveStandingMandate,
   getDecisionReceipt,
@@ -115,14 +116,20 @@ export interface JudgeExecutionDemoResult {
 export interface RunJudgeExecutionDemoInput {
   readonly snapshot: NvidiaMarketSnapshot;
   readonly nowMs?: number;
+  readonly runRepository?: PaperTradingRunRepository;
+  readonly proofRepository?: ProofRepository;
 }
 
 function uniqueDemoFlowId(store: TenaxDevStore, nowMs: number): string {
-  let candidate = `demo-${nowMs}`;
+  // Timestamp plus cryptographic randomness: two serverless instances
+  // starting in the same millisecond must still mint distinct flow ids,
+  // or their durable run rows would collide on UNIQUE(flow_id). The
+  // store-local loop below additionally guards same-process reruns.
+  let candidate = `demo-${nowMs}-${randomBytes(4).toString("hex")}`;
   let suffix = 0;
   while (store.flows.has(candidate)) {
     suffix += 1;
-    candidate = `demo-${nowMs}-${suffix}`;
+    candidate = `demo-${nowMs}-${randomBytes(4).toString("hex")}-${suffix}`;
   }
   return candidate;
 }
@@ -313,7 +320,14 @@ export async function runJudgeExecutionDemo(
   const nowMs = input.nowMs ?? Date.now();
   const createdAt = new Date(nowMs).toISOString();
 
-  const { flowId } = createProtectionIntent(store, { rawText: JUDGE_DEMO_EXEC_RAW_TEXT });
+  // Collision-safe demo identity (same convention as the refusal path):
+  // process-local nextFlowId() would re-mint flow-0001 on every cold
+  // start and lose the run INSERT to historical rows on UNIQUE(flow_id).
+  const flowId = uniqueDemoFlowId(store, nowMs);
+  const execFlow = new ProtectionFlow(flowId);
+  execFlow.loadExposure(NVDA_EXPOSURE_FIXTURE);
+  execFlow.createIntent(JUDGE_DEMO_EXEC_RAW_TEXT);
+  store.flows.set(flowId, execFlow);
   const analyzed = analyzeProtectionIntent(store, flowId, input.snapshot);
   if (analyzed.mandateVerdict !== "PASS") {
     throw new Error(
@@ -343,7 +357,11 @@ export async function runJudgeExecutionDemo(
   const cycle = await runProtectionAgentCycle(
     store,
     { flowId },
-    { executionMode: "DRY_RUN", nowMs: authNowMs },
+    {
+      executionMode: "DRY_RUN",
+      nowMs: authNowMs,
+      repos: { runRepository: input.runRepository, proofRepository: input.proofRepository },
+    },
   );
   if (cycle.outcome !== "EXECUTED" || cycle.executionMode !== "DRY_RUN") {
     throw new Error(
@@ -352,6 +370,25 @@ export async function runJudgeExecutionDemo(
   }
   const { receipt } = getDecisionReceipt(store, flowId);
   const proposalHash = hashProposal(analyzed.proposal);
+
+  // Truthfulness gate: the returned runId must be durably retrievable
+  // right now, and must be the exact expected record — never report
+  // success for a missing or mismatched row. Previews earn no execution
+  // proof, so only the run is required here.
+  const runsRepo = input.runRepository ?? getPaperTradingRunRepository();
+  const savedRun = await runsRepo.getRun(paperTradingRunId(flowId)).catch(() => null);
+  if (
+    !savedRun ||
+    savedRun.flowId !== flowId ||
+    savedRun.authority.outcome !== "EXECUTE" ||
+    savedRun.execution.status !== "PREVIEW" ||
+    savedRun.execution.submitted !== false ||
+    savedRun.execution.orderId !== null
+  ) {
+    throw new Error(
+      "JUDGE_DEMO_UNEXPECTED: durable preview evidence not retrievable after persist — refusing to report success",
+    );
+  }
 
   return {
     version: JUDGE_DEMO_VERSION,
