@@ -5,6 +5,8 @@
 // flows (same non-durable dev-store caveats). Summaries carry only safe
 // display facts — never credentials, signatures, headers, or raw bodies.
 
+import { randomBytes } from "node:crypto";
+
 import type { TenaxDevStore } from "./dev-store";
 
 export const ACTIVITY_TYPES = [
@@ -56,9 +58,29 @@ export interface ActivityEventDetails {
 
 let activityCounter = 0;
 
-/** Reset the in-memory counter (tests only). */
+/** Reset the in-memory sequence (tests only). */
 export function __resetActivityCounterForTests(): void {
   activityCounter = 0;
+}
+
+/**
+ * Globally unique activity id, generated at event creation.
+ *
+ * The old process-local `act-0001` sequence collided across serverless
+ * cold starts: Postgres enforces UNIQUE(source_activity_event_id) and
+ * proof ids derive from the event id, so a fresh process re-minting
+ * act-0001 lost its INSERTs to unrelated historical rows. This id keeps
+ * the `act-` prefix and a per-process sequence (ordering within one
+ * process) but adds wall-clock time and cryptographic randomness, making
+ * cross-process/cross-instance collision practically impossible without
+ * depending on any mutable shared counter. Secret-free (time + counter
+ * + randomness, no credentials), URL-safe, ~22 chars (well under the
+ * 64-char proof/repository bounds). Historical act-NNNN rows are
+ * untouched — they simply never recur.
+ */
+export function createActivityId(nowMs: number = Date.now()): string {
+  activityCounter += 1;
+  return `act-${nowMs.toString(36)}-${activityCounter.toString(36)}-${randomBytes(3).toString("hex")}`;
 }
 
 export function emitActivityEvent(
@@ -72,9 +94,8 @@ export function emitActivityEvent(
   },
   nowMs: number = Date.now(),
 ): ActivityEvent {
-  activityCounter += 1;
   const event: ActivityEvent = {
-    id: `act-${String(activityCounter).padStart(4, "0")}`,
+    id: createActivityId(nowMs),
     type: input.type,
     flowId: input.flowId,
     createdAt: new Date(nowMs).toISOString(),
