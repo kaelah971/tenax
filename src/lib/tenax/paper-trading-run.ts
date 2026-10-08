@@ -185,6 +185,21 @@ export function isPaperTradingTerminalActivityType(type: ActivityEventType): boo
   );
 }
 
+/**
+ * True only when at least one evidence ref provably denotes Bitget
+ * public market data: the `bitget:public:` namespace or a snapshot
+ * endpoint row (`GET …`). Anything else — including `demo:*` fixture
+ * context and free-form model prose — stays TENAX_DOMAIN so fixture
+ * evidence can never wear a public-market label.
+ */
+function hasPublicMarketRefs(refs: readonly string[] | undefined): boolean {
+  if (!refs) return false;
+  return refs.some((ref) => {
+    const normalized = ref.trim().toLowerCase();
+    return normalized.startsWith("bitget:public:") || normalized.startsWith("get ");
+  });
+}
+
 function finiteFromString(value: string | null | undefined): number | null {
   if (typeof value !== "string" || value.trim() === "") return null;
   const parsed = Number(value);
@@ -305,7 +320,7 @@ export function buildPaperTradingRun(input: {
   const environment = receipt?.executionMode ?? context?.executionModeUsed ?? null;
   const decisionSource: PaperRunSource = context?.aiAudit ? "AI_PROVIDER" : "TENAX_DOMAIN";
   const executionSource: PaperRunSource = execution || demo ? "BITGET_DEMO_PRIVATE" : "TENAX_DOMAIN";
-  const eventSource: PaperRunSource = analysis?.reasoning.evidenceRefs.length ? "BITGET_PUBLIC" : "TENAX_DOMAIN";
+  const eventSource: PaperRunSource = hasPublicMarketRefs(analysis?.reasoning.evidenceRefs) ? "BITGET_PUBLIC" : "TENAX_DOMAIN";
   const orderId = execution?.providerOrderId ?? demo?.orderId ?? null;
   const size = execution?.quantity ?? demo?.cumExecQty ?? null;
   const price = execution?.avgFillPrice ? finiteFromString(execution.avgFillPrice) : finiteFromString(demo?.avgPrice);
@@ -341,8 +356,8 @@ export function buildPaperTradingRun(input: {
     },
     authority: {
       mandateId: authority?.mandateId ?? mandateSnapshot?.mandateId ?? event?.details?.mandateId ?? null,
-      mandateHash: authority?.mandateHash ?? mandateSnapshot?.mandateHash ?? null,
-      mode: authority?.mode ?? mandateSnapshot?.mode ?? null,
+      mandateHash: authority?.mandateHash ?? mandateSnapshot?.mandateHash ?? event?.details?.mandateHash ?? null,
+      mode: authority?.mode ?? mandateSnapshot?.mode ?? event?.details?.mode ?? null,
       outcome: terminal.authorityOutcome,
       reasonCodes: [...terminal.reasonCodes],
       bounds: mandateSnapshot
@@ -356,7 +371,7 @@ export function buildPaperTradingRun(input: {
           ? {
               maxProtectionPct: event.details.maxPct ?? null,
               maxNotionalUsdt: event.details.maxNotional ?? null,
-              maxExecutions: null,
+              maxExecutions: event.details.maxExecutions ?? null,
               maxLeverage: null,
             }
           : null,

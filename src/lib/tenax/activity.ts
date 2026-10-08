@@ -54,6 +54,10 @@ export interface ActivityEventDetails {
   readonly outcome?: string | null;
   /** Standing mandate that evaluated the action, when one did. */
   readonly mandateId?: string | null;
+  /** Authority mode and bounds snapshot, so durable runs survive store loss. */
+  readonly mode?: string | null;
+  readonly maxExecutions?: number | null;
+  readonly mandateHash?: string | null;
 }
 
 let activityCounter = 0;

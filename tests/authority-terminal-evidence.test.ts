@@ -350,3 +350,117 @@ describe("provenance truth and judge surfaces", () => {
     expect(proofSource).toContain("POLICY REFUSED — NO ORDER SENT");
   });
 });
+
+describe("fixture event provenance is classified by ref shape", () => {
+  it("demo fixture refs stay TENAX_DOMAIN while keeping the fixture marker", async () => {
+    const { runJudgeDemo } = await import("../src/lib/tenax/judge-demo");
+    const store = createDevStore();
+    const result = await runJudgeDemo(store, { nowMs: Date.now() });
+    expect(result.authorityOutcome).toBe("REFUSE");
+    const runs = await getPaperTradingRunRepository().listRuns();
+    const run = runs.find((r) => r.flowId === result.flowId);
+    expect(run?.provenance.event).toBe("TENAX_DOMAIN");
+    expect(run?.event.contextRefs).toEqual(
+      expect.arrayContaining(["demo:controlled-fixture"]),
+    );
+    expect(run?.status).toBe("REFUSED");
+    expect(run?.execution.status).toBe("NO_ORDER");
+  });
+
+  it("genuine snapshot refs keep BITGET_PUBLIC provenance", async () => {
+    const { store, flowId } = await setupPassFlow();
+    activateMandate(store);
+    const result = await runProtectionAgentCycle(store, { flowId }, { nowMs: Date.now() });
+    expect(result.outcome).toBe("EXECUTED");
+    const runs = await getPaperTradingRunRepository().listRuns();
+    const run = runs.find((r) => r.flowId === flowId);
+    // Fixture analysis evidence refs are snapshot endpoint rows (GET …),
+    // i.e. genuinely public market data consumed as sample context.
+    expect(run?.provenance.event).toBe("BITGET_PUBLIC");
+    expect(run?.event.contextRefs.some((ref) => ref.trim().toLowerCase().startsWith("get "))).toBe(true);
+  });
+
+  it("model bitget:public refs keep BITGET_PUBLIC on an AI refusal run", async () => {
+    const store = createDevStore();
+    const snapshot = await testSnapshot();
+    const { flowId } = createProtectionIntent(store, { rawText: RAW_TEXT });
+    const calls: Array<{ url: string; method: string; body: string }> = [];
+    const analyzed = await analyzeProtectionIntentWithAi(store, flowId, snapshot, {
+      config: TEST_AI_CONFIG,
+      fetchImpl: fakeAiFetch(aiModelOutput(), calls),
+      nowMs: NOW,
+    });
+    expect(analyzed.mandateVerdict).toBe("REFUSE");
+    const { recordDeterministicRefusal } = await import("../src/lib/tenax/index");
+    await recordDeterministicRefusal(store, flowId, { nowMs: Date.now() });
+    const runs = await getPaperTradingRunRepository().listRuns();
+    const run = runs.find((r) => r.flowId === flowId);
+    expect(run?.provenance.event).toBe("BITGET_PUBLIC");
+    expect(run?.decision.provider).toBe("groq");
+  });
+
+  it("free-form model refs without public markers stay TENAX_DOMAIN", async () => {
+    const store = createDevStore();
+    const snapshot = await testSnapshot();
+    const { flowId } = createProtectionIntent(store, { rawText: RAW_TEXT });
+    const calls: Array<{ url: string; method: string; body: string }> = [];
+    const analyzed = await analyzeProtectionIntentWithAi(store, flowId, snapshot, {
+      config: TEST_AI_CONFIG,
+      fetchImpl: fakeAiFetch(
+        aiModelOutput({ evidenceRefs: ["operator note: watch earnings chatter"] }),
+        calls,
+      ),
+      nowMs: NOW,
+    });
+    expect(analyzed.mandateVerdict).toBe("REFUSE");
+    const { recordDeterministicRefusal } = await import("../src/lib/tenax/index");
+    await recordDeterministicRefusal(store, flowId, { nowMs: Date.now() });
+    const runs = await getPaperTradingRunRepository().listRuns();
+    const run = runs.find((r) => r.flowId === flowId);
+    expect(run?.provenance.event).toBe("TENAX_DOMAIN");
+    expect(run?.event.contextRefs).toEqual(["operator note: watch earnings chatter"]);
+  });
+});
+
+describe("preview run preserves standing authority metadata", () => {
+  it("DRY_RUN EXECUTED run carries mandate id, mode, bounds, and hash", async () => {
+    const { store, flowId } = await setupPassFlow();
+    const mandate = activateMandate(store);
+    const result = await runProtectionAgentCycle(store, { flowId }, { nowMs: Date.now() });
+    expect(result.outcome).toBe("EXECUTED");
+    // The receipt-ready event carries proven mandate facts.
+    const event = store.activities.find(
+      (a) => a.flowId === flowId && a.type === "DECISION_RECEIPT_READY",
+    );
+    expect(event?.details).toMatchObject({
+      mandateId: mandate.id,
+      mode: "AUTO_WITHIN_MANDATE",
+      maxPct: 30,
+      maxNotional: 150,
+      maxExecutions: 1,
+    });
+    expect(typeof event?.details?.mandateHash).toBe("string");
+    expect(event?.details?.reasonCodes).toEqual([]);
+    // The durable run preserves them verbatim.
+    const runs = await getPaperTradingRunRepository().listRuns();
+    const run = runs.find((r) => r.flowId === flowId);
+    expect(run?.status).toBe("EXECUTED");
+    expect(run?.authority.outcome).toBe("EXECUTE");
+    expect(run?.authority.mandateId).toBe(mandate.id);
+    expect(run?.authority.mode).toBe("AUTO_WITHIN_MANDATE");
+    expect(run?.authority.mandateHash).toBe(mandate.mandateHash);
+    expect(run?.authority.bounds).toMatchObject({
+      maxProtectionPct: 30,
+      maxNotionalUsdt: 150,
+      maxExecutions: 1,
+    });
+    expect(run?.authority.reasonCodes).toEqual([]);
+    // Preview truth unchanged: no order, no fill, no proof.
+    expect(run?.execution.status).toBe("PREVIEW");
+    expect(run?.execution.submitted).toBe(false);
+    expect(run?.execution.orderId).toBeNull();
+    const ownEventIds = new Set(store.activities.map((a) => a.id));
+    const proofs = await getProofRepository().repo.listProofs({ flowId });
+    expect(proofs.filter((p) => ownEventIds.has(p.sourceActivityEventId))).toEqual([]);
+  });
+});

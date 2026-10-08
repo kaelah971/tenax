@@ -1818,6 +1818,36 @@ function ensureConsumedIfSubmitted(
   }
 }
 
+/**
+ * Standing-authority facts for receipt-ready events, read from the live
+ * mandate record bound to the execution authority. Values are proven by
+ * domain state (mandate id, hash, mode, bounds) — never invented — so
+ * durable runs keep them even after the process-local store is gone.
+ * Proposed values come from the sealed receipt.
+ */
+function standingDetailsForReceipt(
+  store: TenaxDevStore | undefined,
+  authority: ExecutionAuthority,
+  receipt: DecisionReceipt,
+): ActivityEventDetails {
+  const mandate =
+    authority.standingMandateId && store
+      ? (store.mandates.get(authority.standingMandateId) ?? null)
+      : null;
+  return {
+    mandateId: authority.standingMandateId ?? null,
+    mandateHash: mandate?.mandateHash ?? authority.standingMandateHash ?? null,
+    mode: mandate?.policy.authorityMode ?? null,
+    proposedPct: receipt.proposedProtectionPct,
+    proposedUsd: receipt.proposedTradeValueUsdt,
+    maxPct: mandate?.policy.maxProtectionPct ?? null,
+    maxNotional: mandate?.policy.maxNotionalUsdt ?? null,
+    maxExecutions: mandate?.policy.maxExecutions ?? null,
+    reasonCodes: [],
+    outcome: "EXECUTED",
+  };
+}
+
 /** Settle a successful autonomous execution into the cycle result shape. */
 async function settleAutonomous(
   flowId: string,
@@ -1843,6 +1873,7 @@ async function settleAutonomous(
         flowId,
         summary: `Receipt ${finalReceipt.receiptId} ready (DRY_RUN preview, no funds moved)`,
         receiptId: finalReceipt.receiptId,
+        details: standingDetailsForReceipt(store, authority, finalReceipt),
       }, nowMs ?? Date.now(), repos);
     }
     return {
@@ -1884,6 +1915,7 @@ async function settleAutonomous(
       flowId,
       summary: `Receipt ${finalReceipt.receiptId} ready (BITGET_DEMO, virtual funds)`,
       receiptId: finalReceipt.receiptId,
+      details: standingDetailsForReceipt(store, authority, finalReceipt),
     }, at, repos);
   }
   return {
