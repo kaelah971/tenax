@@ -1,19 +1,53 @@
-# Tenax
+<div align="center">
 
-**The authority layer for AI trading agents.**
+<p align="center">
+  <img
+    src="./public/brand/tenax-readme-banner.png"
+    alt="Tenax — The authority layer for AI trading agents"
+    width="100%"
+  />
+</p>
 
-> AI can propose. It cannot authorize itself.
+<h1>TENAX</h1>
 
-Tenax separates probabilistic intelligence from deterministic execution authority.
-Models analyze markets and propose actions — but deterministic mandates decide
-whether those actions are actually allowed to reach execution, and durable
-evidence records what happened either way.
+<p><strong>The authority layer for AI trading agents.</strong></p>
 
-```text
-EVENT → INTENT → AUTHORITY → EXECUTION → PROOF
-```
+<p><em>AI can propose. It cannot authorize itself.</em></p>
 
-> **Live Demo:** [use-tenax.vercel.app](https://use-tenax.vercel.app) · **GitHub Repo:** [github.com/kaelah971/tenax](https://github.com/kaelah971/tenax)
+<p>Deterministic mandates sit between AI intent and execution — permitting, refusing, escalating, and recording every outcome.</p>
+
+<p><code>INTELLIGENCE → AUTHORITY → EXECUTION → PROOF</code></p>
+
+<p>
+<a href="https://use-tenax.vercel.app"><img src="https://img.shields.io/badge/OPEN_TENAX-LIVE_DEMO-63FF2A?style=for-the-badge" alt="Open Tenax — live demo" /></a>
+<a href="https://x.com/_kaaelaa_/status/2108870959931261392?s=46"><img src="https://img.shields.io/badge/WATCH_DEMO-VIDEO-111111?style=for-the-badge" alt="Watch demo — video" /></a>
+<a href="https://use-tenax.vercel.app/app/paper-trading"><img src="https://img.shields.io/badge/JUDGE_EVIDENCE-PAPER_TRADING-45E0CF?style=for-the-badge" alt="Judge evidence — paper trading" /></a>
+</p>
+
+<p>
+<img src="https://img.shields.io/badge/track-agentic_trading-45E0CF?style=flat-square" alt="Track: Agentic Trading" />
+<img src="https://img.shields.io/badge/mode-DRY_RUN-F5FF3B?style=flat-square" alt="Mode: DRY RUN" />
+<img src="https://img.shields.io/badge/evidence-durable_postgres-4CC9FF?style=flat-square" alt="Evidence: durable Postgres" />
+<img src="https://img.shields.io/badge/tests-963%2F963_passing-66F2A2?style=flat-square" alt="Tests: 963 of 963 passing" />
+<img src="https://img.shields.io/badge/next.js-16-111111?style=flat-square" alt="Next.js 16" />
+<img src="https://img.shields.io/badge/typescript-strict-3178C6?style=flat-square" alt="TypeScript strict" />
+<img src="https://img.shields.io/badge/bitget_ai_hackathon-S2-FFB454?style=flat-square" alt="Bitget AI Hackathon S2" />
+</p>
+
+<p><sub>Bitget AI Hackathon S2 · Track: Agentic Trading · Sub-theme: Open Theme</sub></p>
+
+<p>
+<a href="https://use-tenax.vercel.app">Website</a> ·
+<a href="https://use-tenax.vercel.app/app/demo">Demo</a> ·
+<a href="https://use-tenax.vercel.app/app/paper-trading">Paper Trading</a> ·
+<a href="https://use-tenax.vercel.app/app/proof">Proof Ledger</a> ·
+<a href="docs/tenax_prd_architecture_build_plan.md">Architecture</a> ·
+<a href="docs/agentic-trading-capture-manifest.md">Submission Evidence</a>
+</p>
+
+</div>
+
+---
 
 ## Proof at a glance
 
